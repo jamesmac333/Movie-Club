@@ -1,0 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Outfit", "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Premium Retro Cinema Color Theme */
+  --color-zinc-950: #14100d; /* Deep vintage espresso bean */
+  --color-zinc-900: #1c1613; /* Roasted coffee bean */
+  --color-zinc-800: #2b221d; /* Warm chocolate brown border */
+  --color-zinc-700: #3f322b; /* Soft retro clay */
+  --color-zinc-600: #59483e; /* Warm brown-gray accent */
+  --color-zinc-500: #7d695c; /* Dusty retro taupe */
+  --color-zinc-400: #aa9484; /* Soft rose-beige */
+  --color-zinc-300: #d5c3b5; /* Warm oatmeal */
+  --color-zinc-200: #eae1d4; /* Antique retro cream */
+  --color-zinc-100: #f6f1e5; /* Soft vintage ivory */
+
+  --color-amber-500: #df8b39; /* Warm vintage burnt honey-amber */
+  --color-amber-600: #c57324; /* Deep sunset amber */
+  --color-amber-700: #9b5113; /* Rich caramel brown */
+  --color-amber-400: #eba563; /* Pastel peach-amber */
+}
+
+/* Custom retro lounge styling */
+body {
+  background-color: #14100d;
+  color: #eae1d4;
+  font-family: var(--font-sans);
+}
+
+/* Hardcoded hex utility overrides for seamless retro transition */
+.bg-\[\#080808\] {
+  background-color: #14100d !important;
+}
+.bg-\[\#0c0c0c\] {
+  background-color: #1c1613 !important;
+}
+.bg-\[\#0a0a0a\] {
+  background-color: #181310 !important;
+}
+.bg-\[\#0d0d0d\] {
+  background-color: #231c18 !important;
+}
+
+/* Map translucent backgrounds */
+.bg-\[\#080808\]\/75 {
+  background-color: rgba(20, 16, 13, 0.75) !important;
+}
+.bg-\[\#080808\]\/50 {
+  background-color: rgba(20, 16, 13, 0.5) !important;
+}
+.bg-\[\#080808\]\/40 {
+  background-color: rgba(20, 16, 13, 0.4) !important;
+}
+.bg-\[\#080808\]\/80 {
+  background-color: rgba(20, 16, 13, 0.8) !important;
+}
+.bg-\[\#0c0c0c\]\/95 {
+  background-color: rgba(28, 22, 19, 0.95) !important;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #14100d;
+}
+::-webkit-scrollbar-thumb {
+  background: #2b221d;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f322b;
+}
+

@@ -1,0 +1,6 @@
+{
+  "name": "Movie Club",
+  "description": "The official hub for our fortnightly movie night: events calendar, reviews, and night overviews.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,116 @@
+{
+  "nights": [
+    {
+      "id": "night-1",
+      "date": "2026-07-17T19:00:00",
+      "selector": "Max Smith",
+      "movie": {
+        "title": "The Santa Clause",
+        "year": 1994,
+        "director": "John Pasquin",
+        "genre": "Fantasy, Drama, Comedy, Family",
+        "runtime": 97,
+        "overview": "On Christmas Eve, divorced dad Scott Calvin and his son discover Santa Claus has fallen off their roof. When Scott takes the reins of the magical sleigh, he finds he is now the new Santa, and must convince a world of disbelievers, including himself.",
+        "rating": "PG",
+        "posterUrl": "https://image.tmdb.org/t/p/w500/hvV2rI60qOYELT7tHHLpxtafnBZ.jpg",
+        "selectedBy": "Max Smith"
+      },
+      "status": "scheduled"
+    },
+    {
+      "id": "night-2",
+      "date": "2026-07-31T19:00:00",
+      "selector": "Ash Macintosh",
+      "movie": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "night-3",
+      "date": "2026-08-14T19:00:00",
+      "selector": "Madison Hill",
+      "movie": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "night-4",
+      "date": "2026-08-28T19:00:00",
+      "selector": "Amy Walsh",
+      "movie": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "night-5",
+      "date": "2026-09-11T19:00:00",
+      "selector": "Tom Sakai",
+      "movie": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "night-6",
+      "date": "2026-09-25T19:00:00",
+      "selector": "James Macintosh",
+      "movie": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "night-7",
+      "date": "2026-10-09T19:00:00",
+      "selector": "Max Smith",
+      "movie": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "night-8",
+      "date": "2026-10-23T19:00:00",
+      "selector": "Ash Macintosh",
+      "movie": null,
+      "status": "scheduled"
+    }
+  ],
+  "reviews": [],
+  "overviews": [],
+  "users": [
+    {
+      "username": "James",
+      "name": "James Macintosh",
+      "isAdmin": true,
+      "isAsh": false,
+      "password": "Admin"
+    },
+    {
+      "username": "Ash",
+      "name": "Ash Macintosh",
+      "isAdmin": true,
+      "isAsh": true,
+      "password": "Admin"
+    },
+    {
+      "username": "Tom",
+      "name": "Tom Sakai",
+      "isAdmin": false,
+      "isAsh": false,
+      "password": "movienight"
+    },
+    {
+      "username": "Madison",
+      "name": "Madison Hill",
+      "isAdmin": false,
+      "isAsh": false,
+      "password": "movienight"
+    },
+    {
+      "username": "Max",
+      "name": "Max Smith",
+      "isAdmin": false,
+      "isAsh": false,
+      "password": "movienight"
+    },
+    {
+      "username": "Amy",
+      "name": "Amy Walsh",
+      "isAdmin": false,
+      "isAsh": false,
+      "password": "movienight"
+    }
+  ]
+}
