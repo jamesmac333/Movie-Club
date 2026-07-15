@@ -147,7 +147,7 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
           <select
             value={selectedNightId}
             onChange={(e) => setSelectedNightId(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-850 text-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-amber-500 text-sm font-sans"
+            className="w-full bg-zinc-900 border border-zinc-850 text-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-amber-500 text-base md:text-sm font-sans"
           >
             <option value="">-- Choose a movie night to recap --</option>
             {reviewableNights.map((night, idx) => (
@@ -168,7 +168,7 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
             placeholder="e.g., Inception Night: Dream Layers & Popcorn Overload"
             value={headline}
             onChange={(e) => setHeadline(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-850 text-zinc-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 font-sans"
+            className="w-full bg-zinc-900 border border-zinc-850 text-zinc-100 rounded-xl px-4 py-3 text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 font-sans"
           />
         </div>
 
@@ -182,7 +182,7 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
             placeholder="How did the night go? Write a cozy or funny recap about the movie reactions, debates, food brought, who fell asleep, etc..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-850 text-zinc-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 font-sans leading-relaxed"
+            className="w-full bg-zinc-900 border border-zinc-850 text-zinc-100 rounded-xl px-4 py-3 text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 font-sans leading-relaxed"
           />
         </div>
 

@@ -80,7 +80,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mt-2 font-mono"
           >
-            Members-Only Cinema Hub
+            Members-Only Movie Club
           </motion.p>
         </div>
 
@@ -175,7 +175,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                 className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 text-zinc-950 font-black text-sm uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-amber-500/10 cursor-pointer active:scale-[0.99]"
               >
                 <LogIn className="w-4 h-4" />
-                {loading ? "Verifying Token..." : "Access Cinema Hub"}
+                {loading ? "Verifying Token..." : "Access Movie Club"}
               </button>
 
             </form>
@@ -184,7 +184,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
           {/* Ticket Footer branding */}
           <div className="bg-zinc-900/40 px-8 py-3.5 border-t border-zinc-900 flex justify-between items-center text-[10px] text-zinc-500 font-mono">
             <span className="flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500/60" /> Classy Cinematic Hub
+              <Sparkles className="w-3.5 h-3.5 text-amber-500/60" /> Classy Movie Club
             </span>
             <span>Est. 2026</span>
           </div>

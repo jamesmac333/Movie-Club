@@ -488,7 +488,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Enter your new password"
-                        className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg px-4 py-3 pr-10 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-sm font-mono"
+                        className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg px-4 py-3 pr-10 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-base md:text-sm font-mono"
                       />
                       <button
                         type="button"
@@ -509,7 +509,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Repeat new password"
-                      className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-sm font-mono"
+                      className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-base md:text-sm font-mono"
                     />
                   </div>
 
@@ -538,7 +538,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                 <select
                   value={selectedTarget}
                   onChange={(e) => setSelectedTarget(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-sm cursor-pointer"
+                  className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-base md:text-sm cursor-pointer"
                 >
                   {users.map((user) => (
                     <option key={user.username} value={user.username}>
@@ -672,7 +672,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                         value={adminNewPassword}
                         onChange={(e) => setAdminNewPassword(e.target.value)}
                         placeholder="Enter new password for selected member"
-                        className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg px-4 py-3 pr-10 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-sm font-mono"
+                        className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg px-4 py-3 pr-10 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-base md:text-sm font-mono"
                       />
                       <button
                         type="button"

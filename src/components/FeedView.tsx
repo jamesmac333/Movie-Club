@@ -359,7 +359,7 @@ export default function FeedView({
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
                         rows={3}
-                        className="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3 text-sm placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                        className="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3 text-base md:text-sm placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-500"
                       />
 
                       {reviewError && <p className="text-xs text-red-400">{reviewError}</p>}
@@ -469,7 +469,7 @@ export default function FeedView({
                                 <textarea
                                   value={editComment}
                                   onChange={(e) => setEditComment(e.target.value)}
-                                  className="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-lg p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                  className="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-lg p-2.5 text-base md:text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
                                   rows={2}
                                 />
                                 <div className="flex justify-end gap-1.5">
