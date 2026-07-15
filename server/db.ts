@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { MovieNight, Review, NightOverview, User } from "../src/types.ts";
 
-const DB_FILE = path.join(process.cwd(), "server-db.json");
+const DB_FILE = process.env.DB_PATH || path.join(process.cwd(), "server-db.json");
 
 export interface UserWithPassword extends User {
   password?: string;
