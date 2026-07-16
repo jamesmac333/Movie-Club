@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { User, MOVIE_CLUB_USERS } from "../types.ts";
-import { Lock, KeyRound, UserCog, Check, AlertCircle, Eye, EyeOff, Upload, Camera, Image } from "lucide-react";
+import { Lock, KeyRound, UserCog, Check, AlertCircle, Eye, EyeOff, Upload, Camera, Image, X } from "lucide-react";
 
 interface UserProfileModalProps {
   currentUser: User;
@@ -297,17 +297,33 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50">
-      <div className="relative bg-[#0d0d0d] border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
+    <div 
+      className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 cursor-pointer"
+      onClick={onClose}
+    >
+      <div 
+        className="relative bg-[#0d0d0d] border border-zinc-800 rounded-2xl w-full max-w-md max-h-[90vh] sm:max-h-[85vh] overflow-hidden shadow-2xl flex flex-col cursor-default"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="bg-zinc-900 px-6 py-4 border-b border-zinc-800/60 flex items-center gap-3">
-          <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">
-            <KeyRound className="w-5 h-5" />
+        <div className="bg-zinc-900 px-6 py-4 border-b border-zinc-800/60 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">
+              <KeyRound className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-serif font-bold text-lg text-zinc-100">Credentials Manager</h3>
+              <p className="text-[10px] uppercase tracking-wider text-zinc-500">Account Security & Resets</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-serif font-bold text-lg text-zinc-100">Credentials Manager</h3>
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500">Account Security & Resets</p>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 hover:bg-zinc-800 text-zinc-500 hover:text-zinc-200 rounded-lg transition-colors cursor-pointer"
+            aria-label="Close settings"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Tab switcher if admin */}
