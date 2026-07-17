@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { MovieNight, User, MOVIE_CLUB_USERS } from "../types.ts";
-import { Film, Clock, Search, Calendar, Sparkles, AlertCircle, RefreshCw, RotateCcw } from "lucide-react";
+import { Film, Clock, Search, Calendar, Sparkles, AlertCircle, RefreshCw, RotateCcw, Play, ExternalLink } from "lucide-react";
 import { motion } from "motion/react";
 
 interface NextMovieHeroProps {
@@ -219,6 +219,21 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
                     {nextNight.movie!.overview}
                   </p>
                 </div>
+
+                {nextNight.movie!.trailerUrl && (
+                  <div className="pt-4 flex flex-wrap gap-3">
+                    <a
+                      href={nextNight.movie!.trailerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-mono text-xs font-bold uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-lg shadow-red-600/20 active:scale-[0.98]"
+                    >
+                      <Play className="w-4 h-4 fill-current" />
+                      Watch Trailer
+                      <ExternalLink className="w-3.5 h-3.5 opacity-60 ml-0.5" />
+                    </a>
+                  </div>
+                )}
 
                 {canReset && (
                   <div className="pt-4 flex flex-col gap-2 items-start">

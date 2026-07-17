@@ -15,6 +15,7 @@ export interface MovieMetadata {
   posterUrl?: string;
   rating?: string; // e.g. "PG-13", "R"
   selectedBy: string;
+  trailerUrl?: string;
 }
 
 export interface MovieNight {

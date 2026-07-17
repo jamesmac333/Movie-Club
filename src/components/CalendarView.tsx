@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { MovieNight, User, MOVIE_CLUB_USERS } from "../types.ts";
-import { Calendar, Edit, CheckCircle, Clock, UserCheck, Shield, ChevronRight } from "lucide-react";
+import { Calendar, Edit, CheckCircle, Clock, UserCheck, Shield, ChevronRight, Play, ExternalLink } from "lucide-react";
 import { motion } from "motion/react";
 
 interface CalendarViewProps {
@@ -200,6 +200,20 @@ export default function CalendarView({ nights, currentUser, onUpdateDate, onForc
                         <span className="text-xs text-zinc-400 not-italic">({night.movie!.year})</span>
                       </p>
                       <p className="text-xs text-zinc-400">Dir: {night.movie!.director}</p>
+                      {night.movie!.trailerUrl && (
+                        <div className="flex justify-start md:justify-end">
+                          <a
+                            href={night.movie!.trailerUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-mono text-red-400 hover:text-red-300 transition-colors mt-1"
+                          >
+                            <Play className="w-2.5 h-2.5 fill-current" />
+                            Watch Trailer
+                            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                          </a>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-1">

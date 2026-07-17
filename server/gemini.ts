@@ -34,8 +34,8 @@ export async function fetchMovieMetadata(title: string, selector: string): Promi
 
       if (movieResult) {
         const movieId = movieResult.id;
-        // 2. Fetch detailed movie metadata, including credits (for director) and release_dates (for US rating)
-        const detailsUrl = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${tmdbApiKey}&append_to_response=credits,release_dates&language=en-US`;
+        // 2. Fetch detailed movie metadata, including credits (for director), release_dates (for US rating), and videos (for trailers)
+        const detailsUrl = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${tmdbApiKey}&append_to_response=credits,release_dates,videos&language=en-US`;
         const detailsRes = await fetch(detailsUrl);
         if (detailsRes.ok) {
           const movieDetails = (await detailsRes.json()) as any;
@@ -69,6 +69,15 @@ export async function fetchMovieMetadata(title: string, selector: string): Promi
             }
           }
 
+          // YouTube Trailer
+          let trailerUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent((movieDetails.title || title) + " " + year + " official trailer")}`;
+          const trailerVideo = movieDetails.videos?.results?.find((v: any) => v.site === "YouTube" && v.type === "Trailer") 
+            || movieDetails.videos?.results?.find((v: any) => v.site === "YouTube" && v.type === "Teaser")
+            || movieDetails.videos?.results?.find((v: any) => v.site === "YouTube");
+          if (trailerVideo?.key) {
+            trailerUrl = `https://www.youtube.com/watch?v=${trailerVideo.key}`;
+          }
+
           return {
             title: movieDetails.title || title,
             year,
@@ -78,7 +87,8 @@ export async function fetchMovieMetadata(title: string, selector: string): Promi
             overview: movieDetails.overview || "No overview available.",
             rating,
             posterUrl,
-            selectedBy: selector
+            selectedBy: selector,
+            trailerUrl
           };
         }
       }
@@ -101,7 +111,8 @@ export async function fetchMovieMetadata(title: string, selector: string): Promi
   5. Movie duration/runtime in minutes (integer, e.g. 148).
   6. A compelling 2-3 sentence synopsis/overview.
   7. Age rating (e.g. PG, PG-13, R, M, etc.).
-  8. The official TMDb poster image URL. Official TMDb posters usually follow the format "https://image.tmdb.org/t/p/w500/..." or "https://image.tmdb.org/t/p/original/...". Find the poster path and construct a high-quality "https://image.tmdb.org/t/p/w500/<poster_path_hash>.jpg" URL. If you can't find the direct tmdb poster path, find a high-quality poster image URL for this specific movie.`;
+  8. The official TMDb poster image URL. Official TMDb posters usually follow the format "https://image.tmdb.org/t/p/w500/..." or "https://image.tmdb.org/t/p/original/...". Find the poster path and construct a high-quality "https://image.tmdb.org/t/p/w500/<poster_path_hash>.jpg" URL. If you can't find the direct tmdb poster path, find a high-quality poster image URL for this specific movie.
+  9. The official YouTube trailer video URL for this movie (e.g. "https://www.youtube.com/watch?v=dQw4w9WgXcQ"). If you cannot find a direct YouTube trailer link, generate a search results link on YouTube like "https://www.youtube.com/results?search_query=..." for the official movie trailer.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -144,9 +155,13 @@ export async function fetchMovieMetadata(title: string, selector: string): Promi
             posterUrl: {
               type: Type.STRING,
               description: "The official TMDb poster image URL starting with https://image.tmdb.org/t/p/w500/ or similar high-quality poster URL."
+            },
+            trailerUrl: {
+              type: Type.STRING,
+              description: "The official YouTube trailer link for the movie, or a high-quality search link on YouTube if not found."
             }
           },
-          required: ["title", "year", "director", "genre", "runtime", "overview", "posterUrl"]
+          required: ["title", "year", "director", "genre", "runtime", "overview", "posterUrl", "trailerUrl"]
         }
       }
     });
@@ -186,6 +201,9 @@ export async function fetchMovieMetadata(title: string, selector: string): Promi
       }
     }
 
+    // Fallback trailer link if not returned or invalid
+    const finalTrailerUrl = data.trailerUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent((data.title || title) + " " + (data.year || new Date().getFullYear()) + " official trailer")}`;
+
     return {
       title: data.title || title,
       year: Number(data.year) || new Date().getFullYear(),
@@ -195,11 +213,13 @@ export async function fetchMovieMetadata(title: string, selector: string): Promi
       overview: data.overview || "No overview available.",
       rating: data.rating || "PG-13",
       posterUrl: finalPoster,
-      selectedBy: selector
+      selectedBy: selector,
+      trailerUrl: finalTrailerUrl
     };
   } catch (error) {
     console.error("Error fetching metadata via Gemini:", error);
-    // Return a functional fallback
+    // Return a functional fallback with a youtube search trailer link
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(title + " official trailer")}`;
     return {
       title: title,
       year: new Date().getFullYear(),
@@ -209,7 +229,8 @@ export async function fetchMovieMetadata(title: string, selector: string): Promi
       overview: "Details could not be pulled from online at the moment. Please update details if needed.",
       rating: "PG-13",
       posterUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=800&q=80",
-      selectedBy: selector
+      selectedBy: selector,
+      trailerUrl: searchUrl
     };
   }
 }
