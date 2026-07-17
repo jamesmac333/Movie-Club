@@ -2,7 +2,22 @@ import fs from "fs";
 import path from "path";
 import { MovieNight, Review, NightOverview, User } from "../src/types.ts";
 
-const DB_FILE = process.env.DB_PATH || path.join(process.cwd(), "server-db.json");
+function getDbFile(): string {
+  if (process.env.DB_PATH) {
+    return process.env.DB_PATH;
+  }
+  // Auto-detect mounted GCS volumes
+  if (fs.existsSync("/app/db-volume")) {
+    return "/app/db-volume/server-db.json";
+  }
+  if (fs.existsSync("/app/server-db-volume")) {
+    return "/app/server-db-volume/server-db.json";
+  }
+  // Default to local server-db.json in current working directory
+  return path.join(process.cwd(), "server-db.json");
+}
+
+const DB_FILE = getDbFile();
 
 export interface UserWithPassword extends User {
   password?: string;
@@ -98,9 +113,15 @@ const getInitialData = (): DatabaseSchema => {
 export function readDb(): DatabaseSchema {
   try {
     if (!fs.existsSync(DB_FILE)) {
-      const data = getInitialData();
-      fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf8");
-      return data;
+      const localFile = path.join(process.cwd(), "server-db.json");
+      if (fs.existsSync(localFile) && localFile !== DB_FILE) {
+        console.log(`DB_FILE not found at ${DB_FILE}. Copying initial state from bundled ${localFile}...`);
+        fs.copyFileSync(localFile, DB_FILE);
+      } else {
+        const data = getInitialData();
+        fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf8");
+        return data;
+      }
     }
     const raw = fs.readFileSync(DB_FILE, "utf8");
     const parsed = JSON.parse(raw) as DatabaseSchema;
