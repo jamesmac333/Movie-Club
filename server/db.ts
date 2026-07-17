@@ -109,6 +109,50 @@ const getInitialData = (): DatabaseSchema => {
   };
 };
 
+export function ensureFutureNights(db: DatabaseSchema) {
+  const ROTATION = ["Tom Sakai", "Madison Hill", "Max Smith", "Amy Walsh", "James Macintosh", "Ash Macintosh"];
+  
+  // Sort nights chronologically
+  db.nights.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
+  // Count how many scheduled nights we have in the pipeline
+  let scheduledCount = db.nights.filter(n => n.status === "scheduled").length;
+  
+  let attempts = 0;
+  while (scheduledCount < 8 && attempts < 50) {
+    attempts++;
+    const lastNight = db.nights[db.nights.length - 1];
+    if (!lastNight) break;
+    
+    // Calculate the next date (exactly 14 days later)
+    const lastDate = new Date(lastNight.date);
+    const nextDate = new Date(lastDate);
+    nextDate.setDate(nextDate.getDate() + 14);
+    
+    const year = nextDate.getFullYear();
+    const month = String(nextDate.getMonth() + 1).padStart(2, '0');
+    const day = String(nextDate.getDate()).padStart(2, '0');
+    const nextDateStr = `${year}-${month}-${day}T19:00:00`;
+    
+    // Determine next selector
+    const lastIndex = ROTATION.indexOf(lastNight.selector);
+    const nextIndex = lastIndex === -1 ? 0 : (lastIndex + 1) % ROTATION.length;
+    const nextSelector = ROTATION[nextIndex];
+    
+    const nextId = `night-${db.nights.length + 1}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    
+    db.nights.push({
+      id: nextId,
+      date: nextDateStr,
+      selector: nextSelector,
+      movie: null,
+      status: "scheduled"
+    });
+    
+    scheduledCount++;
+  }
+}
+
 // Helper to load database
 export function readDb(): DatabaseSchema {
   try {
@@ -135,6 +179,14 @@ export function readDb(): DatabaseSchema {
       parsed.overviews = [];
       fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), "utf8");
     }
+
+    // Auto-schedule future nights to ensure at least 8 are always in the pipeline
+    const originalLength = parsed.nights.length;
+    ensureFutureNights(parsed);
+    if (parsed.nights.length !== originalLength) {
+      fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), "utf8");
+    }
+
     return parsed;
   } catch (error) {
     console.error("Error reading database file, returning defaults:", error);

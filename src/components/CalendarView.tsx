@@ -7,7 +7,7 @@ interface CalendarViewProps {
   nights: MovieNight[];
   currentUser: User | null;
   onUpdateDate: (id: string, newDate: string) => Promise<void>;
-  onForceStatus?: (id: string, newStatus: 'scheduled' | 'watched') => Promise<void>;
+  onForceStatus?: (id: string, newStatus: 'scheduled' | 'watched' | 'skipped') => Promise<void>;
   users?: User[];
 }
 
@@ -100,7 +100,9 @@ export default function CalendarView({ nights, currentUser, onUpdateDate, onForc
               className={`relative bg-[#080808]/80 hover:bg-[#0c0c0c]/80 border rounded-xl p-5 transition-all ${
                 night.status === "watched" 
                   ? "border-zinc-900/60 hover:border-zinc-800 bg-[#080808]/40" 
-                  : "border-zinc-800 hover:border-amber-500/30 shadow-lg shadow-amber-500/[0.01]"
+                  : night.status === "skipped"
+                    ? "border-zinc-900/40 hover:border-zinc-900/60 bg-[#080808]/20 opacity-50"
+                    : "border-zinc-800 hover:border-amber-500/30 shadow-lg shadow-amber-500/[0.01]"
               }`}
             >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
@@ -117,6 +119,10 @@ export default function CalendarView({ nights, currentUser, onUpdateDate, onForc
                       <span className="text-[11px] font-semibold bg-emerald-950/40 text-emerald-400 border border-emerald-900/60 px-2 py-0.5 rounded flex items-center gap-1">
                         <CheckCircle className="w-3 h-3" />
                         Watched
+                      </span>
+                    ) : night.status === "skipped" ? (
+                      <span className="text-[11px] font-semibold bg-red-950/20 text-red-400 border border-red-900/30 px-2 py-0.5 rounded flex items-center gap-1">
+                        Skipped / Event
                       </span>
                     ) : (
                       <span className="text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded flex items-center gap-1">
@@ -215,12 +221,32 @@ export default function CalendarView({ nights, currentUser, onUpdateDate, onForc
                         </button>
                         
                         {onForceStatus && (
-                          <button
-                            onClick={() => onForceStatus(night.id, night.status === "watched" ? "scheduled" : "watched")}
-                            className="text-[10px] uppercase font-mono px-2.5 py-1.5 rounded border transition-all cursor-pointer bg-zinc-950 hover:bg-zinc-800 text-zinc-400 border-zinc-800"
-                          >
-                            Mark {night.status === "watched" ? "Scheduled" : "Watched"}
-                          </button>
+                          <>
+                            {night.status === "skipped" ? (
+                              <button
+                                onClick={() => onForceStatus(night.id, "scheduled")}
+                                className="text-[10px] uppercase font-mono px-2.5 py-1.5 rounded border transition-all cursor-pointer bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border-amber-500/30"
+                              >
+                                Unskip Night
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => onForceStatus(night.id, "skipped")}
+                                  className="text-[10px] uppercase font-mono px-2.5 py-1.5 rounded border transition-all cursor-pointer bg-red-950/40 hover:bg-red-950/80 text-red-400 border-red-900/40"
+                                  title="Skip this night (e.g. for Christmas, events, cancellation)"
+                                >
+                                  Skip Night
+                                </button>
+                                <button
+                                  onClick={() => onForceStatus(night.id, night.status === "watched" ? "scheduled" : "watched")}
+                                  className="text-[10px] uppercase font-mono px-2.5 py-1.5 rounded border transition-all cursor-pointer bg-zinc-950 hover:bg-zinc-800 text-zinc-400 border-zinc-800"
+                                >
+                                  Mark {night.status === "watched" ? "Scheduled" : "Watched"}
+                                </button>
+                              </>
+                            )}
+                          </>
                         )}
                       </>
                     )}

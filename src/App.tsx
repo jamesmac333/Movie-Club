@@ -260,7 +260,7 @@ export default function App() {
   };
 
   // API Call: Force event status watched/scheduled (called from CalendarView)
-  const handleForceStatus = async (id: string, newStatus: 'scheduled' | 'watched') => {
+  const handleForceStatus = async (id: string, newStatus: 'scheduled' | 'watched' | 'skipped') => {
     const response = await fetch(`/api/nights/${id}/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

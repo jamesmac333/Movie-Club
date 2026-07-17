@@ -22,7 +22,7 @@ export interface MovieNight {
   date: string; // ISO date format, e.g. '2026-07-17T19:00:00'
   selector: string; // e.g., 'James Macintosh'
   movie: MovieMetadata | null; // null if not chosen yet
-  status: 'scheduled' | 'watched';
+  status: 'scheduled' | 'watched' | 'skipped';
 }
 
 export interface Review {
