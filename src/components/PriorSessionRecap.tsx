@@ -1,15 +1,16 @@
 import React from "react";
 import { MovieNight, Review, NightOverview } from "../types.ts";
-import { Calendar, Star, MessageSquare, Image as ImageIcon, Film, Heart } from "lucide-react";
+import { Calendar, Star, MessageSquare, Image as ImageIcon, Film, Heart, BookOpen, Maximize2 } from "lucide-react";
 import { motion } from "motion/react";
 
 interface PriorSessionRecapProps {
   nights: MovieNight[];
   reviews: Review[];
   overviews: NightOverview[];
+  onOpenRecapModal?: (overview: NightOverview, night: MovieNight) => void;
 }
 
-export default function PriorSessionRecap({ nights, reviews, overviews }: PriorSessionRecapProps) {
+export default function PriorSessionRecap({ nights, reviews, overviews, onOpenRecapModal }: PriorSessionRecapProps) {
   // 1. Find the most recently watched movie night
   const watchedNights = nights
     .filter((n) => n.status === "watched" && n.movie)
@@ -135,9 +136,21 @@ export default function PriorSessionRecap({ nights, reviews, overviews }: PriorS
           {/* Overview text content */}
           {overview ? (
             <div className="space-y-3">
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">Recap by Ash Macintosh</span>
-                <h5 className="text-lg font-serif font-semibold text-zinc-200">{overview.title}</h5>
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">Recap by Ash Macintosh</span>
+                  <h5 className="text-lg font-serif font-semibold text-zinc-200">{overview.title}</h5>
+                </div>
+                {onOpenRecapModal && (
+                  <button
+                    onClick={() => onOpenRecapModal(overview, priorNight)}
+                    className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg border border-amber-500/30 hover:border-amber-500/50 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
+                    title="Read in Pop-up Window"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Pop-up Window</span>
+                  </button>
+                )}
               </div>
               <p className="text-zinc-400 text-sm leading-relaxed font-sans font-light">
                 {overview.content}
@@ -151,17 +164,26 @@ export default function PriorSessionRecap({ nights, reviews, overviews }: PriorS
 
           {/* Memory image if present */}
           {overview?.imageUrl && (
-            <div className="relative rounded-2xl overflow-hidden border border-zinc-900 max-h-72 bg-zinc-950">
+            <div 
+              onClick={() => onOpenRecapModal && onOpenRecapModal(overview, priorNight)}
+              className={`relative rounded-2xl overflow-hidden border border-zinc-900 max-h-72 bg-zinc-950 ${onOpenRecapModal ? 'cursor-pointer group hover:border-amber-500/50 transition-all' : ''}`}
+            >
               <img
                 src={overview.imageUrl}
                 alt="Movie Night Gathering Memory"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-300"
                 referrerPolicy="no-referrer"
               />
               <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md text-zinc-400 border border-zinc-800 rounded px-2.5 py-1 text-[10px] font-mono flex items-center gap-1.5">
                 <ImageIcon className="w-3 h-3 text-amber-500" />
                 Snapshot of the Night
               </div>
+              {onOpenRecapModal && (
+                <div className="absolute top-3 right-3 bg-black/75 backdrop-blur-md text-amber-400 border border-amber-500/30 rounded px-2 py-0.5 text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-lg">
+                  <Maximize2 className="w-3 h-3" />
+                  <span>Pop-up</span>
+                </div>
+              )}
             </div>
           )}
         </div>

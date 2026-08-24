@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS } from "../types.ts";
-import { Star, MessageSquare, Trash2, Edit3, Plus, Image as ImageIcon, Heart, Calendar, Sparkles } from "lucide-react";
+import { Star, MessageSquare, Trash2, Edit3, Plus, Image as ImageIcon, Heart, Calendar, Sparkles, BookOpen, Maximize2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface FeedViewProps {
@@ -13,6 +13,7 @@ interface FeedViewProps {
   onDeleteReview: (id: string) => Promise<void>;
   onToggleStarReview?: (id: string) => Promise<void>;
   onDeleteOverview?: (id: string) => Promise<void>;
+  onOpenRecapModal?: (overview: NightOverview, night: MovieNight) => void;
 }
 
 export default function FeedView({
@@ -24,7 +25,8 @@ export default function FeedView({
   onEditReview,
   onDeleteReview,
   onToggleStarReview,
-  onDeleteOverview
+  onDeleteOverview,
+  onOpenRecapModal
 }: FeedViewProps) {
   const [activeReviewFormId, setActiveReviewFormId] = useState<string | null>(null);
   const [newRating, setNewRating] = useState(5);
@@ -265,24 +267,36 @@ export default function FeedView({
                 {overview ? (
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center justify-between gap-4 flex-wrap">
                         <span className="text-xs font-mono text-amber-500/80 tracking-widest uppercase">The Next Day Overview by Ash</span>
-                        {(isAdmin || isAsh) && (
-                          <button
-                            onClick={async () => {
-                              if (confirm("Are you sure you want to delete this overview recap?")) {
-                                if (onDeleteOverview) {
-                                  await onDeleteOverview(overview.id);
+                        <div className="flex items-center gap-2">
+                          {onOpenRecapModal && (
+                            <button
+                              onClick={() => onOpenRecapModal(overview, night)}
+                              className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg border border-amber-500/30 hover:border-amber-500/50 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
+                              title="Read in Pop-up Window"
+                            >
+                              <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Pop-up Window</span>
+                            </button>
+                          )}
+                          {(isAdmin || isAsh) && (
+                            <button
+                              onClick={async () => {
+                                if (confirm("Are you sure you want to delete this overview recap?")) {
+                                  if (onDeleteOverview) {
+                                    await onDeleteOverview(overview.id);
+                                  }
                                 }
-                              }
-                            }}
-                            className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg border border-transparent hover:border-red-900/40 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
-                            title="Delete Overview Recap"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Delete Overview</span>
-                          </button>
-                        )}
+                              }}
+                              className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg border border-transparent hover:border-red-900/40 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
+                              title="Delete Overview Recap"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete Overview</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <h4 className="text-2xl font-serif font-bold text-zinc-100 tracking-wide">
                         {overview.title}
@@ -295,17 +309,26 @@ export default function FeedView({
 
                     {/* Ash's Memory Photo (the "friends" photo uploaded) */}
                     {overview.imageUrl && (
-                      <div className="relative bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 max-h-[400px]">
+                      <div 
+                        onClick={() => onOpenRecapModal && onOpenRecapModal(overview, night)}
+                        className={`relative bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 max-h-[400px] ${onOpenRecapModal ? 'cursor-pointer group hover:border-amber-500/50 transition-all' : ''}`}
+                      >
                         <img
                           src={overview.imageUrl}
                           alt="Movie Club Friends Gathering"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-300"
                           referrerPolicy="no-referrer"
                         />
                         <div className="absolute bottom-4 left-4 bg-black/75 backdrop-blur-md text-zinc-300 border border-zinc-800 rounded px-3 py-1 text-xs font-mono flex items-center gap-1.5">
                           <ImageIcon className="w-3.5 h-3.5 text-amber-500" />
                           Memory Captured by Ash Macintosh
                         </div>
+                        {onOpenRecapModal && (
+                          <div className="absolute top-4 right-4 bg-black/75 backdrop-blur-md text-amber-400 border border-amber-500/30 rounded px-2.5 py-1 text-[11px] font-mono opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-lg">
+                            <Maximize2 className="w-3 h-3" />
+                            <span>Expand Recap</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

@@ -9,6 +9,7 @@ import OverviewForm from "./components/OverviewForm.tsx";
 import PriorSessionRecap from "./components/PriorSessionRecap.tsx";
 import GroupStatistics from "./components/GroupStatistics.tsx";
 import SelectionAlertModal from "./components/SelectionAlertModal.tsx";
+import RecapAlertModal from "./components/RecapAlertModal.tsx";
 import { Film, Calendar, Compass, BookOpen, Sparkles, Clapperboard, Heart, KeyRound, LogOut, ShieldCheck, User as UserIcon, Home } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useSpring } from "motion/react";
 
@@ -20,6 +21,7 @@ export default function App() {
   const [clubUsers, setClubUsers] = useState<User[]>(MOVIE_CLUB_USERS);
   const [showProfileSettings, setShowProfileSettings] = useState<boolean>(false);
   const [newSelectionAlert, setNewSelectionAlert] = useState<MovieNight | null>(null);
+  const [newRecapAlert, setNewRecapAlert] = useState<{ overview: NightOverview; night: MovieNight } | null>(null);
   
   // App navigation state: 'landing' | 'calendar' | 'feed' | 'writer'
   const [activeTab, setActiveTab] = useState<string>("landing");
@@ -203,6 +205,57 @@ export default function App() {
 
     localStorage.setItem("movie_club_seen_selections", JSON.stringify(seen));
     setNewSelectionAlert(null);
+  };
+
+  // Detect newly published night recaps for popup alerts
+  useEffect(() => {
+    if (!currentUser || overviews.length === 0 || nights.length === 0) return;
+
+    let seen: Record<string, boolean> = {};
+    try {
+      const saved = localStorage.getItem("movie_club_seen_recaps");
+      if (saved) {
+        seen = JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error("Failed to parse seen recaps", e);
+    }
+
+    // Sort overviews by creation timestamp descending to find latest
+    const sortedOverviews = [...overviews].sort(
+      (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+
+    const latestOverview = sortedOverviews[0];
+    if (!latestOverview) return;
+
+    if (!seen[latestOverview.id]) {
+      const matchingNight = nights.find((n) => n.id === latestOverview.movieNightId);
+      if (matchingNight) {
+        if (!newRecapAlert || newRecapAlert.overview.id !== latestOverview.id) {
+          setNewRecapAlert({ overview: latestOverview, night: matchingNight });
+        }
+      }
+    }
+  }, [overviews, nights, currentUser, newRecapAlert]);
+
+  const handleAcknowledgeRecap = (overviewId: string) => {
+    let seen: Record<string, boolean> = {};
+    try {
+      const saved = localStorage.getItem("movie_club_seen_recaps");
+      if (saved) {
+        seen = JSON.parse(saved);
+      }
+    } catch (e) {}
+
+    seen[overviewId] = true;
+    // Mark all current overviews as seen to prevent historical queue buildup
+    overviews.forEach((ov) => {
+      seen[ov.id] = true;
+    });
+
+    localStorage.setItem("movie_club_seen_recaps", JSON.stringify(seen));
+    setNewRecapAlert(null);
   };
 
   const handleLogin = (user: User) => {
@@ -396,8 +449,15 @@ export default function App() {
       throw new Error(errData.error || "Failed to publish overview recap");
     }
 
+    const createdOverview: NightOverview = await response.json();
     await fetchInitialData();
     setActiveTab("feed"); // Redirect to feed to let everyone see!
+
+    // Immediately pop up the window for the user to read fully and exit out of when done
+    const targetNight = nights.find((n) => n.id === movieNightId);
+    if (targetNight) {
+      setNewRecapAlert({ overview: createdOverview, night: targetNight });
+    }
   };
 
   // API Call: Delete a night overview recap (Only Admins / Ash)
@@ -464,6 +524,14 @@ export default function App() {
           <SelectionAlertModal
             night={newSelectionAlert}
             onAcknowledge={handleAcknowledgeSelection}
+          />
+        )}
+        {newRecapAlert && (
+          <RecapAlertModal
+            overview={newRecapAlert.overview}
+            night={newRecapAlert.night}
+            reviews={reviews}
+            onClose={handleAcknowledgeRecap}
           />
         )}
       </AnimatePresence>
@@ -793,7 +861,12 @@ export default function App() {
                     </motion.div>
 
                     {/* Prior Session Recap & Member Reviews */}
-                    <PriorSessionRecap nights={nights} reviews={reviews} overviews={overviews} />
+                    <PriorSessionRecap 
+                      nights={nights} 
+                      reviews={reviews} 
+                      overviews={overviews} 
+                      onOpenRecapModal={(overview, night) => setNewRecapAlert({ overview, night })}
+                    />
 
                     {/* Group Statistics Dashboard */}
                     <GroupStatistics nights={nights} reviews={reviews} users={clubUsers} />
@@ -821,6 +894,7 @@ export default function App() {
                     onDeleteReview={handleDeleteReview}
                     onToggleStarReview={handleToggleStarReview}
                     onDeleteOverview={handleDeleteOverview}
+                    onOpenRecapModal={(overview, night) => setNewRecapAlert({ overview, night })}
                   />
                 )}
 
