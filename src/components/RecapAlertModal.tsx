@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { MovieNight, NightOverview, Review } from "../types.ts";
 import { motion } from "motion/react";
-import { BookOpen, Sparkles, X, Calendar, User as UserIcon, Film, Clock, Star, Camera, Quote } from "lucide-react";
+import { BookOpen, Sparkles, X, Calendar, User as UserIcon, Film, Clock, Star, Camera, Quote, Award, Trophy } from "lucide-react";
 
 interface RecapAlertModalProps {
   overview: NightOverview;
@@ -24,6 +24,13 @@ export default function RecapAlertModal({
     nightReviews.length > 0
       ? (nightReviews.reduce((sum, r) => sum + r.rating, 0) / nightReviews.length).toFixed(1)
       : null;
+
+  // Find top review: prioritize starred review by Ash, or highest rated review
+  const topReview = 
+    nightReviews.find((r) => r.isStarred) ||
+    (nightReviews.length > 0
+      ? [...nightReviews].sort((a, b) => b.rating - a.rating || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+      : null);
 
   // Keyboard escape key support
   useEffect(() => {
@@ -167,6 +174,65 @@ export default function RecapAlertModal({
               {overview.content}
             </div>
           </div>
+
+          {/* Top Review Picked with Congratulations */}
+          {topReview && (
+            <div className="relative overflow-hidden bg-gradient-to-br from-amber-950/40 via-[#1a1410] to-[#120e0c] border-2 border-amber-500/40 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xl shadow-amber-500/10 space-y-3.5">
+              {/* Top Golden Accent Ribbon */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600" />
+              
+              {/* Header with Winner Badge & Congrats */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/20 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-amber-500/20 border border-amber-500/40 text-amber-400 rounded-xl shrink-0 shadow-inner">
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono font-bold tracking-widest text-amber-400 uppercase flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-amber-400" /> Top Review Pick of the Night
+                    </span>
+                    <div className="text-xs sm:text-sm font-serif font-bold text-amber-200/95 flex items-center gap-1.5 pt-0.5">
+                      🎉 Congratulations <strong className="text-white underline decoration-amber-500 decoration-2 underline-offset-2">{topReview.user}</strong>!
+                    </div>
+                  </div>
+                </div>
+
+                {/* Star rating pill */}
+                <div className="flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 px-3 py-1 rounded-xl shrink-0">
+                  <div className="flex items-center gap-0.5">
+                    {Array.from({ length: 5 }).map((_, idx) => (
+                      <Star
+                        key={idx}
+                        className={`w-3.5 h-3.5 ${
+                          idx < Math.round(topReview.rating)
+                            ? "text-amber-400 fill-amber-400"
+                            : "text-zinc-700"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs font-mono font-bold text-amber-300">
+                    {topReview.rating.toFixed(1)}/5
+                  </span>
+                </div>
+              </div>
+
+              {/* Highlighted Review Comment */}
+              <div className="relative pl-3.5 sm:pl-4 border-l-2 border-amber-500/60 py-0.5">
+                <p className="text-zinc-100 text-sm sm:text-base italic font-serif leading-relaxed">
+                  "{topReview.comment}"
+                </p>
+                <div className="flex items-center gap-2 mt-2 text-[11px] font-mono text-zinc-400">
+                  <span>Reviewed by <strong className="text-zinc-200">{topReview.user}</strong></span>
+                  {topReview.isStarred && (
+                    <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded text-[9px] font-bold border border-amber-500/30 uppercase tracking-wider">
+                      Ash's Star Pick ⭐
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Associated Film Badge */}
           {movie && (
