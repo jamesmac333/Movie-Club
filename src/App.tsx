@@ -10,7 +10,7 @@ import PriorSessionRecap from "./components/PriorSessionRecap.tsx";
 import GroupStatistics from "./components/GroupStatistics.tsx";
 import SelectionAlertModal from "./components/SelectionAlertModal.tsx";
 import { Film, Calendar, Compass, BookOpen, Sparkles, Clapperboard, Heart, KeyRound, LogOut, ShieldCheck, User as UserIcon, Home } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useScroll, useSpring } from "motion/react";
 
 export default function App() {
   const [nights, setNights] = useState<MovieNight[]>([]);
@@ -130,7 +130,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, [currentUser]);
 
-  // Detect newly selected movie nights for alerts
+  // Detect newly selected movie nights for alerts (ONLY for the immediate next scheduled night)
   useEffect(() => {
     if (!currentUser || nights.length === 0) return;
 
@@ -144,25 +144,38 @@ export default function App() {
       console.error("Failed to parse seen selections", e);
     }
 
-    const unacknowledged = nights.find((night) => {
-      if (!night.movie) return false;
+    // Find ONLY the next upcoming scheduled movie night in date order
+    const sortedScheduledNights = [...nights]
+      .filter((n) => n.status === "scheduled")
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-      // Check if current user is the selector or if their names match
-      const isCurrentUserSelector =
-        night.selector.toLowerCase() === currentUser.name.toLowerCase() ||
-        night.selector.toLowerCase() === currentUser.username.toLowerCase() ||
-        night.movie.selectedBy?.toLowerCase() === currentUser.name.toLowerCase() ||
-        night.movie.selectedBy?.toLowerCase() === currentUser.username.toLowerCase();
+    const nextNight = sortedScheduledNights[0];
 
-      if (isCurrentUserSelector) return false;
+    if (!nextNight || !nextNight.movie) {
+      if (newSelectionAlert) setNewSelectionAlert(null);
+      return;
+    }
 
-      const alreadySeen = seen[night.id] === night.movie.title;
-      return !alreadySeen;
-    });
+    // Check if current user is the selector or if their names match
+    const isCurrentUserSelector =
+      nextNight.selector.toLowerCase() === currentUser.name.toLowerCase() ||
+      nextNight.selector.toLowerCase() === currentUser.username.toLowerCase() ||
+      nextNight.movie.selectedBy?.toLowerCase() === currentUser.name.toLowerCase() ||
+      nextNight.movie.selectedBy?.toLowerCase() === currentUser.username.toLowerCase();
 
-    if (unacknowledged) {
-      if (!newSelectionAlert || newSelectionAlert.id !== unacknowledged.id || newSelectionAlert.movie?.title !== unacknowledged.movie?.title) {
-        setNewSelectionAlert(unacknowledged);
+    if (isCurrentUserSelector) {
+      if (newSelectionAlert) setNewSelectionAlert(null);
+      return;
+    }
+
+    const alreadySeen = seen[nextNight.id] === nextNight.movie.title;
+    if (!alreadySeen) {
+      if (
+        !newSelectionAlert ||
+        newSelectionAlert.id !== nextNight.id ||
+        newSelectionAlert.movie?.title !== nextNight.movie?.title
+      ) {
+        setNewSelectionAlert(nextNight);
       }
     } else {
       if (newSelectionAlert) {
@@ -180,7 +193,14 @@ export default function App() {
       }
     } catch (e) {}
 
+    // Mark current night and all past nights as seen to prevent any historical queue
     seen[nightId] = movieTitle;
+    nights.forEach((n) => {
+      if (n.status === "watched" && n.movie) {
+        seen[n.id] = n.movie.title;
+      }
+    });
+
     localStorage.setItem("movie_club_seen_selections", JSON.stringify(seen));
     setNewSelectionAlert(null);
   };
@@ -400,6 +420,13 @@ export default function App() {
 
   const isAsh = currentUser?.username?.toLowerCase() === "ash" || currentUser?.isAsh === true;
 
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
   const sortedNightsForRotation = [...nights].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
@@ -554,6 +581,11 @@ export default function App() {
         
         {/* DESKTOP STICKY HEADER NAV */}
         <header className="hidden md:flex items-center justify-between px-12 py-6 border-b border-zinc-900/40 bg-[#080808]/75 backdrop-blur-md sticky top-0 z-20">
+          {/* Scroll progress indicator line */}
+          <motion.div 
+            className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 origin-left"
+            style={{ scaleX }}
+          />
           <div className="flex items-center gap-3">
             <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-500 font-mono">
               {activeTab === "landing" ? "Home" : activeTab === "calendar" ? "Full Schedule" : activeTab === "feed" ? "Memories & Feed" : "Night Writer Recap"}
@@ -606,7 +638,11 @@ export default function App() {
         </header>
 
         {/* MOBILE HEADER SECTION */}
-        <header className="md:hidden bg-[#0c0c0c] border-b border-zinc-900 sticky top-0 z-40">
+        <header className="md:hidden bg-[#0c0c0c] border-b border-zinc-900 sticky top-0 z-40 relative">
+          <motion.div 
+            className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 origin-left"
+            style={{ scaleX }}
+          />
           <div className="px-4 py-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab("landing")}>
               <div className="relative p-1.5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg">
@@ -735,7 +771,13 @@ export default function App() {
                     />
                     
                     {/* Classy Footer Info Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-zinc-900/10 border border-zinc-900 rounded-3xl p-6 sm:p-8 mt-12 text-center md:text-left font-sans">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-50px" }}
+                      transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
+                      className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-zinc-900/10 border border-zinc-900 rounded-3xl p-6 sm:p-8 mt-12 text-center md:text-left font-sans"
+                    >
                       <div>
                         <h4 className="font-serif font-bold text-lg text-zinc-200">The 14-Day Cycle</h4>
                         <p className="text-zinc-400 text-sm mt-1">Every second Friday at 7 PM NZT. Rotate turns deterministically through our 6 friends.</p>
@@ -748,7 +790,7 @@ export default function App() {
                         <h4 className="font-serif font-bold text-lg text-zinc-200">Ash's Recaps</h4>
                         <p className="text-zinc-400 text-sm mt-1">The next day, Ash documents our collective laughter, arguments, food logs, and posts a gathering image.</p>
                       </div>
-                    </div>
+                    </motion.div>
 
                     {/* Prior Session Recap & Member Reviews */}
                     <PriorSessionRecap nights={nights} reviews={reviews} overviews={overviews} />

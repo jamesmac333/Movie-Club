@@ -138,7 +138,12 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
   const hasMovie = nextNight.movie !== null;
 
   return (
-    <div className="relative bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl overflow-hidden shadow-2xl mb-12 shadow-[0_0_24px_rgba(245,158,11,0.03)]">
+    <motion.div 
+      initial={{ opacity: 0, y: 25 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
+      className="relative bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl overflow-hidden shadow-2xl mb-12 shadow-[0_0_24px_rgba(245,158,11,0.03)]"
+    >
       {/* Cinematic Poster background overlay */}
       {hasMovie && nextNight.movie!.posterUrl && (
         <div 
@@ -440,6 +445,6 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
           <div key={i} className="w-2.5 h-1.5 bg-zinc-100 rounded-sm" />
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }

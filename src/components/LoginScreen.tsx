@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { User, MOVIE_CLUB_USERS } from "../types.ts";
-import { Ticket, LogIn, Lock, HelpCircle, Film, Sparkles } from "lucide-react";
+import { Ticket, LogIn, Film, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
 
 interface LoginScreenProps {
@@ -12,7 +12,6 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showCheatSheet, setShowCheatSheet] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,14 +138,6 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                   <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest font-mono">
                     Password
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowCheatSheet(!showCheatSheet)}
-                    className="text-[10px] text-amber-500/70 hover:text-amber-500 flex items-center gap-1 transition-colors font-mono uppercase tracking-wider"
-                  >
-                    <HelpCircle className="w-3 h-3" />
-                    Help
-                  </button>
                 </div>
                 
                 <input
@@ -189,46 +180,6 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             <span>Est. 2026</span>
           </div>
         </motion.div>
-
-        {/* Cheat sheet drawer */}
-        {showCheatSheet && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full bg-zinc-950/90 border border-zinc-900 rounded-2xl p-4 mt-4 text-xs space-y-2 text-zinc-400 font-mono"
-          >
-            <p className="text-zinc-200 font-bold border-b border-zinc-900 pb-1.5 uppercase tracking-wider">Launch Passwords Reference</p>
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
-              <div>
-                <span className="text-zinc-500">James Macintosh:</span><br/>
-                Password: <span className="text-amber-500 font-bold">Admin</span>
-              </div>
-              <div>
-                <span className="text-zinc-500">Ash Macintosh:</span><br/>
-                Password: <span className="text-amber-500 font-bold">Admin</span>
-              </div>
-              <div>
-                <span className="text-zinc-500">Tom Sakai:</span><br/>
-                Password: <span className="text-amber-500 font-bold">movienight</span>
-              </div>
-              <div>
-                <span className="text-zinc-500">Madison Hill:</span><br/>
-                Password: <span className="text-amber-500 font-bold">movienight</span>
-              </div>
-              <div>
-                <span className="text-zinc-500">Max Smith:</span><br/>
-                Password: <span className="text-amber-500 font-bold">movienight</span>
-              </div>
-              <div>
-                <span className="text-zinc-500">Amy Walsh:</span><br/>
-                Password: <span className="text-amber-500 font-bold">movienight</span>
-              </div>
-            </div>
-            <p className="text-[10px] text-zinc-500 pt-1 border-t border-zinc-900 italic">
-              * Note: You can reset your password to anything you like after entering the club!
-            </p>
-          </motion.div>
-        )}
       </div>
     </div>
   );

@@ -79,7 +79,13 @@ export default function PriorSessionRecap({ nights, reviews, overviews }: PriorS
   };
 
   return (
-    <div className="space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 35 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
+      className="space-y-6"
+    >
       {/* Title & Badge */}
       <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
         <div className="space-y-0.5">
@@ -96,7 +102,7 @@ export default function PriorSessionRecap({ nights, reviews, overviews }: PriorS
       </div>
 
       {/* Main Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl p-6 sm:p-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl p-6 sm:p-8 transition-all hover:border-zinc-800">
         
         {/* Left/Middle: Film details and recap */}
         <div className="lg:col-span-7 space-y-6">
@@ -194,6 +200,6 @@ export default function PriorSessionRecap({ nights, reviews, overviews }: PriorS
         </div>
 
       </div>
-    </div>
+    </motion.div>
   );
 }

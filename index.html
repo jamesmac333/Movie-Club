@@ -1,11 +1,38 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Movie Club</title>
+    <title>Movie Club – Fortnightly Cinema & Reviews</title>
+
+    <!-- Meta / SEO (Anonymized & Clean for Google Search Previews) -->
+    <meta name="description" content="The official hub for our fortnightly movie nights: upcoming movie schedule, countdowns, synopses, ratings, and cinema reviews." />
+    <meta name="author" content="Movie Club" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#09090b" />
+
+    <!-- Google Search & Browser Favicons (SVG, PNG multi-resolution, Apple Touch) -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    <link rel="shortcut icon" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Open Graph / Social Previews -->
+    <meta property="og:site_name" content="Movie Club" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Movie Club – Fortnightly Cinema & Reviews" />
+    <meta property="og:description" content="The official hub for our fortnightly movie nights: upcoming movie schedule, countdowns, synopses, ratings, and cinema reviews." />
+    <meta property="og:image" content="/og-image.jpg" />
+
+    <!-- Twitter Card Previews -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Movie Club – Fortnightly Cinema & Reviews" />
+    <meta name="twitter:description" content="The official hub for our fortnightly movie nights: upcoming movie schedule, countdowns, synopses, ratings, and cinema reviews." />
+    <meta name="twitter:image" content="/og-image.jpg" />
   </head>
-  <body>
+  <body class="bg-[#050505] text-zinc-100 antialiased selection:bg-amber-500/20 selection:text-amber-300">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

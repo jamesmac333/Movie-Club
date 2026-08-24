@@ -65,7 +65,13 @@ export default function CalendarView({ nights, currentUser, onUpdateDate, onForc
   const sortedNights = [...nights].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
-    <div className="bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl p-6 sm:p-8 backdrop-blur-md shadow-xl shadow-[0_0_24px_rgba(245,158,11,0.01)]">
+    <motion.div 
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
+      className="bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl p-6 sm:p-8 backdrop-blur-md shadow-xl shadow-[0_0_24px_rgba(245,158,11,0.01)]"
+    >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h2 className="text-3xl font-serif text-zinc-100 font-bold flex items-center gap-3">
@@ -94,10 +100,12 @@ export default function CalendarView({ nights, currentUser, onUpdateDate, onForc
           return (
             <motion.div
               key={night.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`relative bg-[#080808]/80 hover:bg-[#0c0c0c]/80 border rounded-xl p-5 transition-all ${
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.4, delay: Math.min(index * 0.04, 0.3) }}
+              whileHover={{ scale: 1.008, transition: { duration: 0.15 } }}
+              className={`relative bg-[#080808]/80 hover:bg-[#0c0c0c]/80 border rounded-xl p-5 transition-colors ${
                 night.status === "watched" 
                   ? "border-zinc-900/60 hover:border-zinc-800 bg-[#080808]/40" 
                   : night.status === "skipped"
@@ -272,6 +280,6 @@ export default function CalendarView({ nights, currentUser, onUpdateDate, onForc
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -210,9 +210,12 @@ export default function FeedView({
           return (
             <motion.article
               key={night.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl overflow-hidden shadow-xl shadow-[0_0_24px_rgba(245,158,11,0.01)]"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
+              whileHover={{ y: -3, transition: { duration: 0.2 } }}
+              className="bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl overflow-hidden shadow-xl shadow-[0_0_24px_rgba(245,158,11,0.01)] transition-colors hover:border-zinc-800"
             >
               {/* Header metadata ribbon */}
               <div className="bg-[#080808]/50 border-b border-zinc-900/60 px-6 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-zinc-400">
@@ -390,7 +393,7 @@ export default function FeedView({
                     <p className="text-xs text-zinc-600 italic py-2">No reviews written for this movie yet. Click Add Review to start!</p>
                   ) : (
                     <div className="space-y-4">
-                      {nightReviews.map((review) => {
+                      {nightReviews.map((review, rIdx) => {
                         const isAuthor = review.user === currentUser?.name;
                         const isReviewEditing = editingReviewId === review.id;
                         const canModify = isAuthor || currentUser?.isAdmin;
@@ -398,12 +401,17 @@ export default function FeedView({
                         const isStarred = review.isStarred || false;
 
                         return (
-                          <div 
+                          <motion.div 
                             key={review.id}
-                            className={`border rounded-xl p-4 flex flex-col gap-3 transition-all ${
+                            initial={{ opacity: 0, y: 15 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.35, delay: Math.min(rIdx * 0.05, 0.25) }}
+                            whileHover={{ y: -2, transition: { duration: 0.15 } }}
+                            className={`border rounded-xl p-4 flex flex-col gap-3 transition-colors ${
                               isStarred 
                                 ? "bg-amber-500/5 border-amber-500/30 shadow-lg shadow-amber-500/[0.02]" 
-                                : "bg-zinc-900/20 border-zinc-900/60"
+                                : "bg-zinc-900/20 border-zinc-900/60 hover:border-zinc-800"
                             }`}
                           >
                             <div className="flex items-center justify-between gap-4">
@@ -493,7 +501,7 @@ export default function FeedView({
                                 {review.comment}
                               </p>
                             )}
-                          </div>
+                          </motion.div>
                         );
                       })}
                     </div>

@@ -1,6 +1,7 @@
 import React from "react";
 import { MovieNight, Review, User } from "../types.ts";
 import { Film, Clock, Star, Trophy, Flame, Heart } from "lucide-react";
+import { motion } from "motion/react";
 
 interface GroupStatisticsProps {
   nights: MovieNight[];
@@ -83,7 +84,13 @@ export default function GroupStatistics({ nights, reviews, users = [] }: GroupSt
   };
 
   return (
-    <div className="bg-[#fcfcfc] border border-zinc-200/80 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+    <motion.div 
+      initial={{ opacity: 0, y: 35 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
+      className="bg-[#fcfcfc] border border-zinc-200/80 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm"
+    >
       {/* Header */}
       <div className="border-b border-zinc-200/80 pb-5">
         <span className="text-[10px] font-mono text-amber-600 uppercase tracking-widest flex items-center gap-1 mb-1">
@@ -96,7 +103,14 @@ export default function GroupStatistics({ nights, reviews, users = [] }: GroupSt
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Stat 1: Movies */}
-        <div className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4 hover:border-zinc-300 transition-colors shadow-sm">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.35, delay: 0.05 }}
+          whileHover={{ y: -3, transition: { duration: 0.15 } }}
+          className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4 hover:border-zinc-300 transition-colors shadow-sm"
+        >
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl shrink-0">
             <Film className="w-5 h-5" />
           </div>
@@ -105,10 +119,17 @@ export default function GroupStatistics({ nights, reviews, users = [] }: GroupSt
             <div className="text-2xl font-bold font-mono text-zinc-900">{totalWatched}</div>
             <span className="text-[10px] text-zinc-500 block font-sans">Movie sessions completed</span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Stat 2: Hours */}
-        <div className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4 hover:border-zinc-300 transition-colors shadow-sm">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.35, delay: 0.1 }}
+          whileHover={{ y: -3, transition: { duration: 0.15 } }}
+          className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4 hover:border-zinc-300 transition-colors shadow-sm"
+        >
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl shrink-0">
             <Clock className="w-5 h-5" />
           </div>
@@ -117,10 +138,17 @@ export default function GroupStatistics({ nights, reviews, users = [] }: GroupSt
             <div className="text-2xl font-bold font-mono text-zinc-900">{totalHours}h</div>
             <span className="text-[10px] text-zinc-500 block font-sans">Based on film runtimes</span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Stat 3: Average Rating */}
-        <div className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4 hover:border-zinc-300 transition-colors shadow-sm">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.35, delay: 0.15 }}
+          whileHover={{ y: -3, transition: { duration: 0.15 } }}
+          className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4 hover:border-zinc-300 transition-colors shadow-sm"
+        >
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl shrink-0">
             <Star className="w-5 h-5 fill-amber-500/20" />
           </div>
@@ -131,10 +159,17 @@ export default function GroupStatistics({ nights, reviews, users = [] }: GroupSt
             </div>
             <span className="text-[10px] text-zinc-500 block font-sans">Calculated across {totalReviews} reviews</span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Stat 4: Favourite Genre */}
-        <div className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4 hover:border-zinc-300 transition-colors shadow-sm min-w-0">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.35, delay: 0.2 }}
+          whileHover={{ y: -3, transition: { duration: 0.15 } }}
+          className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4 hover:border-zinc-300 transition-colors shadow-sm min-w-0"
+        >
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl shrink-0">
             <Flame className="w-5 h-5" />
           </div>
@@ -147,7 +182,7 @@ export default function GroupStatistics({ nights, reviews, users = [] }: GroupSt
               {maxGenreCount > 0 ? `${maxGenreCount} films watched` : "No genre data"}
             </span>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Starred Review Winner Section */}
@@ -203,6 +238,6 @@ export default function GroupStatistics({ nights, reviews, users = [] }: GroupSt
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

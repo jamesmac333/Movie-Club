@@ -127,7 +127,13 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
   }
 
   return (
-    <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-6 sm:p-8 md:p-10 max-w-3xl mx-auto backdrop-blur-md">
+    <motion.div 
+      initial={{ opacity: 0, y: 25 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.45, ease: [0.21, 0.47, 0.32, 0.98] }}
+      className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-6 sm:p-8 md:p-10 max-w-3xl mx-auto backdrop-blur-md"
+    >
       <div className="flex items-center gap-3 border-b border-zinc-900 pb-5 mb-6">
         <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-xl">
           <BookOpen className="w-6 h-6" />
@@ -278,6 +284,6 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
           </button>
         </div>
       </form>
-    </div>
+    </motion.div>
   );
 }
