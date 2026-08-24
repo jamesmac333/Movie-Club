@@ -56,12 +56,12 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       <div className="w-full max-w-md relative z-10 my-auto flex flex-col items-center">
         
         {/* Cinematic Branding */}
-        <div className="text-center mb-10 flex flex-col items-center">
+        <div className="text-center mb-8 flex flex-col items-center">
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-4 text-amber-500 shadow-lg shadow-amber-500/5"
+            className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-3 text-amber-500 shadow-lg shadow-amber-500/5"
           >
             <Film className="w-8 h-8" />
           </motion.div>
@@ -73,14 +73,19 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
           >
             MOVIE CLUB
           </motion.h1>
-          <motion.p 
+          <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mt-2 font-mono"
+            className="flex flex-col items-center gap-1.5 mt-2.5"
           >
-            Members-Only Movie Club
-          </motion.p>
+            <span className="text-[10px] uppercase tracking-[0.3em] text-amber-500 font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+              Private Members-Only Society
+            </span>
+            <p className="text-xs text-zinc-400 max-w-xs text-center font-sans font-light leading-relaxed mt-1">
+              Restricted portal for scheduled fortnightly screenings, member voting, and session chronicles.
+            </p>
+          </motion.div>
         </div>
 
         {/* Ticket Styled Box */}
@@ -96,14 +101,14 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               <Ticket className="w-5.5 h-5.5" />
               ADMIT ONE
             </span>
-            <span className="text-zinc-950/70 font-mono text-xs font-bold tracking-wider">NO. 7715408</span>
+            <span className="text-zinc-950/70 font-mono text-xs font-bold tracking-wider">RESTRICTED</span>
             
             {/* Cutout Punch */}
             <div className="absolute left-1/2 -bottom-3.5 -translate-x-1/2 w-7 h-7 bg-black rounded-full" />
           </div>
 
-          {/* Form Content */}
-          <div className="p-8 pt-12 relative">
+          {/* Form Content (Tagged with data-nosnippet to prevent search engine indexing of member names) */}
+          <div className="p-8 pt-12 relative" data-nosnippet="true">
             
             {/* Decorative Ticket Side Notch Cutouts */}
             <div className="absolute top-1/2 -left-3.5 -translate-y-1/2 w-7 h-7 bg-black rounded-full border-r border-zinc-800" />
@@ -112,7 +117,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             <form onSubmit={handleSubmit} className="space-y-6">
               
               {/* Member Selection */}
-              <div>
+              <div data-nosnippet="true">
                 <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2.5 font-mono">
                   Select Member Profile
                 </label>
@@ -122,7 +127,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                     setUsername(e.target.value);
                     setError("");
                   }}
-                  className="w-full bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-sm font-medium"
+                  className="w-full bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-sm font-medium cursor-pointer"
                 >
                   {MOVIE_CLUB_USERS.map((user) => (
                     <option key={user.username} value={user.username}>

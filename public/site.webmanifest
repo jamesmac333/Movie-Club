@@ -1,7 +1,7 @@
 {
   "name": "Movie Club",
   "short_name": "Movie Club",
-  "description": "The official hub for our fortnightly movie nights, schedule, and reviews.",
+  "description": "Private members-only cinema society portal for fortnightly movie nights, archives, and reviews.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#09090b",

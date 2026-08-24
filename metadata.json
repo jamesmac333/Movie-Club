@@ -1,6 +1,6 @@
 {
   "name": "Movie Club",
-  "description": "The official hub for our fortnightly movie night: events calendar, reviews, and night overviews.",
+  "description": "Private members-only cinema society portal for fortnightly movie nights, curated screenings, member voting, and session recaps.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
