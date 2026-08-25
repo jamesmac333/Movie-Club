@@ -832,10 +832,16 @@ export default function App() {
                       users={clubUsers}
                     />
                     <CalendarView 
-                      nights={nights.slice(0, 3)} // Show quick snapshot of next 3 nights
+                      nights={nights}
                       currentUser={currentUser}
                       onUpdateDate={handleUpdateDate}
+                      onForceStatus={handleForceStatus}
                       users={clubUsers}
+                      overviews={overviews}
+                      onOpenRecapModal={(overview, night) => setNewRecapAlert({ overview, night })}
+                      futureOnly={true}
+                      title="Upcoming Schedule"
+                      subtitle="Upcoming scheduled cinema sessions in chronological order • 7:00 PM NZT"
                     />
                     
                     {/* Classy Footer Info Section */}
@@ -880,6 +886,9 @@ export default function App() {
                     onUpdateDate={handleUpdateDate}
                     onForceStatus={handleForceStatus}
                     users={clubUsers}
+                    overviews={overviews}
+                    onOpenRecapModal={(overview, night) => setNewRecapAlert({ overview, night })}
+                    futureOnly={false}
                   />
                 )}
 
