@@ -51,20 +51,6 @@
       "selector": "James Macintosh",
       "movie": null,
       "status": "scheduled"
-    },
-    {
-      "id": "night-7",
-      "date": "2026-10-09T19:00:00",
-      "selector": "Max Smith",
-      "movie": null,
-      "status": "scheduled"
-    },
-    {
-      "id": "night-8",
-      "date": "2026-10-23T19:00:00",
-      "selector": "Ash Macintosh",
-      "movie": null,
-      "status": "scheduled"
     }
   ],
   "reviews": [],

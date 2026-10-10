@@ -369,7 +369,16 @@ export default function App() {
       throw new Error(errData.error || "Failed to post review");
     }
 
-    await fetchInitialData();
+    const data = await response.json();
+    if (data.reviews) {
+      setReviews(data.reviews);
+    }
+    if (data.nights) {
+      setNights(data.nights);
+    }
+
+    // Refresh state silently to ensure all connected clients are in lockstep
+    await fetchSilentData();
   };
 
   // API Call: Edit review (called from FeedView)
@@ -390,7 +399,12 @@ export default function App() {
       throw new Error(errData.error || "Failed to edit review");
     }
 
-    await fetchInitialData();
+    const data = await response.json();
+    if (data.reviews) {
+      setReviews(data.reviews);
+    }
+
+    await fetchSilentData();
   };
 
   // API Call: Delete review (called from FeedView)
@@ -409,7 +423,12 @@ export default function App() {
       throw new Error(errData.error || "Failed to delete review");
     }
 
-    await fetchInitialData();
+    const data = await response.json();
+    if (data.reviews) {
+      setReviews(data.reviews);
+    }
+
+    await fetchSilentData();
   };
 
   // API Call: Star a review (called from FeedView - Ash Only)
@@ -427,7 +446,12 @@ export default function App() {
       throw new Error(errData.error || "Failed to star/unstar review");
     }
 
-    await fetchInitialData();
+    const data = await response.json();
+    if (data.reviews) {
+      setReviews(data.reviews);
+    }
+
+    await fetchSilentData();
   };
 
   // API Call: Post a night overview recap (called from OverviewForm)
@@ -550,18 +574,17 @@ export default function App() {
           </div>
           
           <div className="px-8 mt-8">
-            <h2 className="text-xs uppercase tracking-widest text-zinc-400 mb-4 border-b border-zinc-800/80 pb-2 font-mono">Rotation Schedule</h2>
+            <h2 className="text-xs uppercase tracking-widest text-zinc-400 mb-4 border-b border-zinc-800/80 pb-2 font-mono">Upcoming Rotation</h2>
             <ul className="space-y-4">
-              {sortedNightsForRotation.length > 0 ? (
-                sortedNightsForRotation.slice(0, 6).map((night) => {
+              {sortedNightsForRotation.filter(n => n.status === "scheduled").length > 0 ? (
+                sortedNightsForRotation.filter(n => n.status === "scheduled").slice(0, 6).map((night) => {
                   const isNext = nextUpcomingNight && nextUpcomingNight.id === night.id;
-                  const isPast = night.status === "watched";
                   const u = clubUsers.find(
                     user => user.username.toLowerCase() === night.selector.toLowerCase() ||
                             user.name.toLowerCase() === night.selector.toLowerCase()
                   );
                   return (
-                    <li key={night.id} className={`flex items-center gap-3 transition-all ${isPast ? 'opacity-40' : ''}`}>
+                    <li key={night.id} className="flex items-center gap-3 transition-all">
                       {u?.avatarUrl ? (
                         <img 
                           src={u.avatarUrl} 
@@ -584,9 +607,6 @@ export default function App() {
                       </div>
                       {isNext && (
                         <span className="ml-auto text-[9px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded font-mono">Next</span>
-                      )}
-                      {isPast && (
-                        <span className="ml-auto text-[9px] bg-zinc-800/50 text-zinc-500 px-1 py-0.5 rounded font-mono">Past</span>
                       )}
                     </li>
                   );

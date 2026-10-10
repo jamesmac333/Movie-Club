@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { readDb, writeDb } from "./server/db.ts";
+import { readDb, writeDb, mutateDb, generateUniqueId, ensureFutureNights } from "./server/db.ts";
 import { fetchMovieMetadata } from "./server/gemini.ts";
 import { MovieNight, Review, NightOverview } from "./src/types.ts";
 
@@ -121,9 +121,15 @@ async function startServer() {
   });
 
   // 1. Get all movie nights (calendar & landing page)
-  app.get("/api/nights", (req, res) => {
+  app.get("/api/nights", async (req, res) => {
     try {
       const db = readDb();
+      const scheduledCount = db.nights.filter((n) => n.status === "scheduled").length;
+      if (scheduledCount < 6) {
+        await mutateDb((currentDb) => {
+          ensureFutureNights(currentDb);
+        });
+      }
       res.json(db.nights);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch movie nights" });
@@ -131,7 +137,7 @@ async function startServer() {
   });
 
   // 2. Update a movie night's date (Admin only: James or Ash)
-  app.put("/api/nights/:id/date", (req, res) => {
+  app.put("/api/nights/:id/date", async (req, res) => {
     const { id } = req.params;
     const { date, requester } = req.body;
 
@@ -145,15 +151,21 @@ async function startServer() {
     }
 
     try {
-      const db = readDb();
-      const nightIndex = db.nights.findIndex((n) => n.id === id);
-      if (nightIndex === -1) {
+      const updatedNight = await mutateDb((db) => {
+        const nightIndex = db.nights.findIndex((n) => n.id === id);
+        if (nightIndex === -1) {
+          return null;
+        }
+
+        db.nights[nightIndex].date = date;
+        return db.nights[nightIndex];
+      });
+
+      if (!updatedNight) {
         return res.status(404).json({ error: "Movie night not found" });
       }
 
-      db.nights[nightIndex].date = date;
-      writeDb(db);
-      res.json({ message: "Date updated successfully", night: db.nights[nightIndex] });
+      res.json({ message: "Date updated successfully", night: updatedNight });
     } catch (error) {
       res.status(500).json({ error: "Failed to update date" });
     }
@@ -169,13 +181,11 @@ async function startServer() {
     }
 
     try {
-      const db = readDb();
-      const nightIndex = db.nights.findIndex((n) => n.id === id);
-      if (nightIndex === -1) {
+      const dbSnapshot = readDb();
+      const night = dbSnapshot.nights.find((n) => n.id === id);
+      if (!night) {
         return res.status(404).json({ error: "Movie night not found" });
       }
-
-      const night = db.nights[nightIndex];
 
       // Security check: must be either the assigned selector, or an admin (James/Ash)
       const isSelector = selector && selector.toLowerCase() === requesterName?.toLowerCase();
@@ -187,18 +197,28 @@ async function startServer() {
         });
       }
 
-      // Fetch metadata from Gemini SDK (acting as themoviedb online proxy)
+      // Fetch metadata from Gemini SDK
       const metadata = await fetchMovieMetadata(movieTitle, night.selector);
-      
-      db.nights[nightIndex].movie = metadata;
-      
-      // If date is in the past compared to current time, mark it watched, else scheduled
-      const nightDate = new Date(night.date);
-      const now = new Date();
-      db.nights[nightIndex].status = nightDate < now ? "watched" : "scheduled";
 
-      writeDb(db);
-      res.json({ message: "Movie selected and metadata pulled successfully", night: db.nights[nightIndex] });
+      const updatedNight = await mutateDb((db) => {
+        const nightIndex = db.nights.findIndex((n) => n.id === id);
+        if (nightIndex === -1) return null;
+
+        db.nights[nightIndex].movie = metadata;
+        
+        // If date is in the past compared to current time, mark it watched, else scheduled
+        const nightDate = new Date(db.nights[nightIndex].date);
+        const now = new Date();
+        db.nights[nightIndex].status = nightDate < now ? "watched" : "scheduled";
+
+        return db.nights[nightIndex];
+      });
+
+      if (!updatedNight) {
+        return res.status(404).json({ error: "Movie night not found" });
+      }
+
+      res.json({ message: "Movie selected and metadata pulled successfully", night: updatedNight });
     } catch (error) {
       console.error("Error choosing movie:", error);
       res.status(500).json({ error: "Failed to pull movie metadata or update selection" });
@@ -206,45 +226,52 @@ async function startServer() {
   });
 
   // 3.5. Reset a movie night's movie choice (The selector or admin)
-  app.post("/api/nights/:id/reset-movie", (req, res) => {
+  app.post("/api/nights/:id/reset-movie", async (req, res) => {
     const { id } = req.params;
     const { requester, requesterName } = req.body;
 
     try {
-      const db = readDb();
-      const nightIndex = db.nights.findIndex((n) => n.id === id);
-      if (nightIndex === -1) {
+      const updatedNight = await mutateDb((db) => {
+        const nightIndex = db.nights.findIndex((n) => n.id === id);
+        if (nightIndex === -1) {
+          return null;
+        }
+
+        const night = db.nights[nightIndex];
+
+        // Security check: must be either the assigned selector, or an admin (James/Ash)
+        const isSelector = night.selector && (
+          night.selector.toLowerCase() === requesterName?.toLowerCase() ||
+          night.selector.toLowerCase() === requester?.toLowerCase()
+        );
+        const isAdmin = requester?.toLowerCase() === "james" || requester?.toLowerCase() === "ash";
+
+        if (!isSelector && !isAdmin) {
+          throw new Error("UNAUTHORIZED");
+        }
+
+        db.nights[nightIndex].movie = null;
+        db.nights[nightIndex].status = "scheduled"; // revert back to scheduled
+
+        return db.nights[nightIndex];
+      });
+
+      if (!updatedNight) {
         return res.status(404).json({ error: "Movie night not found" });
       }
 
-      const night = db.nights[nightIndex];
-
-      // Security check: must be either the assigned selector, or an admin (James/Ash)
-      const isSelector = night.selector && (
-        night.selector.toLowerCase() === requesterName?.toLowerCase() ||
-        night.selector.toLowerCase() === requester?.toLowerCase()
-      );
-      const isAdmin = requester?.toLowerCase() === "james" || requester?.toLowerCase() === "ash";
-
-      if (!isSelector && !isAdmin) {
-        return res.status(403).json({ 
-          error: `Unauthorized. Only the assigned selector (${night.selector}) or an admin can reset this choice.` 
-        });
+      res.json({ message: "Movie selection reset successfully", night: updatedNight });
+    } catch (error: any) {
+      if (error?.message === "UNAUTHORIZED") {
+        return res.status(403).json({ error: "Unauthorized. Only the assigned selector or an admin can reset this choice." });
       }
-
-      db.nights[nightIndex].movie = null;
-      db.nights[nightIndex].status = "scheduled"; // revert back to scheduled
-
-      writeDb(db);
-      res.json({ message: "Movie selection reset successfully", night: db.nights[nightIndex] });
-    } catch (error) {
       console.error("Error resetting movie selection:", error);
       res.status(500).json({ error: "Failed to reset movie selection" });
     }
   });
 
   // 4. Force status update (mark watched) - helpful for testing & admin
-  app.put("/api/nights/:id/status", (req, res) => {
+  app.put("/api/nights/:id/status", async (req, res) => {
     const { id } = req.params;
     const { status, requester } = req.body;
 
@@ -253,13 +280,18 @@ async function startServer() {
     }
 
     try {
-      const db = readDb();
-      const index = db.nights.findIndex(n => n.id === id);
-      if (index === -1) return res.status(404).json({ error: "Not found" });
+      const updatedNight = await mutateDb((db) => {
+        const index = db.nights.findIndex(n => n.id === id);
+        if (index === -1) return null;
 
-      db.nights[index].status = status;
-      writeDb(db);
-      res.json(db.nights[index]);
+        db.nights[index].status = status;
+        ensureFutureNights(db);
+        return db.nights[index];
+      });
+
+      if (!updatedNight) return res.status(404).json({ error: "Not found" });
+
+      res.json(updatedNight);
     } catch (e) {
       res.status(500).json({ error: "Failed to update status" });
     }
@@ -275,147 +307,206 @@ async function startServer() {
     }
   });
 
-  // 6. Submit a new review
-  app.post("/api/reviews", (req, res) => {
+  // 6. Submit a new review (Concurrency-safe via mutateDb)
+  app.post("/api/reviews", async (req, res) => {
     const { movieNightId, user, rating, comment } = req.body;
 
-    if (!movieNightId || !user || !rating || !comment) {
+    if (!movieNightId || !user || rating === undefined || rating === null || !comment) {
       return res.status(400).json({ error: "Missing review fields (movieNightId, user, rating, comment)" });
     }
 
     try {
-      const db = readDb();
-      const newReview: Review = {
-        id: `rev-${Date.now()}`,
-        movieNightId,
-        user,
-        rating: Number(rating),
-        comment,
-        createdAt: new Date().toISOString()
-      };
+      const result = await mutateDb(async (db) => {
+        const numericRating = Number(rating);
+        const nowIso = new Date().toISOString();
+        const cleanUser = String(user).trim();
 
-      db.reviews.push(newReview);
-      
-      // Auto upgrade movie status to watched when reviewed
-      const nightIndex = db.nights.findIndex(n => n.id === movieNightId);
-      if (nightIndex !== -1 && db.nights[nightIndex].status === "scheduled") {
-        db.nights[nightIndex].status = "watched";
-      }
+        // Check if an existing review exists from this user for this movie night (upsert safety)
+        const existingIndex = db.reviews.findIndex(
+          (r) => r.movieNightId === movieNightId && r.user.trim().toLowerCase() === cleanUser.toLowerCase()
+        );
 
-      writeDb(db);
-      res.json({ message: "Review posted successfully", review: newReview });
+        let savedReview: Review;
+
+        if (existingIndex !== -1) {
+          // Update the user's review in place
+          db.reviews[existingIndex].rating = numericRating;
+          db.reviews[existingIndex].comment = String(comment).trim();
+          db.reviews[existingIndex].createdAt = nowIso;
+          savedReview = db.reviews[existingIndex];
+        } else {
+          // Create new review with guaranteed unique cryptographic ID
+          savedReview = {
+            id: generateUniqueId("rev"),
+            movieNightId,
+            user: cleanUser,
+            rating: numericRating,
+            comment: String(comment).trim(),
+            createdAt: nowIso
+          };
+          db.reviews.push(savedReview);
+        }
+
+        // Auto upgrade movie status to watched when reviewed
+        const nightIndex = db.nights.findIndex((n) => n.id === movieNightId);
+        if (nightIndex !== -1 && db.nights[nightIndex].status === "scheduled") {
+          db.nights[nightIndex].status = "watched";
+          ensureFutureNights(db);
+        }
+
+        return {
+          savedReview,
+          reviews: [...db.reviews],
+          nights: [...db.nights]
+        };
+      });
+
+      res.json({
+        message: "Review posted successfully",
+        review: result.savedReview,
+        reviews: result.reviews,
+        nights: result.nights
+      });
     } catch (error) {
+      console.error("Failed to save review:", error);
       res.status(500).json({ error: "Failed to save review" });
     }
   });
 
   // 7. Edit a review (Author or Admin James/Ash)
-  app.put("/api/reviews/:id", (req, res) => {
+  app.put("/api/reviews/:id", async (req, res) => {
     const { id } = req.params;
     const { rating, comment, requester, requesterName } = req.body;
 
-    if (!rating || !comment) {
+    if (rating === undefined || !comment) {
       return res.status(400).json({ error: "Missing comment or rating" });
     }
 
     try {
-      const db = readDb();
-      const index = db.reviews.findIndex((r) => r.id === id);
-      if (index === -1) {
+      const result = await mutateDb(async (db) => {
+        const index = db.reviews.findIndex((r) => r.id === id);
+        if (index === -1) {
+          return null;
+        }
+
+        const review = db.reviews[index];
+        const isAuthor = review.user.trim().toLowerCase() === requesterName?.trim().toLowerCase();
+        const isAdmin = requester?.toLowerCase() === "james" || requester?.toLowerCase() === "ash";
+
+        if (!isAuthor && !isAdmin) {
+          throw new Error("UNAUTHORIZED");
+        }
+
+        db.reviews[index].rating = Number(rating);
+        db.reviews[index].comment = String(comment).trim();
+        db.reviews[index].createdAt = new Date().toISOString();
+
+        return { review: db.reviews[index], reviews: [...db.reviews] };
+      });
+
+      if (!result) {
         return res.status(404).json({ error: "Review not found" });
       }
 
-      const review = db.reviews[index];
-      const isAuthor = review.user === requesterName;
-      const isAdmin = requester?.toLowerCase() === "james" || requester?.toLowerCase() === "ash";
-
-      if (!isAuthor && !isAdmin) {
+      res.json({
+        message: "Review updated successfully",
+        review: result.review,
+        reviews: result.reviews
+      });
+    } catch (error: any) {
+      if (error?.message === "UNAUTHORIZED") {
         return res.status(403).json({ error: "Unauthorized. You can only edit your own reviews." });
       }
-
-      db.reviews[index].rating = Number(rating);
-      db.reviews[index].comment = comment;
-      db.reviews[index].createdAt = new Date().toISOString(); // update timestamp
-
-      writeDb(db);
-      res.json({ message: "Review updated successfully", review: db.reviews[index] });
-    } catch (error) {
       res.status(500).json({ error: "Failed to edit review" });
     }
   });
 
   // Auth: Star a review (Ash Only)
-  app.put("/api/reviews/:id/star", (req, res) => {
+  app.put("/api/reviews/:id/star", async (req, res) => {
     const { id } = req.params;
     const { requester } = req.body;
 
     const reqLower = requester?.toLowerCase();
-    if (!requester || (reqLower !== "ash" && reqLower !== "james")) { // although james is also admin, let's keep it to Ash primarily or any admin
-      // user request: "Please also give Ash the ability to star her favourite review for each session"
-      // Ash is "ash". Let's restrict strictly to "ash" or allow any admin but check "ash" first. Let's enforce "ash"!
-    }
-
     if (reqLower !== "ash") {
       return res.status(403).json({ error: "Unauthorized. Only Ash Macintosh can star reviews." });
     }
 
     try {
-      const db = readDb();
-      const reviewIndex = db.reviews.findIndex((r) => r.id === id);
-      if (reviewIndex === -1) {
+      const result = await mutateDb(async (db) => {
+        const reviewIndex = db.reviews.findIndex((r) => r.id === id);
+        if (reviewIndex === -1) {
+          return null;
+        }
+
+        const review = db.reviews[reviewIndex];
+        const isCurrentlyStarred = review.isStarred || false;
+
+        // Exclusive star per session (movieNightId)
+        db.reviews.forEach((r) => {
+          if (r.movieNightId === review.movieNightId) {
+            r.isStarred = false;
+          }
+        });
+
+        // Toggle star status
+        db.reviews[reviewIndex].isStarred = !isCurrentlyStarred;
+
+        return { review: db.reviews[reviewIndex], reviews: [...db.reviews] };
+      });
+
+      if (!result) {
         return res.status(404).json({ error: "Review not found" });
       }
 
-      const review = db.reviews[reviewIndex];
-      const isCurrentlyStarred = review.isStarred || false;
-
-      // Exclusive star per session (movieNightId)
-      db.reviews.forEach((r) => {
-        if (r.movieNightId === review.movieNightId) {
-          r.isStarred = false;
-        }
+      res.json({
+        message: "Review star status updated successfully",
+        review: result.review,
+        reviews: result.reviews
       });
-
-      // Toggle star status
-      db.reviews[reviewIndex].isStarred = !isCurrentlyStarred;
-
-      writeDb(db);
-      res.json({ message: "Review star status updated successfully", review: db.reviews[reviewIndex] });
     } catch (error) {
       res.status(500).json({ error: "Failed to update review star status" });
     }
   });
 
   // 8. Delete a review (Author or Admin James/Ash)
-  app.delete("/api/reviews/:id", (req, res) => {
+  app.delete("/api/reviews/:id", async (req, res) => {
     const { id } = req.params;
     const { requester, requesterName } = req.body;
 
     try {
-      const db = readDb();
-      const index = db.reviews.findIndex((r) => r.id === id);
-      if (index === -1) {
+      const result = await mutateDb(async (db) => {
+        const index = db.reviews.findIndex((r) => r.id === id);
+        if (index === -1) {
+          return null;
+        }
+
+        const review = db.reviews[index];
+        const isAuthor = review.user.trim().toLowerCase() === requesterName?.trim().toLowerCase();
+        const isAdmin = requester?.toLowerCase() === "james" || requester?.toLowerCase() === "ash";
+
+        if (!isAuthor && !isAdmin) {
+          throw new Error("UNAUTHORIZED");
+        }
+
+        db.reviews.splice(index, 1);
+        return { success: true, reviews: [...db.reviews] };
+      });
+
+      if (!result) {
         return res.status(404).json({ error: "Review not found" });
       }
 
-      const review = db.reviews[index];
-      const isAuthor = review.user === requesterName;
-      const isAdmin = requester?.toLowerCase() === "james" || requester?.toLowerCase() === "ash";
-
-      if (!isAuthor && !isAdmin) {
+      res.json({ message: "Review deleted successfully", reviews: result.reviews });
+    } catch (error: any) {
+      if (error?.message === "UNAUTHORIZED") {
         return res.status(403).json({ error: "Unauthorized. You can only delete your own reviews." });
       }
-
-      db.reviews.splice(index, 1);
-      writeDb(db);
-      res.json({ message: "Review deleted successfully" });
-    } catch (error) {
       res.status(500).json({ error: "Failed to delete review" });
     }
   });
 
   // Delete a night overview (Admins and Ash Macintosh)
-  app.delete("/api/overviews/:id", (req, res) => {
+  app.delete("/api/overviews/:id", async (req, res) => {
     const { id } = req.params;
     const { requester } = req.body;
 
@@ -425,23 +516,32 @@ async function startServer() {
     }
 
     try {
-      const db = readDb();
-      const user = db.users.find(u => u.username.toLowerCase() === reqLower);
-      const isAuthorized = reqLower === "ash" || reqLower === "james" || user?.isAdmin;
+      const deleted = await mutateDb((db) => {
+        const user = db.users.find(u => u.username.toLowerCase() === reqLower);
+        const isAuthorized = reqLower === "ash" || reqLower === "james" || user?.isAdmin;
 
-      if (!isAuthorized) {
-        return res.status(403).json({ error: "Unauthorized. Only Ash Macintosh or Admins can delete overviews." });
-      }
+        if (!isAuthorized) {
+          throw new Error("UNAUTHORIZED");
+        }
 
-      const index = db.overviews.findIndex((ov) => ov.id === id);
-      if (index === -1) {
+        const index = db.overviews.findIndex((ov) => ov.id === id);
+        if (index === -1) {
+          return false;
+        }
+
+        db.overviews.splice(index, 1);
+        return true;
+      });
+
+      if (!deleted) {
         return res.status(404).json({ error: "Overview not found" });
       }
 
-      db.overviews.splice(index, 1);
-      writeDb(db);
       res.json({ message: "Overview deleted successfully" });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === "UNAUTHORIZED") {
+        return res.status(403).json({ error: "Unauthorized. Only Ash Macintosh or Admins can delete overviews." });
+      }
       res.status(500).json({ error: "Failed to delete overview" });
     }
   });
@@ -457,7 +557,7 @@ async function startServer() {
   });
 
   // 10. Post a new night overview (Only Ash Macintosh)
-  app.post("/api/overviews", (req, res) => {
+  app.post("/api/overviews", async (req, res) => {
     const { movieNightId, title, content, imageUrl, requester } = req.body;
 
     // Explicit security check: Only Ash can post overviews
@@ -470,36 +570,42 @@ async function startServer() {
     }
 
     try {
-      const db = readDb();
-      
-      // Check if night exists
-      const nightIndex = db.nights.findIndex((n) => n.id === movieNightId);
-      if (nightIndex === -1) {
+      const newOverview = await mutateDb((db) => {
+        // Check if night exists
+        const nightIndex = db.nights.findIndex((n) => n.id === movieNightId);
+        if (nightIndex === -1) {
+          return null;
+        }
+
+        const overviewObj: NightOverview = {
+          id: generateUniqueId("ov"),
+          movieNightId,
+          title,
+          content,
+          imageUrl, // Stored as base64 or Unsplash url
+          author: "Ash Macintosh",
+          createdAt: new Date().toISOString()
+        };
+
+        // Ensure that there is only one overview per night
+        const existingOvIndex = db.overviews.findIndex((ov) => ov.movieNightId === movieNightId);
+        if (existingOvIndex !== -1) {
+          db.overviews[existingOvIndex] = overviewObj;
+        } else {
+          db.overviews.push(overviewObj);
+        }
+
+        // Mark the movie night as watched
+        db.nights[nightIndex].status = "watched";
+        ensureFutureNights(db);
+
+        return overviewObj;
+      });
+
+      if (!newOverview) {
         return res.status(404).json({ error: "Movie night not found" });
       }
 
-      const newOverview: NightOverview = {
-        id: `ov-${Date.now()}`,
-        movieNightId,
-        title,
-        content,
-        imageUrl, // Stored as base64 or Unsplash url
-        author: "Ash Macintosh",
-        createdAt: new Date().toISOString()
-      };
-
-      // Ensure that there is only one overview per night
-      const existingOvIndex = db.overviews.findIndex((ov) => ov.movieNightId === movieNightId);
-      if (existingOvIndex !== -1) {
-        db.overviews[existingOvIndex] = newOverview;
-      } else {
-        db.overviews.push(newOverview);
-      }
-
-      // Mark the movie night as watched
-      db.nights[nightIndex].status = "watched";
-
-      writeDb(db);
       res.json({ message: "Night overview posted successfully", overview: newOverview });
     } catch (error) {
       res.status(500).json({ error: "Failed to save night overview" });
