@@ -3,42 +3,42 @@
     {
       "id": "night-1",
       "date": "2026-10-23T19:00:00",
-      "selector": "Ash Macintosh",
+      "selector": "Max Smith",
       "movie": null,
       "status": "scheduled"
     },
     {
       "id": "night-2",
       "date": "2026-11-06T19:00:00",
-      "selector": "Madison Hill",
+      "selector": "Ash Macintosh",
       "movie": null,
       "status": "scheduled"
     },
     {
       "id": "night-3",
       "date": "2026-11-20T19:00:00",
-      "selector": "Amy Walsh",
+      "selector": "Madison Hill",
       "movie": null,
       "status": "scheduled"
     },
     {
       "id": "night-4",
       "date": "2026-12-04T19:00:00",
-      "selector": "Tom Sakai",
+      "selector": "Amy Walsh",
       "movie": null,
       "status": "scheduled"
     },
     {
       "id": "night-5",
       "date": "2026-12-18T19:00:00",
-      "selector": "James Macintosh",
+      "selector": "Tom Sakai",
       "movie": null,
       "status": "scheduled"
     },
     {
       "id": "night-6",
       "date": "2027-01-01T19:00:00",
-      "selector": "Max Smith",
+      "selector": "James Macintosh",
       "movie": null,
       "status": "scheduled"
     }
@@ -94,11 +94,6 @@
       "email": "james.mac333@gmail.com",
       "name": "James Macintosh",
       "addedAt": "2026-10-11T00:21:27.715Z"
-    },
-    {
-      "email": "ash.macintosh@example.com",
-      "name": "Ash Macintosh",
-      "addedAt": "2026-10-11T00:21:32.954Z"
     }
   ],
   "edmLogs": [

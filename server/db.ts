@@ -32,8 +32,8 @@ export interface DatabaseSchema {
   edmLogs?: EdmLog[];
 }
 
-// Clean launch initial data: starting rotation with Max Smith first on July 17, 2026.
-// Strict perpetual rotation order: Max, Ash, Madison, Amy, Tom, James
+// Clean launch initial data: starting rotation with Max Smith first
+// Strict perpetual rotation order: max > ash > madi > amy > Tom > james (Then the order starts again with no change)
 export const HOST_ROTATION = [
   "Max Smith",
   "Ash Macintosh",
@@ -43,13 +43,24 @@ export const HOST_ROTATION = [
   "James Macintosh"
 ];
 
+export function canonicalizeHostName(name: string): string {
+  if (!name) return "";
+  const s = name.trim().toLowerCase();
+  const idx = getRotationIndex(s);
+  return idx !== -1 ? HOST_ROTATION[idx] : name.trim();
+}
+
 export function getRotationIndex(selectorName: string): number {
   if (!selectorName) return -1;
   const s = selectorName.trim().toLowerCase();
   return HOST_ROTATION.findIndex((r) => {
     const rLower = r.toLowerCase();
-    const rFirst = rLower.split(" ")[0];
-    return rLower === s || s.startsWith(rFirst) || rLower.startsWith(s);
+    const rFirst = rLower.split(" ")[0]; // "max", "ash", "madison", "amy", "tom", "james"
+    if (rLower === s || s === rFirst) return true;
+    if (rLower.startsWith(s) || s.startsWith(rLower)) return true;
+    if ((s === "madi" || s === "maddy") && rFirst === "madison") return true;
+    if (s.startsWith("mad") && rFirst === "madison") return true;
+    return false;
   });
 }
 
@@ -58,42 +69,42 @@ const getInitialData = (): DatabaseSchema => {
     {
       id: "night-1",
       date: "2026-10-23T19:00:00",
-      selector: "Ash Macintosh",
+      selector: "Max Smith",
       movie: null,
       status: "scheduled"
     },
     {
       id: "night-2",
       date: "2026-11-06T19:00:00",
-      selector: "Madison Hill",
+      selector: "Ash Macintosh",
       movie: null,
       status: "scheduled"
     },
     {
       id: "night-3",
       date: "2026-11-20T19:00:00",
-      selector: "Amy Walsh",
+      selector: "Madison Hill",
       movie: null,
       status: "scheduled"
     },
     {
       id: "night-4",
       date: "2026-12-04T19:00:00",
-      selector: "Tom Sakai",
+      selector: "Amy Walsh",
       movie: null,
       status: "scheduled"
     },
     {
       id: "night-5",
       date: "2026-12-18T19:00:00",
-      selector: "James Macintosh",
+      selector: "Tom Sakai",
       movie: null,
       status: "scheduled"
     },
     {
       id: "night-6",
       date: "2027-01-01T19:00:00",
-      selector: "Max Smith",
+      selector: "James Macintosh",
       movie: null,
       status: "scheduled"
     }
@@ -189,6 +200,30 @@ export function ensureFutureNights(db: DatabaseSchema) {
     });
     
     scheduledCount++;
+  }
+}
+
+/**
+ * Re-aligns future uncompleted sessions strictly according to standard rotation:
+ * Max Smith > Ash Macintosh > Madison Hill > Amy Walsh > Tom Sakai > James Macintosh
+ */
+export function realignFutureNights(db: DatabaseSchema, startingSelector?: string): void {
+  // Sort nights chronologically
+  db.nights.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  // Find all scheduled nights that are uncompleted
+  const scheduledNights = db.nights.filter((n) => n.status === "scheduled");
+  if (scheduledNights.length === 0) return;
+
+  let currentIdx = 0;
+  if (startingSelector) {
+    const foundIdx = getRotationIndex(startingSelector);
+    if (foundIdx !== -1) currentIdx = foundIdx;
+  }
+
+  for (const night of scheduledNights) {
+    night.selector = HOST_ROTATION[currentIdx];
+    currentIdx = (currentIdx + 1) % HOST_ROTATION.length;
   }
 }
 

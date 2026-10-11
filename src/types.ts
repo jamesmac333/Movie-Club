@@ -84,3 +84,22 @@ export const MOVIE_CLUB_USERS: User[] = [
   { username: "Max", name: "Max Smith", isAdmin: false, isAsh: false, avatarUrl: maxAvatar },
   { username: "Amy", name: "Amy Walsh", isAdmin: false, isAsh: false, avatarUrl: amyAvatar },
 ];
+
+export const HOST_ROTATION = [
+  "Max Smith",
+  "Ash Macintosh",
+  "Madison Hill",
+  "Amy Walsh",
+  "Tom Sakai",
+  "James Macintosh"
+] as const;
+
+export const ROTATION_MEMBERS = [
+  { shortName: "Max", fullName: "Max Smith", username: "Max" },
+  { shortName: "Ash", fullName: "Ash Macintosh", username: "Ash" },
+  { shortName: "Madi", fullName: "Madison Hill", username: "Madison" },
+  { shortName: "Amy", fullName: "Amy Walsh", username: "Amy" },
+  { shortName: "Tom", fullName: "Tom Sakai", username: "Tom" },
+  { shortName: "James", fullName: "James Macintosh", username: "James" },
+];
+

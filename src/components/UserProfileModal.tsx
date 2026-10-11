@@ -299,13 +299,13 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
 
   return (
     <div 
-      className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 cursor-pointer"
+      className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 cursor-pointer overscroll-contain"
       onClick={onClose}
     >
       <div 
         className={`relative bg-[#0d0d0d] border border-zinc-800 rounded-2xl w-full ${
           activeTab === "edm" ? "max-w-2xl" : "max-w-md"
-        } max-h-[90vh] sm:max-h-[85vh] overflow-hidden shadow-2xl flex flex-col cursor-default transition-all duration-300`}
+        } max-h-[90dvh] sm:max-h-[85dvh] overflow-hidden shadow-2xl flex flex-col cursor-default transition-all duration-300 overscroll-contain`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -371,7 +371,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
           </div>
         )}
 
-        <div className="p-6 flex-1 overflow-y-auto">
+        <div className="p-6 flex-1 overflow-y-auto overscroll-contain">
           {/* Feedback messages */}
           {successMsg && (
             <div className="mb-4 bg-emerald-950/20 border border-emerald-900/40 text-emerald-400 p-3.5 rounded-lg text-xs flex items-center gap-2.5 animate-fadeIn">

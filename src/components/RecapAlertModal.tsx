@@ -58,13 +58,13 @@ export default function RecapAlertModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto overscroll-contain">
       {/* Dark Ambient Cinema Backdrop Filter */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-[#0a0807]/92 backdrop-blur-lg pointer-events-auto"
+        className="fixed inset-0 bg-[#0a0807]/92 backdrop-blur-lg pointer-events-auto overscroll-contain"
         onClick={() => onClose(overview.id)}
       />
 
@@ -81,7 +81,7 @@ export default function RecapAlertModal({
           transition: { type: "spring", damping: 24, stiffness: 140 }
         }}
         exit={{ scale: 0.94, y: 20, opacity: 0 }}
-        className="relative bg-[#14100e] border-2 border-amber-500/70 rounded-[28px] sm:rounded-[36px] w-full max-w-3xl max-h-[90vh] flex flex-col shadow-[0_0_80px_rgba(245,158,11,0.25)] z-10 overflow-hidden my-auto"
+        className="relative bg-[#14100e] border-2 border-amber-500/70 rounded-[28px] sm:rounded-[36px] w-full max-w-3xl max-h-[90dvh] flex flex-col shadow-[0_0_80px_rgba(245,158,11,0.25)] z-10 overflow-hidden my-auto overscroll-contain"
       >
         {/* Flashing Vintage Film Border Ribbon */}
         <div className="h-1.5 bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600 shrink-0" />

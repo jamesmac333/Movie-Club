@@ -127,7 +127,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                     setUsername(e.target.value);
                     setError("");
                   }}
-                  className="w-full bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-sm font-medium cursor-pointer"
+                  className="w-full bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-base font-medium cursor-pointer"
                 >
                   {MOVIE_CLUB_USERS.map((user) => (
                     <option key={user.username} value={user.username}>
@@ -153,7 +153,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                     setError("");
                   }}
                   placeholder="••••••••"
-                  className="w-full bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all font-mono tracking-widest text-sm"
+                  className="w-full bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all font-mono tracking-widest text-base"
                 />
               </div>
 

@@ -23,13 +23,13 @@ export default function SelectionAlertModal({ night, onAcknowledge }: SelectionA
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overscroll-contain">
       {/* Rich Retro Backdrop Filter & Vignette */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-[#14100d]/90 backdrop-blur-md pointer-events-auto"
+        className="absolute inset-0 bg-[#14100d]/90 backdrop-blur-md pointer-events-auto overscroll-contain"
         onClick={() => onAcknowledge(night.id, movie.title)}
       />
 
@@ -41,7 +41,7 @@ export default function SelectionAlertModal({ night, onAcknowledge }: SelectionA
         initial={{ scale: 0.85, y: 50, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1, transition: { type: "spring", damping: 20, stiffness: 100 } }}
         exit={{ scale: 0.9, y: 30, opacity: 0 }}
-        className="relative bg-[#1c1613] border-4 border-amber-500 rounded-[32px] w-full max-w-lg overflow-hidden shadow-[0_0_80px_rgba(223,139,57,0.35)] z-10 p-1 select-none"
+        className="relative bg-[#1c1613] border-4 border-amber-500 rounded-[32px] w-full max-w-lg max-h-[92dvh] overflow-y-auto overscroll-contain shadow-[0_0_80px_rgba(223,139,57,0.35)] z-10 p-1 select-none"
       >
         {/* Flashing Retro Marquee Lights Effect */}
         <div className="absolute inset-x-0 top-0 h-1 bg-[repeating-linear-gradient(90deg,#df8b39,0px,#df8b39_4px,transparent_4px,transparent_12px)] opacity-80" />

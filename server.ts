@@ -1,7 +1,17 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { readDb, writeDb, mutateDb, generateUniqueId, ensureFutureNights } from "./server/db.ts";
+import { 
+  readDb, 
+  writeDb, 
+  mutateDb, 
+  generateUniqueId, 
+  ensureFutureNights,
+  canonicalizeHostName,
+  HOST_ROTATION,
+  getRotationIndex,
+  realignFutureNights
+} from "./server/db.ts";
 import { fetchMovieMetadata } from "./server/gemini.ts";
 import { MovieNight, Review, NightOverview, EdmRecipient, EdmLog } from "./src/types.ts";
 import {
@@ -175,6 +185,91 @@ async function startServer() {
       res.json({ message: "Date updated successfully", night: updatedNight });
     } catch (error) {
       res.status(500).json({ error: "Failed to update date" });
+    }
+  });
+
+  // 2.5. Update a movie night's assigned host/selector (Admin only: James or Ash)
+  app.put("/api/nights/:id/selector", async (req, res) => {
+    const { id } = req.params;
+    const { selector, requester, realignSubsequent } = req.body;
+
+    const reqLower = requester?.toLowerCase();
+    if (!requester || (reqLower !== "james" && reqLower !== "ash")) {
+      return res.status(403).json({ error: "Unauthorized. Only James or Ash can change assigned session hosts." });
+    }
+
+    if (!selector || typeof selector !== "string") {
+      return res.status(400).json({ error: "Missing new selector name" });
+    }
+
+    const cleanSelector = canonicalizeHostName(selector);
+
+    try {
+      const updatedNight = await mutateDb((db) => {
+        const nightIndex = db.nights.findIndex((n) => n.id === id);
+        if (nightIndex === -1) {
+          return null;
+        }
+
+        db.nights[nightIndex].selector = cleanSelector;
+
+        // If requested, auto-realign all subsequent scheduled uncompleted sessions
+        // to continue the standard cycle: Max > Ash > Madi > Amy > Tom > James
+        if (realignSubsequent) {
+          db.nights.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          const targetIndex = db.nights.findIndex((n) => n.id === id);
+          if (targetIndex !== -1) {
+            let nextRotationIdx = (getRotationIndex(cleanSelector) + 1) % HOST_ROTATION.length;
+            for (let i = targetIndex + 1; i < db.nights.length; i++) {
+              if (db.nights[i].status === "scheduled" && !db.nights[i].movie) {
+                db.nights[i].selector = HOST_ROTATION[nextRotationIdx];
+                nextRotationIdx = (nextRotationIdx + 1) % HOST_ROTATION.length;
+              }
+            }
+          }
+        }
+
+        return db.nights[nightIndex];
+      });
+
+      if (!updatedNight) {
+        return res.status(404).json({ error: "Movie night not found" });
+      }
+
+      const db = readDb();
+      res.json({ 
+        message: `Assigned host updated to ${cleanSelector}`, 
+        night: updatedNight, 
+        nights: db.nights 
+      });
+    } catch (error) {
+      console.error("Failed to update selector:", error);
+      res.status(500).json({ error: "Failed to update assigned host" });
+    }
+  });
+
+  // 2.6. Re-align all future scheduled movie nights to standard order: Max > Ash > Madi > Amy > Tom > James
+  app.post("/api/nights/realign-rotation", async (req, res) => {
+    const { requester, startingSelector } = req.body;
+
+    const reqLower = requester?.toLowerCase();
+    if (!requester || (reqLower !== "james" && reqLower !== "ash")) {
+      return res.status(403).json({ error: "Unauthorized. Only James or Ash can re-align session rotations." });
+    }
+
+    try {
+      await mutateDb((db) => {
+        realignFutureNights(db, startingSelector);
+      });
+
+      const db = readDb();
+      res.json({ 
+        message: "Future rotation realigned successfully (Max > Ash > Madi > Amy > Tom > James)", 
+        nights: db.nights 
+      });
+    } catch (error) {
+      console.error("Failed to realign rotation:", error);
+      res.status(500).json({ error: "Failed to realign rotation" });
     }
   });
 

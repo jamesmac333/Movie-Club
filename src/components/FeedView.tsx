@@ -653,7 +653,7 @@ export default function FeedView({
                               value={newComment}
                               onChange={(e) => setNewComment(e.target.value)}
                               rows={6}
-                              className="w-full min-h-[150px] sm:min-h-[170px] bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3.5 text-base sm:text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/80 font-sans leading-relaxed resize-y transition-all"
+                              className="w-full min-h-[150px] sm:min-h-[170px] bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3.5 text-base placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/80 font-sans leading-relaxed resize-y transition-all"
                             />
 
                             {reviewError && <p className="text-xs text-red-400">{reviewError}</p>}
@@ -778,7 +778,7 @@ export default function FeedView({
                                       <textarea
                                         value={editComment}
                                         onChange={(e) => setEditComment(e.target.value)}
-                                        className="w-full min-h-[140px] sm:min-h-[160px] bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3.5 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/80 font-sans leading-relaxed resize-y transition-all"
+                                        className="w-full min-h-[140px] sm:min-h-[160px] bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3.5 text-base focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/80 font-sans leading-relaxed resize-y transition-all"
                                         rows={6}
                                         placeholder="Edit your review..."
                                       />

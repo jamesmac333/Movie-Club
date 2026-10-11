@@ -1,12 +1,31 @@
 import React, { useState } from "react";
-import { MovieNight, User, NightOverview, MOVIE_CLUB_USERS } from "../types.ts";
-import { Calendar, Edit, CheckCircle, Clock, UserCheck, Shield, BookOpen, Play, ExternalLink, History, ChevronDown, ArrowRight } from "lucide-react";
+import { MovieNight, User, NightOverview, MOVIE_CLUB_USERS, ROTATION_MEMBERS, HOST_ROTATION } from "../types.ts";
+import { 
+  Calendar, 
+  Edit, 
+  CheckCircle, 
+  Clock, 
+  UserCheck, 
+  Shield, 
+  BookOpen, 
+  Play, 
+  ExternalLink, 
+  History, 
+  ChevronDown, 
+  ArrowRight,
+  Users,
+  RefreshCw,
+  Check,
+  AlertCircle
+} from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface CalendarViewProps {
   nights: MovieNight[];
   currentUser: User | null;
   onUpdateDate: (id: string, newDate: string) => Promise<void>;
+  onUpdateSelector?: (id: string, newSelector: string, realignSubsequent?: boolean) => Promise<void>;
+  onRealignRotation?: () => Promise<void>;
   onForceStatus?: (id: string, newStatus: 'scheduled' | 'watched' | 'skipped') => Promise<void>;
   users?: User[];
   overviews?: NightOverview[];
@@ -22,6 +41,8 @@ export default function CalendarView({
   nights, 
   currentUser, 
   onUpdateDate, 
+  onUpdateSelector,
+  onRealignRotation,
   onForceStatus, 
   users = MOVIE_CLUB_USERS,
   overviews = [],
@@ -38,9 +59,23 @@ export default function CalendarView({
   const [loading, setLoading] = useState(false);
   const [showPreviousSessions, setShowPreviousSessions] = useState(false);
 
+  // Selector assignment state for Admins
+  const [editingSelectorNightId, setEditingSelectorNightId] = useState<string | null>(null);
+  const [selectedSelector, setSelectedSelector] = useState<string>("");
+  const [realignSubsequent, setRealignSubsequent] = useState<boolean>(true);
+  const [selectorError, setSelectorError] = useState("");
+  const [selectorLoading, setSelectorLoading] = useState(false);
+  const [selectorSuccess, setSelectorSuccess] = useState("");
+
+  // Re-align all rotation state
+  const [realigningAll, setRealigningAll] = useState(false);
+  const [realignAllMessage, setRealignAllMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [showRealignConfirm, setShowRealignConfirm] = useState(false);
+
   const isAdmin = currentUser?.isAdmin || false;
 
   const handleEditClick = (night: MovieNight) => {
+    setEditingSelectorNightId(null);
     setEditingNightId(night.id);
     // Convert current ISO date to input-friendly format
     const isoDate = new Date(night.date);
@@ -48,6 +83,61 @@ export default function CalendarView({
     const offset = isoDate.getTimezoneOffset();
     const adjustedDate = new Date(isoDate.getTime() - (offset * 60 * 1000));
     setEditDate(adjustedDate.toISOString().slice(0, 16));
+  };
+
+  const handleOpenEditSelector = (night: MovieNight) => {
+    setEditingNightId(null);
+    setEditingSelectorNightId(night.id);
+    setSelectedSelector(night.selector);
+    setRealignSubsequent(true);
+    setSelectorError("");
+    setSelectorSuccess("");
+  };
+
+  const handleSaveSelector = async (nightId: string) => {
+    if (!selectedSelector) {
+      setSelectorError("Please select a club member to host");
+      return;
+    }
+    if (!onUpdateSelector) return;
+    setSelectorError("");
+    setSelectorLoading(true);
+    try {
+      await onUpdateSelector(nightId, selectedSelector, realignSubsequent);
+      setSelectorSuccess(`Session host updated to ${selectedSelector}!`);
+      setTimeout(() => {
+        setEditingSelectorNightId(null);
+        setSelectorSuccess("");
+      }, 1000);
+    } catch (e: any) {
+      setSelectorError(e.message || "Failed to update assigned host");
+    } finally {
+      setSelectorLoading(false);
+    }
+  };
+
+  const handleTriggerRealignAll = async () => {
+    if (!onRealignRotation) return;
+    setRealigningAll(true);
+    setRealignAllMessage(null);
+    try {
+      await onRealignRotation();
+      setShowRealignConfirm(false);
+      setRealignAllMessage({
+        text: "Future schedule re-aligned: Max > Ash > Madi > Amy > Tom > James!",
+        type: "success"
+      });
+      setTimeout(() => {
+        setRealignAllMessage(null);
+      }, 4500);
+    } catch (e: any) {
+      setRealignAllMessage({
+        text: e.message || "Failed to realign schedule",
+        type: "error"
+      });
+    } finally {
+      setRealigningAll(false);
+    }
   };
 
   const handleSaveDate = async (id: string) => {
@@ -113,6 +203,7 @@ export default function CalendarView({
 
   const renderNightCard = (night: MovieNight, index: number, isPreviousList: boolean = false) => {
     const isEditing = editingNightId === night.id;
+    const isEditingSelector = editingSelectorNightId === night.id;
     const hasMovie = night.movie !== null;
     const isWatched = night.status === "watched";
 
@@ -133,7 +224,9 @@ export default function CalendarView({
               ? "border-zinc-900/60 hover:border-zinc-800 bg-[#080808]/40"
               : night.status === "skipped"
                 ? "border-zinc-900/40 hover:border-zinc-900/60 bg-[#080808]/20 opacity-50"
-                : "bg-[#080808]/80 hover:bg-[#0c0c0c]/80 border-zinc-800 hover:border-amber-500/30 shadow-lg shadow-amber-500/[0.01]"
+                : isEditingSelector
+                  ? "bg-[#0c0c0c] border-amber-500/60 shadow-xl shadow-amber-500/5 ring-1 ring-amber-500/30"
+                  : "bg-[#080808]/80 hover:bg-[#0c0c0c]/80 border-zinc-800 hover:border-amber-500/30 shadow-lg shadow-amber-500/[0.01]"
         }`}
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
@@ -168,7 +261,7 @@ export default function CalendarView({
                   type="datetime-local"
                   value={editDate}
                   onChange={(e) => setEditDate(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  className="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
                 {error && <p className="text-xs text-red-400">{error}</p>}
                 <div className="flex gap-2">
@@ -194,7 +287,7 @@ export default function CalendarView({
             )}
 
             {/* Selector Info */}
-            <div className="flex items-center gap-2 text-sm text-zinc-400 pt-1">
+            <div className="flex items-center gap-2 text-sm text-zinc-400 pt-1 flex-wrap">
               {(() => {
                 const u = users.find(
                   (user) =>
@@ -218,6 +311,18 @@ export default function CalendarView({
                   </>
                 );
               })()}
+
+              {isAdmin && !isWatched && !isEditingSelector && (
+                <button
+                  type="button"
+                  onClick={() => handleOpenEditSelector(night)}
+                  className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/50 px-2 py-0.5 rounded transition-all cursor-pointer ml-1"
+                  title="Change assigned host account for this movie night"
+                >
+                  <UserCheck className="w-3 h-3" />
+                  <span>Change Host</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -286,17 +391,32 @@ export default function CalendarView({
                 </button>
               )}
 
-              {/* Admin controls: rescheduling only for uncompleted future dates */}
+              {/* Admin controls: selector change & rescheduling only for uncompleted future dates */}
               {isAdmin && !isEditing && (
                 <>
                   {!isWatched && (
-                    <button
-                      onClick={() => handleEditClick(night)}
-                      className="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 hover:border-zinc-600 transition-all rounded px-3 py-1.5 flex items-center gap-1 cursor-pointer"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                      Reschedule
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleOpenEditSelector(night)}
+                        className={`text-xs border transition-all rounded px-3 py-1.5 flex items-center gap-1 cursor-pointer font-medium ${
+                          isEditingSelector
+                            ? "bg-amber-500 text-zinc-950 border-amber-400 font-bold"
+                            : "bg-zinc-800 hover:bg-zinc-700 text-amber-400 border-zinc-700 hover:border-amber-500/40"
+                        }`}
+                        title="Manually assign which user account hosts this session"
+                      >
+                        <UserCheck className="w-3.5 h-3.5" />
+                        {isEditingSelector ? "Editing Host..." : "Change Host"}
+                      </button>
+
+                      <button
+                        onClick={() => handleEditClick(night)}
+                        className="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 hover:border-zinc-600 transition-all rounded px-3 py-1.5 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        Reschedule
+                      </button>
+                    </>
                   )}
 
                   {onForceStatus && (
@@ -334,6 +454,141 @@ export default function CalendarView({
             </div>
           </div>
         </div>
+
+        {/* Inline Host / Selector Assignment Panel (Admin Only) */}
+        {isEditingSelector && (
+          <div className="mt-5 pt-4 border-t border-zinc-800/80 space-y-3.5 bg-zinc-950/70 -mx-5 -mb-5 p-5 rounded-b-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-amber-500" />
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-100">
+                  Manually Assign Host for Night #{nightNumber}
+                </span>
+              </div>
+              <span className="text-[11px] font-mono text-amber-400/90 font-medium">
+                Standard: Max → Ash → Madi → Amy → Tom → James
+              </span>
+            </div>
+
+            {/* 6 Member Quick Selection Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-1">
+              {ROTATION_MEMBERS.map((member) => {
+                const isSelected =
+                  selectedSelector.toLowerCase() === member.fullName.toLowerCase() ||
+                  selectedSelector.toLowerCase() === member.shortName.toLowerCase();
+                const userObj = users.find(
+                  (u) =>
+                    u.name.toLowerCase() === member.fullName.toLowerCase() ||
+                    u.username.toLowerCase() === member.username.toLowerCase()
+                );
+                return (
+                  <button
+                    key={member.shortName}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSelector(member.fullName);
+                      setSelectorError("");
+                    }}
+                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-amber-500/20 border-amber-500 text-amber-200 ring-1 ring-amber-500/60 shadow-lg shadow-amber-500/10"
+                        : "bg-zinc-900/80 border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:bg-zinc-850"
+                    }`}
+                  >
+                    {userObj?.avatarUrl ? (
+                      <img
+                        src={userObj.avatarUrl}
+                        alt={member.shortName}
+                        className={`w-7 h-7 rounded-full object-cover shrink-0 border ${
+                          isSelected ? "border-amber-400" : "border-zinc-700"
+                        }`}
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-bold text-amber-500 shrink-0">
+                        {member.shortName[0]}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold truncate leading-tight flex items-center justify-between">
+                        <span>{member.shortName}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-1" />}
+                      </p>
+                      <p className="text-[10px] text-zinc-400 truncate leading-tight font-sans mt-0.5">
+                        {member.fullName.split(" ")[1] || ""}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Re-align subsequent sessions option */}
+            <label className="flex items-start gap-2.5 pt-1 text-xs text-zinc-300 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={realignSubsequent}
+                onChange={(e) => setRealignSubsequent(e.target.checked)}
+                className="mt-0.5 rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 cursor-pointer"
+              />
+              <div>
+                <span className="font-semibold text-zinc-200">
+                  Auto-realign subsequent sessions to follow the standard rotation
+                </span>
+                <p className="text-[11px] text-zinc-400 mt-0.5">
+                  Maintains continuous sequence starting after {selectedSelector.split(" ")[0] || "this host"} (Max → Ash → Madi → Amy → Tom → James).
+                </p>
+              </div>
+            </label>
+
+            {selectorError && (
+              <div className="flex items-center gap-2 text-xs text-red-400 bg-red-950/30 border border-red-900/50 p-2.5 rounded-lg">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{selectorError}</span>
+              </div>
+            )}
+
+            {selectorSuccess && (
+              <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-950/30 border border-emerald-900/50 p-2.5 rounded-lg">
+                <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{selectorSuccess}</span>
+              </div>
+            )}
+
+            {/* Save & Cancel */}
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => handleSaveSelector(night.id)}
+                disabled={selectorLoading}
+                className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 font-bold px-4 py-2 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+              >
+                {selectorLoading ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving Assignment...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Assigned Host</span>
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingSelectorNightId(null);
+                  setSelectorError("");
+                }}
+                disabled={selectorLoading}
+                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3.5 py-2 rounded-lg text-xs transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </motion.div>
     );
   };
@@ -364,6 +619,95 @@ export default function CalendarView({
           </div>
         )}
       </div>
+
+      {/* Admin Rotation Manager Banner */}
+      {isAdmin && onRealignRotation && (
+        <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-950/20 via-zinc-950/90 to-[#0c0c0c] border border-amber-500/30 shadow-lg">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/40 font-bold tracking-wider">
+                  Official Host Rotation
+                </span>
+                <span className="text-xs font-mono text-zinc-200 font-semibold flex items-center gap-1.5 flex-wrap">
+                  <span className="text-amber-400">Max</span>
+                  <span className="text-zinc-600">→</span>
+                  <span className="text-amber-400">Ash</span>
+                  <span className="text-zinc-600">→</span>
+                  <span className="text-amber-400">Madi</span>
+                  <span className="text-zinc-600">→</span>
+                  <span className="text-amber-400">Amy</span>
+                  <span className="text-zinc-600">→</span>
+                  <span className="text-amber-400">Tom</span>
+                  <span className="text-zinc-600">→</span>
+                  <span className="text-amber-400">James</span>
+                  <span className="text-[10px] text-zinc-500 font-normal">(repeats continuously)</span>
+                </span>
+              </div>
+              <p className="text-xs text-zinc-400 font-sans">
+                Admins can manually reassign any future session using the <span className="text-amber-400 font-medium">Change Host</span> button on each session card, or reset all future upcoming sessions to the standard sequence.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {!showRealignConfirm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowRealignConfirm(true)}
+                  className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 text-xs font-mono font-medium transition-all flex items-center gap-2 cursor-pointer shadow-sm group"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
+                  <span>Re-align All to Standard Order</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 bg-zinc-900/90 p-1.5 rounded-xl border border-amber-500/50 shadow-md">
+                  <span className="text-[11px] font-mono text-amber-300 px-2 font-medium">
+                    Reset order starting Max?
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleTriggerRealignAll}
+                    disabled={realigningAll}
+                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1 shadow-sm"
+                  >
+                    {realigningAll ? (
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Check className="w-3 h-3" />
+                    )}
+                    <span>Confirm</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowRealignConfirm(false)}
+                    disabled={realigningAll}
+                    className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {realignAllMessage && (
+            <div
+              className={`mt-3 p-2.5 rounded-xl text-xs flex items-center gap-2 ${
+                realignAllMessage.type === "success"
+                  ? "bg-emerald-950/40 border border-emerald-900/60 text-emerald-300"
+                  : "bg-red-950/40 border border-red-900/60 text-red-300"
+              }`}
+            >
+              {realignAllMessage.type === "success" ? (
+                <CheckCircle className="w-4 h-4 shrink-0 text-emerald-400" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+              )}
+              <span>{realignAllMessage.text}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* IN THE SCHEDULE TAB: Button to toggle & reveal all previous sessions */}
       {!futureOnly && previousNights.length > 0 && (

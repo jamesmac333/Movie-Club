@@ -244,7 +244,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
               placeholder="member@example.com"
-              className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono"
+              className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-xl px-3.5 py-2.5 text-base focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono"
             />
           </div>
           <div className="sm:col-span-4">
@@ -253,7 +253,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Name (e.g. Tom Sakai)"
-              className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
+              className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-xl px-3.5 py-2.5 text-base focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
           </div>
           <div className="sm:col-span-2">

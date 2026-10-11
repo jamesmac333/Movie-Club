@@ -332,6 +332,54 @@ export default function App() {
     await fetchInitialData();
   };
 
+  // API Call: Change assigned session selector / host (called from CalendarView)
+  const handleUpdateSelector = async (id: string, newSelector: string, realignSubsequent: boolean = false) => {
+    const response = await fetch(`/api/nights/${id}/selector`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        selector: newSelector,
+        requester: currentUser?.username,
+        realignSubsequent: realignSubsequent
+      })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || "Failed to update assigned host");
+    }
+
+    const data = await response.json();
+    if (data.nights) {
+      setNights(data.nights);
+    } else {
+      await fetchInitialData();
+    }
+  };
+
+  // API Call: Re-align all future scheduled sessions to standard rotation (Max > Ash > Madi > Amy > Tom > James)
+  const handleRealignRotation = async () => {
+    const response = await fetch("/api/nights/realign-rotation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        requester: currentUser?.username
+      })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || "Failed to realign rotation");
+    }
+
+    const data = await response.json();
+    if (data.nights) {
+      setNights(data.nights);
+    } else {
+      await fetchInitialData();
+    }
+  };
+
   // API Call: Force event status watched/scheduled (called from CalendarView)
   const handleForceStatus = async (id: string, newStatus: 'scheduled' | 'watched' | 'skipped') => {
     const response = await fetch(`/api/nights/${id}/status`, {
@@ -534,7 +582,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080808] text-zinc-100 font-sans selection:bg-amber-500 selection:text-zinc-950 flex flex-col md:flex-row">
+    <div className="min-h-screen min-h-[100dvh] bg-[#080808] text-zinc-100 font-sans selection:bg-amber-500 selection:text-zinc-950 flex flex-col md:flex-row">
       <AnimatePresence>
         {showProfileSettings && (
           <UserProfileModal 
@@ -776,11 +824,14 @@ export default function App() {
         </header>
 
         {/* MOBILE BOTTOM TAB BAR */}
-        <div className="md:hidden fixed bottom-0 inset-x-0 bg-[#0c0c0c]/95 border-t border-zinc-900/80 z-40 backdrop-blur-md py-2.5 flex justify-around px-4">
+        <nav 
+          aria-label="Mobile navigation"
+          className="md:hidden fixed bottom-0 inset-x-0 bg-[#0c0c0c]/95 border-t border-zinc-900/90 z-40 backdrop-blur-lg pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] flex justify-around px-5 shadow-2xl select-none overscroll-contain"
+        >
           <button
             onClick={() => setActiveTab("landing")}
-            className={`flex flex-col items-center gap-1 transition-all text-[10px] font-medium cursor-pointer ${
-              activeTab === "landing" ? "text-amber-500" : "text-zinc-500"
+            className={`flex flex-col items-center gap-1 transition-all text-[10px] font-medium cursor-pointer py-1 ${
+              activeTab === "landing" ? "text-amber-500 font-semibold" : "text-zinc-500"
             }`}
           >
             <Home className="w-4.5 h-4.5" />
@@ -788,8 +839,8 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveTab("calendar")}
-            className={`flex flex-col items-center gap-1 transition-all text-[10px] font-medium cursor-pointer ${
-              activeTab === "calendar" ? "text-amber-500" : "text-zinc-500"
+            className={`flex flex-col items-center gap-1 transition-all text-[10px] font-medium cursor-pointer py-1 ${
+              activeTab === "calendar" ? "text-amber-500 font-semibold" : "text-zinc-500"
             }`}
           >
             <Calendar className="w-4.5 h-4.5" />
@@ -797,8 +848,8 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveTab("feed")}
-            className={`flex flex-col items-center gap-1 transition-all text-[10px] font-medium cursor-pointer ${
-              activeTab === "feed" ? "text-amber-500" : "text-zinc-500"
+            className={`flex flex-col items-center gap-1 transition-all text-[10px] font-medium cursor-pointer py-1 ${
+              activeTab === "feed" ? "text-amber-500 font-semibold" : "text-zinc-500"
             }`}
           >
             <Heart className="w-4.5 h-4.5" />
@@ -807,19 +858,19 @@ export default function App() {
           {isAsh && (
             <button
               onClick={() => setActiveTab("writer")}
-              className={`flex flex-col items-center gap-1 transition-all text-[10px] font-medium cursor-pointer ${
-                activeTab === "writer" ? "text-amber-500" : "text-zinc-500"
+              className={`flex flex-col items-center gap-1 transition-all text-[10px] font-medium cursor-pointer py-1 ${
+                activeTab === "writer" ? "text-amber-500 font-semibold" : "text-zinc-500"
               }`}
             >
               <BookOpen className="w-4.5 h-4.5" />
               <span>Recap</span>
             </button>
           )}
-        </div>
+        </nav>
 
         {/* ERROR DISPLAY */}
         {error && (
-          <div className="px-6 md:px-12 mt-6 w-full">
+          <div className="px-5 md:px-12 mt-6 w-full">
             <div className="bg-red-950/20 border border-red-900/30 text-red-400 p-4 rounded-2xl text-sm flex items-center justify-between gap-4">
               <span>{error}</span>
               <button 
@@ -833,7 +884,7 @@ export default function App() {
         )}
 
         {/* CORE CONTENT LAYOUT */}
-        <main className="flex-1 px-4 sm:px-8 md:px-12 py-8 w-full max-w-5xl">
+        <main className="flex-1 px-5 sm:px-8 md:px-12 py-8 pb-32 md:pb-12 w-full max-w-5xl">
           {loading ? (
             <div className="h-96 flex flex-col items-center justify-center gap-4">
               <div className="relative w-12 h-12">
@@ -864,6 +915,8 @@ export default function App() {
                       nights={nights}
                       currentUser={currentUser}
                       onUpdateDate={handleUpdateDate}
+                      onUpdateSelector={handleUpdateSelector}
+                      onRealignRotation={handleRealignRotation}
                       onForceStatus={handleForceStatus}
                       users={clubUsers}
                       overviews={overviews}
@@ -915,6 +968,8 @@ export default function App() {
                     nights={nights} 
                     currentUser={currentUser} 
                     onUpdateDate={handleUpdateDate}
+                    onUpdateSelector={handleUpdateSelector}
+                    onRealignRotation={handleRealignRotation}
                     onForceStatus={handleForceStatus}
                     users={clubUsers}
                     overviews={overviews}

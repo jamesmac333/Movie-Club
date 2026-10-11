@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { MovieNight, User, MOVIE_CLUB_USERS } from "../types.ts";
-import { Film, Clock, Search, Calendar, Sparkles, AlertCircle, RefreshCw, RotateCcw, Play, ExternalLink } from "lucide-react";
-import { motion } from "motion/react";
+import { Film, Clock, Search, Calendar, Sparkles, AlertCircle, RefreshCw, RotateCcw, Play, ExternalLink, Share2, Copy, Check } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
 interface NextMovieHeroProps {
   nights: MovieNight[];
@@ -19,6 +19,8 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [copiedShare, setCopiedShare] = useState(false);
+  const [shareToast, setShareToast] = useState<string | null>(null);
 
   // Auto-clear confirmation state after 4 seconds
   useEffect(() => {
@@ -137,6 +139,69 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
 
   const hasMovie = nextNight.movie !== null;
 
+  const handleShareOrCopy = async () => {
+    const dateFormatted = formatNZTDate(nextNight.date);
+    let shareTitle = "";
+    let shareText = "";
+
+    if (hasMovie) {
+      shareTitle = `🎬 Movie Club: ${nextNight.movie!.title}`;
+      shareText = `🎬 Movie Club Night: ${nextNight.movie!.title} (${nextNight.movie!.year})
+📅 ${dateFormatted}
+👤 Host Selector: ${nextNight.selector}
+⭐ Genre: ${nextNight.movie!.genre || "Film"} • ${nextNight.movie!.runtime} mins
+📝 Plot: ${nextNight.movie!.overview ? nextNight.movie!.overview.slice(0, 160) + "..." : "No synopsis"}
+🍿 Club Portal: ${window.location.origin}`;
+    } else {
+      shareTitle = "🎬 Next Movie Club Night";
+      shareText = `🎬 Next Movie Club Night
+📅 ${dateFormatted}
+👤 Host Selector: ${nextNight.selector}'s turn to pick the film!
+🍿 Club Portal: ${window.location.origin}`;
+    }
+
+    // Try Web Share API first (supported by iOS Safari & Chrome on user interaction)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: window.location.origin,
+        });
+        setShareToast("Shared to group chat! 🍿");
+        setTimeout(() => setShareToast(null), 3500);
+        return;
+      } catch (err: any) {
+        if (err.name === "AbortError") {
+          return; // User canceled the native sheet
+        }
+      }
+    }
+
+    // Fallback: Copy to clipboard
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareText);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = shareText;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopiedShare(true);
+      setShareToast("Copied details to clipboard for group chat! 📋");
+      setTimeout(() => {
+        setCopiedShare(false);
+        setShareToast(null);
+      }, 3500);
+    } catch {
+      setShareToast("Could not copy automatically. Please copy manually.");
+      setTimeout(() => setShareToast(null), 3000);
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 25 }}
@@ -225,20 +290,45 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
                   </p>
                 </div>
 
-                {nextNight.movie!.trailerUrl && (
-                  <div className="pt-4 flex flex-wrap gap-3">
+                {/* Action Buttons: Trailer, Share to Group Chat, and Reset */}
+                <div className="pt-4 flex flex-wrap items-center gap-3">
+                  {nextNight.movie!.trailerUrl && (
                     <a
                       href={nextNight.movie!.trailerUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-mono text-xs font-bold uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-lg shadow-red-600/20 active:scale-[0.98]"
+                      className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-mono text-xs font-bold uppercase tracking-wider px-4 sm:px-5 py-3 rounded-xl transition-all shadow-lg shadow-red-600/20 active:scale-[0.98]"
                     >
                       <Play className="w-4 h-4 fill-current" />
                       Watch Trailer
                       <ExternalLink className="w-3.5 h-3.5 opacity-60 ml-0.5" />
                     </a>
-                  </div>
-                )}
+                  )}
+
+                  {/* 1-Tap "Copy for Group Chat" & Web Share */}
+                  <button
+                    type="button"
+                    onClick={handleShareOrCopy}
+                    className={`inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider px-4 sm:px-5 py-3 rounded-xl transition-all shadow-lg cursor-pointer active:scale-[0.98] ${
+                      copiedShare
+                        ? "bg-emerald-500 text-zinc-950 shadow-emerald-500/20 border border-emerald-400"
+                        : "bg-zinc-800 hover:bg-zinc-750 text-amber-400 hover:text-amber-300 border border-zinc-700 hover:border-amber-500/50 shadow-black/40"
+                    }`}
+                    title="Share or copy movie details formatted for WhatsApp or iMessage group chat"
+                  >
+                    {copiedShare ? (
+                      <>
+                        <Check className="w-4 h-4 text-zinc-950 stroke-[3]" />
+                        <span>Copied to Clipboard!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-4 h-4" />
+                        <span>Copy for Group Chat</span>
+                      </>
+                    )}
+                  </button>
+                </div>
 
                 {canReset && (
                   <div className="pt-4 flex flex-col gap-2 items-start">
@@ -289,6 +379,32 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
                   Every fortnight we rotate selections. It's <span className="font-semibold text-zinc-200">{nextNight.selector}</span>'s turn to pick the movie. Once selected, our online engine will pull rich information, runtime, synopsis, and genres instantly!
                 </p>
 
+                {/* 1-Tap Share / Copy Event Details to Group Chat */}
+                <div className="pt-1 flex flex-wrap gap-2.5">
+                  <button
+                    type="button"
+                    onClick={handleShareOrCopy}
+                    className={`inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all border cursor-pointer active:scale-[0.98] ${
+                      copiedShare
+                        ? "bg-emerald-500 text-zinc-950 border-emerald-400 shadow-md shadow-emerald-500/20"
+                        : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-400 border-zinc-800 hover:border-amber-500/40"
+                    }`}
+                    title="Share upcoming event date and host to group chat"
+                  >
+                    {copiedShare ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[3]" />
+                        <span>Copied to Clipboard!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Copy for Group Chat</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
                 {/* Selection input for the designated selector or admins */}
                 {canSelect ? (
                   <motion.div 
@@ -311,7 +427,7 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
                           value={movieInput}
                           onChange={(e) => setMovieInput(e.target.value)}
                           disabled={loading}
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-4 pr-10 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-4 pr-10 py-2.5 text-base text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
                         />
                         <Film className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
                       </div>
@@ -438,6 +554,22 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
         </div>
 
       </div>
+
+      {/* Floating Share / Copy Toast Notification */}
+      <AnimatePresence>
+        {shareToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 15, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 15, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-24 sm:bottom-12 left-1/2 -translate-x-1/2 z-50 bg-[#1c1613] border border-amber-500/80 text-amber-200 px-5 py-3 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.8)] text-xs font-mono font-medium flex items-center gap-2.5 pointer-events-none"
+          >
+            <Check className="w-4 h-4 text-emerald-400 shrink-0 stroke-[3]" />
+            <span>{shareToast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Decorative film rolls on the bottom */}
       <div className="absolute bottom-0 inset-x-0 h-3 bg-zinc-950 flex justify-around overflow-hidden select-none pointer-events-none opacity-20">
