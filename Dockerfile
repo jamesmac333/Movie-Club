@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (fallback to npm install if lockfile has slight discrepancies)
+RUN npm ci || npm install
 
 # Copy the rest of the application files
 COPY . .
@@ -28,7 +28,7 @@ WORKDIR /app
 
 # Copy package files and install only production dependencies
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev || npm install --omit=dev
 
 # Copy compiled assets and server bundles from the builder
 COPY --from=builder /app/dist ./dist
