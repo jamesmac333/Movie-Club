@@ -8,13 +8,28 @@ import { readDb, mutateDb, generateUniqueId } from "./db.ts";
  */
 function getTransporter() {
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-    const cleanPass = process.env.SMTP_PASS.replace(/\s+/g, "");
+    // Strip surrounding quotes and any whitespace from user and password
+    const cleanUser = process.env.SMTP_USER.trim().replace(/^["']|["']$/g, "").trim();
+    const cleanPass = process.env.SMTP_PASS.trim().replace(/^["']|["']$/g, "").replace(/\s+/g, "");
+    const host = process.env.SMTP_HOST.trim().replace(/^["']|["']$/g, "").toLowerCase();
+
+    // If host is Gmail, use nodemailer's built-in Gmail service configuration for optimal TLS/port handling
+    if (host === "smtp.gmail.com" || host === "gmail") {
+      return nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: cleanUser,
+          pass: cleanPass
+        }
+      });
+    }
+
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
+      host: process.env.SMTP_HOST.trim(),
       port: Number(process.env.SMTP_PORT || 587),
       secure: process.env.SMTP_SECURE === "true" || Number(process.env.SMTP_PORT) === 465,
       auth: {
-        user: process.env.SMTP_USER.trim(),
+        user: cleanUser,
         pass: cleanPass
       }
     });
