@@ -10,7 +10,7 @@ import PriorSessionRecap from "./components/PriorSessionRecap.tsx";
 import GroupStatistics from "./components/GroupStatistics.tsx";
 import SelectionAlertModal from "./components/SelectionAlertModal.tsx";
 import RecapAlertModal from "./components/RecapAlertModal.tsx";
-import { Film, Calendar, Compass, BookOpen, Sparkles, Clapperboard, Heart, KeyRound, LogOut, ShieldCheck, User as UserIcon, Home } from "lucide-react";
+import { Film, Calendar, Compass, BookOpen, Sparkles, Clapperboard, Heart, KeyRound, LogOut, ShieldCheck, User as UserIcon, Home, Mail } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useSpring } from "motion/react";
 
 export default function App() {
@@ -648,10 +648,19 @@ export default function App() {
           <div className="flex flex-col gap-2">
             <button
               onClick={() => setShowProfileSettings(true)}
-              className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-400 border border-zinc-800 hover:border-amber-500/30 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <KeyRound className="w-3.5 h-3.5 text-amber-500/80" />
-              Reset Pass / Settings
+              {currentUser.isAdmin ? (
+                <>
+                  <Mail className="w-3.5 h-3.5 text-amber-500" />
+                  Admin & EDM Settings
+                </>
+              ) : (
+                <>
+                  <KeyRound className="w-3.5 h-3.5 text-amber-500/80" />
+                  Reset Password / Profile
+                </>
+              )}
             </button>
             <button
               onClick={handleLogout}
@@ -860,7 +869,9 @@ export default function App() {
                       overviews={overviews}
                       onOpenRecapModal={(overview, night) => setNewRecapAlert({ overview, night })}
                       futureOnly={true}
-                      title="Upcoming Schedule"
+                      limit={3}
+                      onViewFullSchedule={() => setActiveTab("calendar")}
+                      title="Next 3 Upcoming Sessions"
                       subtitle="Upcoming scheduled cinema sessions in chronological order • 7:00 PM NZT"
                     />
                     

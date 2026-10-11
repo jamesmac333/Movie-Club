@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { User, MOVIE_CLUB_USERS } from "../types.ts";
-import { Lock, KeyRound, UserCog, Check, AlertCircle, Eye, EyeOff, Upload, Camera, Image, X } from "lucide-react";
+import { Lock, KeyRound, UserCog, Check, AlertCircle, Eye, EyeOff, Upload, Camera, Image, X, Mail } from "lucide-react";
+import EdmAdminManager from "./EdmAdminManager.tsx";
 
 interface UserProfileModalProps {
   currentUser: User;
@@ -10,7 +11,7 @@ interface UserProfileModalProps {
 }
 
 export default function UserProfileModal({ currentUser, onClose, users = MOVIE_CLUB_USERS, onUserUpdate }: UserProfileModalProps) {
-  const [activeTab, setActiveTab] = useState<"personal" | "admin">("personal");
+  const [activeTab, setActiveTab] = useState<"personal" | "admin" | "edm">("personal");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -302,18 +303,24 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
       onClick={onClose}
     >
       <div 
-        className="relative bg-[#0d0d0d] border border-zinc-800 rounded-2xl w-full max-w-md max-h-[90vh] sm:max-h-[85vh] overflow-hidden shadow-2xl flex flex-col cursor-default"
+        className={`relative bg-[#0d0d0d] border border-zinc-800 rounded-2xl w-full ${
+          activeTab === "edm" ? "max-w-2xl" : "max-w-md"
+        } max-h-[90vh] sm:max-h-[85vh] overflow-hidden shadow-2xl flex flex-col cursor-default transition-all duration-300`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="bg-zinc-900 px-6 py-4 border-b border-zinc-800/60 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">
-              <KeyRound className="w-5 h-5" />
+              {activeTab === "edm" ? <Mail className="w-5 h-5" /> : <KeyRound className="w-5 h-5" />}
             </div>
             <div>
-              <h3 className="font-serif font-bold text-lg text-zinc-100">Credentials Manager</h3>
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500">Account Security & Resets</p>
+              <h3 className="font-serif font-bold text-lg text-zinc-100">
+                {activeTab === "edm" ? "EDM Dispatcher Controls" : "Credentials & Admin"}
+              </h3>
+              <p className="text-[10px] uppercase tracking-wider text-zinc-500">
+                {activeTab === "edm" ? "Distribution Lists & Automated Alerts" : "Account Security & Resets"}
+              </p>
             </div>
           </div>
           <button
@@ -337,7 +344,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                   : "text-zinc-500 hover:text-zinc-300"
               }`}
             >
-              Reset My Password
+              My Password
             </button>
             <button
               onClick={() => { setActiveTab("admin"); setSuccessMsg(""); setErrorMsg(""); }}
@@ -348,7 +355,18 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
               }`}
             >
               <UserCog className="w-3.5 h-3.5" />
-              Admin Controls
+              Member Overrides
+            </button>
+            <button
+              onClick={() => { setActiveTab("edm"); setSuccessMsg(""); setErrorMsg(""); }}
+              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                activeTab === "edm"
+                  ? "text-amber-500 border-b-2 border-amber-500 bg-amber-500/[0.02]"
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              <Mail className="w-3.5 h-3.5" />
+              EDM Broadcast
             </button>
           </div>
         )}
@@ -540,7 +558,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                 </form>
               </div>
             </div>
-          ) : (
+          ) : activeTab === "admin" ? (
             <div className="space-y-6 animate-fadeIn">
               <div className="bg-amber-500/5 border border-amber-500/10 rounded-lg p-3 text-amber-500/80 text-[11px] leading-relaxed">
                 As a Movie Club Administrator, you can modify any member's profile picture or override their password instantly.
@@ -711,6 +729,8 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                 </form>
               </div>
             </div>
+          ) : (
+            <EdmAdminManager currentUser={currentUser} />
           )}
         </div>
 

@@ -3,7 +3,14 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { readDb, writeDb, mutateDb, generateUniqueId, ensureFutureNights } from "./server/db.ts";
 import { fetchMovieMetadata } from "./server/gemini.ts";
-import { MovieNight, Review, NightOverview } from "./src/types.ts";
+import { MovieNight, Review, NightOverview, EdmRecipient, EdmLog } from "./src/types.ts";
+import {
+  sendEdm,
+  generateNightOverviewEmailHtml,
+  generateMovieSelectedEmailHtml,
+  generateTestEmailHtml,
+  formatNZTDate
+} from "./server/edm.ts";
 
 async function startServer() {
   const app = express();
@@ -217,6 +224,16 @@ async function startServer() {
       if (!updatedNight) {
         return res.status(404).json({ error: "Movie night not found" });
       }
+
+      // Fire and forget EDM for movie selection: notify club recipients
+      sendEdm({
+        type: "movie_selection",
+        subject: `The Curtain Rises: ${metadata.title} selected by ${night.selector}`,
+        html: generateMovieSelectedEmailHtml(updatedNight),
+        previewText: `${night.selector} has chosen "${metadata.title}" for Movie Night on ${formatNZTDate(updatedNight.date)}!`
+      }).catch((edmErr) => {
+        console.error("Async EDM dispatch error on movie selection:", edmErr);
+      });
 
       res.json({ message: "Movie selected and metadata pulled successfully", night: updatedNight });
     } catch (error) {
@@ -606,9 +623,137 @@ async function startServer() {
         return res.status(404).json({ error: "Movie night not found" });
       }
 
+      // Fire and forget EDM for newly posted Night Overview recap: notify club recipients
+      try {
+        const dbSnapshot = readDb();
+        const night = dbSnapshot.nights.find((n) => n.id === movieNightId);
+        if (night) {
+          sendEdm({
+            type: "overview",
+            subject: `Movie Club Recap: ${newOverview.title}`,
+            html: generateNightOverviewEmailHtml(newOverview, night, dbSnapshot.reviews || []),
+            previewText: `${newOverview.author} has published the official session chronicle: ${newOverview.title}`
+          }).catch((edmErr) => {
+            console.error("Async EDM dispatch error on overview:", edmErr);
+          });
+        }
+      } catch (err) {
+        console.error("Failed to initiate overview EDM:", err);
+      }
+
       res.json({ message: "Night overview posted successfully", overview: newOverview });
     } catch (error) {
       res.status(500).json({ error: "Failed to save night overview" });
+    }
+  });
+
+  // --- EDM API ENDPOINTS ---
+
+  // Get EDM distribution list and history logs (Admins only)
+  app.get("/api/edm", (req, res) => {
+    try {
+      const db = readDb();
+      res.json({
+        recipients: db.edmRecipients || [],
+        logs: db.edmLogs || []
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch EDM settings and logs" });
+    }
+  });
+
+  // Add / Save EDM recipient emails (Admins only: James or Ash)
+  app.post("/api/edm/recipients", async (req, res) => {
+    const { email, name, requester } = req.body;
+    const reqLower = requester?.toLowerCase();
+    if (!requester || (reqLower !== "james" && reqLower !== "ash")) {
+      return res.status(403).json({ error: "Unauthorized. Only admins (James or Ash) can manage EDM recipients." });
+    }
+
+    if (!email || !email.includes("@")) {
+      return res.status(400).json({ error: "Please provide a valid email address." });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    try {
+      const updatedRecipients = await mutateDb((db) => {
+        if (!db.edmRecipients) db.edmRecipients = [];
+        const exists = db.edmRecipients.some((r) => r.email.toLowerCase() === cleanEmail);
+        if (!exists) {
+          db.edmRecipients.push({
+            email: cleanEmail,
+            name: name?.trim() || cleanEmail.split("@")[0],
+            addedAt: new Date().toISOString()
+          });
+        }
+        return db.edmRecipients;
+      });
+
+      res.json({ message: "Recipient added successfully", recipients: updatedRecipients });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save recipient" });
+    }
+  });
+
+  // Delete an EDM recipient email (Admins only)
+  app.delete("/api/edm/recipients", async (req, res) => {
+    const { email, requester } = req.body;
+    const reqLower = requester?.toLowerCase();
+    if (!requester || (reqLower !== "james" && reqLower !== "ash")) {
+      return res.status(403).json({ error: "Unauthorized. Only admins can manage EDM recipients." });
+    }
+
+    if (!email) {
+      return res.status(400).json({ error: "Missing email to remove." });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    try {
+      const updatedRecipients = await mutateDb((db) => {
+        if (!db.edmRecipients) db.edmRecipients = [];
+        db.edmRecipients = db.edmRecipients.filter((r) => r.email.toLowerCase() !== cleanEmail);
+        return db.edmRecipients;
+      });
+
+      res.json({ message: "Recipient removed successfully", recipients: updatedRecipients });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to remove recipient" });
+    }
+  });
+
+  // Send an EDM test transmission to verify dispatching works (Admins only)
+  app.post("/api/edm/test", async (req, res) => {
+    const { requester } = req.body;
+    const reqLower = requester?.toLowerCase();
+    if (!requester || (reqLower !== "james" && reqLower !== "ash")) {
+      return res.status(403).json({ error: "Unauthorized. Only admins can initiate EDM test broadcasts." });
+    }
+
+    try {
+      const db = readDb();
+      const adminUser = db.users.find(u => u.username.toLowerCase() === reqLower);
+      const adminName = adminUser?.name || requester;
+      const recipientCount = (db.edmRecipients || []).length;
+
+      const testLog = await sendEdm({
+        type: "test",
+        subject: `[TEST] Movie Club EDM Transmission Verification - ${adminName}`,
+        html: generateTestEmailHtml(adminName, recipientCount),
+        previewText: `EDM system check triggered by ${adminName}. Distribution pipeline verified.`
+      });
+
+      res.json({
+        message: testLog.status === "failed" 
+          ? "Test EDM recorded error: " + testLog.error
+          : "Test EDM broadcast completed successfully!",
+        log: testLog,
+        logs: readDb().edmLogs || []
+      });
+    } catch (error: any) {
+      console.error("Failed to dispatch test EDM:", error);
+      res.status(500).json({ error: error?.message || "Failed to dispatch test EDM" });
     }
   });
 

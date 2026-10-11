@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { MovieNight, Review, NightOverview, User } from "../src/types.ts";
+import { MovieNight, Review, NightOverview, User, EdmRecipient, EdmLog } from "../src/types.ts";
 
 function getDbFile(): string {
   if (process.env.DB_PATH) {
@@ -23,11 +23,13 @@ export interface UserWithPassword extends User {
   password?: string;
 }
 
-interface DatabaseSchema {
+export interface DatabaseSchema {
   nights: MovieNight[];
   reviews: Review[];
   overviews: NightOverview[];
   users: UserWithPassword[];
+  edmRecipients?: EdmRecipient[];
+  edmLogs?: EdmLog[];
 }
 
 // Clean launch initial data: starting rotation with Max Smith first on July 17, 2026.
@@ -55,43 +57,43 @@ const getInitialData = (): DatabaseSchema => {
   const initialNights: MovieNight[] = [
     {
       id: "night-1",
-      date: "2026-07-17T19:00:00",
-      selector: "Max Smith",
-      movie: null,
-      status: "scheduled"
-    },
-    {
-      id: "night-2",
-      date: "2026-07-31T19:00:00",
+      date: "2026-10-23T19:00:00",
       selector: "Ash Macintosh",
       movie: null,
       status: "scheduled"
     },
     {
-      id: "night-3",
-      date: "2026-08-14T19:00:00",
+      id: "night-2",
+      date: "2026-11-06T19:00:00",
       selector: "Madison Hill",
       movie: null,
       status: "scheduled"
     },
     {
-      id: "night-4",
-      date: "2026-08-28T19:00:00",
+      id: "night-3",
+      date: "2026-11-20T19:00:00",
       selector: "Amy Walsh",
       movie: null,
       status: "scheduled"
     },
     {
-      id: "night-5",
-      date: "2026-09-11T19:00:00",
+      id: "night-4",
+      date: "2026-12-04T19:00:00",
       selector: "Tom Sakai",
       movie: null,
       status: "scheduled"
     },
     {
-      id: "night-6",
-      date: "2026-09-25T19:00:00",
+      id: "night-5",
+      date: "2026-12-18T19:00:00",
       selector: "James Macintosh",
+      movie: null,
+      status: "scheduled"
+    },
+    {
+      id: "night-6",
+      date: "2027-01-01T19:00:00",
+      selector: "Max Smith",
       movie: null,
       status: "scheduled"
     }
@@ -110,7 +112,11 @@ const getInitialData = (): DatabaseSchema => {
     nights: initialNights,
     reviews: [],
     overviews: [],
-    users: initialUsers
+    users: initialUsers,
+    edmRecipients: [
+      { email: "james.mac333@gmail.com", name: "James Macintosh", addedAt: new Date().toISOString() }
+    ],
+    edmLogs: []
   };
 };
 
@@ -283,6 +289,12 @@ function loadDbFromDisk(): DatabaseSchema {
     if (!Array.isArray(parsed.reviews)) parsed.reviews = [];
     if (!Array.isArray(parsed.overviews)) parsed.overviews = [];
     if (!Array.isArray(parsed.nights)) parsed.nights = [];
+    if (!Array.isArray(parsed.edmRecipients)) {
+      parsed.edmRecipients = [
+        { email: "james.mac333@gmail.com", name: "James Macintosh", addedAt: new Date().toISOString() }
+      ];
+    }
+    if (!Array.isArray(parsed.edmLogs)) parsed.edmLogs = [];
 
     // Auto-schedule future nights to ensure at least 8 are always in the pipeline
     const originalLength = parsed.nights.length;

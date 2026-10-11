@@ -2,53 +2,43 @@
   "nights": [
     {
       "id": "night-1",
-      "date": "2026-07-17T19:00:00",
-      "selector": "Max Smith",
-      "movie": {
-        "title": "The Santa Clause",
-        "year": 1994,
-        "director": "John Pasquin",
-        "genre": "Fantasy, Drama, Comedy, Family",
-        "runtime": 97,
-        "overview": "On Christmas Eve, divorced dad Scott Calvin and his son discover Santa Claus has fallen off their roof. When Scott takes the reins of the magical sleigh, he finds he is now the new Santa, and must convince a world of disbelievers, including himself.",
-        "rating": "PG",
-        "posterUrl": "https://image.tmdb.org/t/p/w500/hvV2rI60qOYELT7tHHLpxtafnBZ.jpg",
-        "selectedBy": "Max Smith"
-      },
-      "status": "scheduled"
-    },
-    {
-      "id": "night-2",
-      "date": "2026-07-31T19:00:00",
+      "date": "2026-10-23T19:00:00",
       "selector": "Ash Macintosh",
       "movie": null,
       "status": "scheduled"
     },
     {
-      "id": "night-3",
-      "date": "2026-08-14T19:00:00",
+      "id": "night-2",
+      "date": "2026-11-06T19:00:00",
       "selector": "Madison Hill",
       "movie": null,
       "status": "scheduled"
     },
     {
-      "id": "night-4",
-      "date": "2026-08-28T19:00:00",
+      "id": "night-3",
+      "date": "2026-11-20T19:00:00",
       "selector": "Amy Walsh",
       "movie": null,
       "status": "scheduled"
     },
     {
-      "id": "night-5",
-      "date": "2026-09-11T19:00:00",
+      "id": "night-4",
+      "date": "2026-12-04T19:00:00",
       "selector": "Tom Sakai",
       "movie": null,
       "status": "scheduled"
     },
     {
-      "id": "night-6",
-      "date": "2026-09-25T19:00:00",
+      "id": "night-5",
+      "date": "2026-12-18T19:00:00",
       "selector": "James Macintosh",
+      "movie": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "night-6",
+      "date": "2027-01-01T19:00:00",
+      "selector": "Max Smith",
       "movie": null,
       "status": "scheduled"
     }
@@ -97,6 +87,27 @@
       "isAdmin": false,
       "isAsh": false,
       "password": "movienight"
+    }
+  ],
+  "edmRecipients": [
+    {
+      "email": "james.mac333@gmail.com",
+      "name": "James Macintosh",
+      "addedAt": "2026-10-11T00:21:27.715Z"
+    }
+  ],
+  "edmLogs": [
+    {
+      "id": "edm-1791678089894-61502af7",
+      "type": "test",
+      "subject": "[TEST] Movie Club EDM Transmission Verification - James Macintosh",
+      "sentAt": "2026-10-11T00:21:29.894Z",
+      "recipients": [
+        "james.mac333@gmail.com"
+      ],
+      "status": "simulated",
+      "previewText": "EDM system check triggered by James Macintosh. Distribution pipeline verified.",
+      "htmlContent": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Movie Club EDM Test Transmission</title>\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #080808; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f4f4f5;\">\n  <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color: #080808; padding: 32px 16px;\">\n    <tr>\n      <td align=\"center\">\n        <!-- Main Container -->\n        <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width: 580px; background-color: #14100e; border: 2px solid #10b981; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 60px rgba(16, 185, 129, 0.2);\">\n          \n          <!-- Green Header Ribbon -->\n          <tr>\n            <td style=\"height: 6px; background: linear-gradient(90deg, #059669, #34d399, #059669);\"></td>\n          </tr>\n\n          <!-- Content -->\n          <tr>\n            <td style=\"padding: 32px; text-align: center;\">\n              <div style=\"display: inline-block; padding: 8px 16px; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 30px; font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: bold; color: #34d399; letter-spacing: 0.2em; text-transform: uppercase;\">\n                ✓ SYSTEM VERIFICATION TRANSMISSION\n              </div>\n\n              <h1 style=\"margin: 16px 0 8px; font-size: 26px; font-weight: 800; font-family: Georgia, serif; color: #ffffff;\">\n                EDM Dispatcher is Live & Functional\n              </h1>\n\n              <p style=\"margin: 0 0 20px; font-size: 14px; color: #a1a1aa; line-height: 1.6;\">\n                This test broadcast was requested by administrator <strong style=\"color: #fbbf24;\">James Macintosh</strong> to verify that automated email distributions are operational.\n              </p>\n\n              <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color: #1c1511; border: 1px dashed #38271a; border-radius: 14px; padding: 16px 20px; margin-bottom: 24px; text-align: left;\">\n                <tr>\n                  <td style=\"font-size: 12px; color: #d4d4d8; line-height: 1.8;\">\n                    <div>• <strong>Transmission Time:</strong> 11/10/2026, 1:21:29 pm (NZT)</div>\n                    <div>• <strong>Target Recipients:</strong> 1 registered email address(es)</div>\n                    <div>• <strong>Delivery Triggers Armed:</strong></div>\n                    <div style=\"padding-left: 16px; color: #a1a1aa;\">\n                      1. Whenever Ash Macintosh publishes a Night Overview recap<br/>\n                      2. Whenever a host locks in the next cycle's movie selection\n                    </div>\n                  </td>\n                </tr>\n              </table>\n\n              <a href=\"https://ais-dev-cplyxtwj7fa5b4y47u7zjl-771540860151.asia-southeast1.run.app\" style=\"display: inline-block; background-color: #10b981; color: #022c22; font-weight: bold; font-size: 13px; text-decoration: none; padding: 12px 28px; border-radius: 12px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);\">\n                Return to Movie Club →\n              </a>\n            </td>\n          </tr>\n\n          <!-- Footer -->\n          <tr>\n            <td style=\"padding: 16px 32px; background-color: #0b0907; border-top: 1px solid #281f18; text-align: center;\">\n              <p style=\"margin: 0; font-size: 11px; color: #71717a; font-family: 'Courier New', Courier, monospace;\">\n                Movie Club Admin EDM Diagnostic Utility\n              </p>\n            </td>\n          </tr>\n\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>"
     }
   ]
 }

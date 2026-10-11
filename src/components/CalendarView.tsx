@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { MovieNight, User, NightOverview, MOVIE_CLUB_USERS } from "../types.ts";
-import { Calendar, Edit, CheckCircle, Clock, UserCheck, Shield, BookOpen, Play, ExternalLink, History, ChevronDown } from "lucide-react";
+import { Calendar, Edit, CheckCircle, Clock, UserCheck, Shield, BookOpen, Play, ExternalLink, History, ChevronDown, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface CalendarViewProps {
@@ -12,6 +12,8 @@ interface CalendarViewProps {
   overviews?: NightOverview[];
   onOpenRecapModal?: (overview: NightOverview, night: MovieNight) => void;
   futureOnly?: boolean;
+  limit?: number;
+  onViewFullSchedule?: () => void;
   title?: string;
   subtitle?: string;
 }
@@ -25,6 +27,8 @@ export default function CalendarView({
   overviews = [],
   onOpenRecapModal,
   futureOnly = false,
+  limit,
+  onViewFullSchedule,
   title,
   subtitle
 }: CalendarViewProps) {
@@ -98,12 +102,14 @@ export default function CalendarView({
   const upcomingNights = sortedNights.filter((n) => !isPreviousNight(n));
 
   // If futureOnly is requested (e.g. homepage), filter to strictly future scheduled sessions
-  const displayNights = futureOnly
+  const rawDisplayNights = futureOnly
     ? sortedNights.filter((night) => {
         const nightTime = new Date(night.date).getTime();
         return nightTime >= todayStart && night.status === "scheduled";
       })
     : upcomingNights;
+
+  const displayNights = limit ? rawDisplayNights.slice(0, limit) : rawDisplayNights;
 
   const renderNightCard = (night: MovieNight, index: number, isPreviousList: boolean = false) => {
     const isEditing = editingNightId === night.id;
@@ -440,6 +446,40 @@ export default function CalendarView({
           </div>
         ) : (
           displayNights.map((night, index) => renderNightCard(night, index, false))
+        )}
+
+        {/* View Full Schedule CTA when limited */}
+        {limit !== undefined && rawDisplayNights.length > limit && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3.5 p-4 sm:p-5 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 shadow-md"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <Clock className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-zinc-200">
+                  Showing next {limit} of {rawDisplayNights.length} upcoming sessions
+                </p>
+                <p className="text-[11px] text-zinc-500 font-sans">
+                  The full 6-session pipeline is queued and available in the Schedule tab.
+                </p>
+              </div>
+            </div>
+
+            {onViewFullSchedule && (
+              <button
+                type="button"
+                onClick={onViewFullSchedule}
+                className="w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-amber-500 hover:text-zinc-950 text-amber-400 border border-amber-500/30 hover:border-amber-500 text-xs font-mono font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group shrink-0"
+              >
+                <span>View Full Schedule ({rawDisplayNights.length})</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            )}
+          </motion.div>
         )}
       </div>
     </motion.div>

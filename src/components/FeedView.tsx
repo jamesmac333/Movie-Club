@@ -560,25 +560,66 @@ export default function FeedView({
                   </div>
 
                   {/* Collapsed Reviews Teaser Preview */}
-                  {!isReviewsExpanded && nightReviews.length > 0 && (
-                    <div 
-                      onClick={() => toggleReviewsExpand(night.id)}
-                      className="mt-2 bg-zinc-900/30 hover:bg-zinc-900/60 border border-zinc-900 hover:border-zinc-800 rounded-xl px-4 py-2.5 flex items-center justify-between text-xs text-zinc-400 cursor-pointer transition-colors group"
-                    >
-                      <span className="flex items-center gap-2 truncate">
-                        <span className="text-zinc-500 font-mono">{nightReviews.length} review{nightReviews.length > 1 ? "s" : ""} recorded</span>
-                        {nightReviews.some(r => r.isStarred) && (
-                          <span className="text-amber-400 font-mono text-[10px] bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded flex items-center gap-1">
-                            <Star className="w-2.5 h-2.5 fill-amber-400" />
-                            Ash's Pick Included
+                  {!isReviewsExpanded && nightReviews.length > 0 && (() => {
+                    const ashStarredPick = nightReviews.find(r => r.isStarred);
+                    const pickAuthor = ashStarredPick ? MOVIE_CLUB_USERS.find(u => u.name.toLowerCase() === ashStarredPick.user.toLowerCase() || u.username.toLowerCase() === ashStarredPick.user.toLowerCase()) : null;
+
+                    return (
+                      <div 
+                        onClick={() => toggleReviewsExpand(night.id)}
+                        className="mt-2 bg-zinc-900/35 hover:bg-zinc-900/70 border border-zinc-900 hover:border-zinc-800 rounded-xl p-3 sm:px-4 sm:py-3 text-xs text-zinc-400 cursor-pointer transition-all group space-y-2.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-2 truncate">
+                            <span className="text-zinc-500 font-mono">{nightReviews.length} review{nightReviews.length > 1 ? "s" : ""} recorded</span>
+                            {ashStarredPick && (
+                              <span className="text-amber-400 font-mono text-[10px] bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded flex items-center gap-1 font-semibold">
+                                <Star className="w-2.5 h-2.5 fill-amber-400" />
+                                Ash's Best Review Pick
+                              </span>
+                            )}
                           </span>
+                          <span className="text-amber-500/80 group-hover:text-amber-400 font-mono text-[11px] flex items-center gap-1 shrink-0 ml-2">
+                            <span>{ashStarredPick ? "View all reviews" : "Click to view reviews"}</span>
+                            <ChevronDown className="w-3 h-3 transition-transform group-hover:translate-y-0.5" />
+                          </span>
+                        </div>
+
+                        {/* Ash's Best Review Pick Preview Card */}
+                        {ashStarredPick && (
+                          <div className="bg-amber-500/[0.04] border border-amber-500/25 rounded-lg p-2.5 sm:p-3 flex flex-col gap-2 shadow-inner">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {pickAuthor?.avatarUrl ? (
+                                  <img 
+                                    src={pickAuthor.avatarUrl} 
+                                    alt={ashStarredPick.user} 
+                                    className="w-5 h-5 rounded-full object-cover border border-amber-500/40 shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-5 h-5 bg-zinc-800 rounded-full flex items-center justify-center font-mono text-[10px] font-bold text-amber-400 uppercase shrink-0">
+                                    {ashStarredPick.user.substring(0, 2)}
+                                  </div>
+                                )}
+                                <span className="font-semibold text-zinc-200 text-xs truncate">
+                                  {ashStarredPick.user}
+                                </span>
+                                <span className="text-[10px] font-mono text-zinc-500 hidden sm:inline">
+                                  • {formatNZTDateOnly(ashStarredPick.createdAt)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {renderStars(ashStarredPick.rating)}
+                              </div>
+                            </div>
+                            <p className="text-xs text-zinc-300 font-serif italic line-clamp-2 leading-relaxed pl-1 border-l-2 border-amber-500/50">
+                              "{ashStarredPick.comment}"
+                            </p>
+                          </div>
                         )}
-                      </span>
-                      <span className="text-amber-500/80 group-hover:text-amber-400 font-mono text-[11px] flex items-center gap-1 shrink-0 ml-2">
-                        Click to view reviews <ChevronDown className="w-3 h-3" />
-                      </span>
-                    </div>
-                  )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Expanded Reviews Content (Forms + Review Cards) */}
                   <AnimatePresence>

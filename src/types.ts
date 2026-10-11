@@ -54,6 +54,28 @@ export interface User {
   avatarUrl?: string;
 }
 
+export interface EdmRecipient {
+  email: string;
+  name?: string;
+  addedAt?: string;
+}
+
+export interface EdmLog {
+  id: string;
+  type: "overview" | "movie_selection" | "test";
+  subject: string;
+  sentAt: string;
+  recipients: string[];
+  status: "sent" | "failed" | "simulated";
+  previewText?: string;
+  htmlContent?: string;
+  error?: string;
+}
+
+export interface EdmConfig {
+  recipients: EdmRecipient[];
+}
+
 export const MOVIE_CLUB_USERS: User[] = [
   { username: "James", name: "James Macintosh", isAdmin: true, isAsh: false, avatarUrl: jamesAvatar },
   { username: "Ash", name: "Ash Macintosh", isAdmin: true, isAsh: true, avatarUrl: ashAvatar },
