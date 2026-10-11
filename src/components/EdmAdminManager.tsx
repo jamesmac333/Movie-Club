@@ -39,11 +39,28 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
     fetchEdmData();
   }, []);
 
+  const parseResponse = async (res: Response) => {
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      return await res.json();
+    }
+    const rawText = await res.text();
+    if (!res.ok) {
+      if (rawText.includes("Cannot POST") || rawText.includes("Cannot GET") || res.status === 404) {
+        throw new Error(
+          "Cloud Run backend does not have the EDM endpoints yet (HTTP 404). Please redeploy your backend to Google Cloud Run by running ./deploy.sh from your terminal."
+        );
+      }
+      throw new Error(`Server returned HTTP ${res.status}`);
+    }
+    throw new Error("Received non-JSON response from server.");
+  };
+
   const fetchEdmData = async () => {
     try {
       const res = await fetch("/api/edm");
       if (res.ok) {
-        const data = await res.json();
+        const data = await parseResponse(res);
         setRecipients(data.recipients || []);
         setLogs(data.logs || []);
       }
@@ -74,7 +91,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
         })
       });
 
-      const data = await res.json();
+      const data = await parseResponse(res);
       if (!res.ok) {
         throw new Error(data.error || "Failed to add email address.");
       }
@@ -104,7 +121,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
         })
       });
 
-      const data = await res.json();
+      const data = await parseResponse(res);
       if (!res.ok) {
         throw new Error(data.error || "Failed to remove recipient.");
       }
@@ -130,7 +147,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
         })
       });
 
-      const data = await res.json();
+      const data = await parseResponse(res);
       if (!res.ok) {
         throw new Error(data.error || "Failed to send test EDM.");
       }

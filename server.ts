@@ -757,6 +757,11 @@ async function startServer() {
     }
   });
 
+  // Catch unmatched API routes and return structured JSON (prevents HTML error leakage)
+  app.all("/api/*", (req, res) => {
+    res.status(404).json({ error: `API route ${req.method} ${req.path} not found.` });
+  });
+
   // --- VITE MIDDLEWARE & STATIC FILE SERVING ---
 
   if (process.env.NODE_ENV !== "production") {
