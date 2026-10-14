@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { MovieNight, Review, NightOverview, User, EdmRecipient, EdmLog } from "../src/types.ts";
 
 function getDbFile(): string {
@@ -18,6 +19,48 @@ function getDbFile(): string {
 }
 
 const DB_FILE = getDbFile();
+
+export function getDbFilePath(): string {
+  return DB_FILE;
+}
+
+let lastSnapshotTime = 0;
+
+export function getBackupStats() {
+  const bakFile = `${DB_FILE}.bak`;
+  const bakExists = fs.existsSync(bakFile);
+  let bakMtime: string | null = null;
+  if (bakExists) {
+    try {
+      bakMtime = fs.statSync(bakFile).mtime.toISOString();
+    } catch {}
+  }
+
+  const backupDir = path.join(path.dirname(DB_FILE), "backups");
+  let snapshotCount = 0;
+  if (fs.existsSync(backupDir)) {
+    try {
+      snapshotCount = fs.readdirSync(backupDir).filter(f => f.endsWith(".json")).length;
+    } catch {}
+  }
+
+  let dbSize = 0;
+  if (fs.existsSync(DB_FILE)) {
+    try {
+      dbSize = fs.statSync(DB_FILE).size;
+    } catch {}
+  }
+
+  return {
+    primaryDbFile: DB_FILE,
+    automaticBackupFile: bakFile,
+    hasBackup: bakExists,
+    backupLastModified: bakMtime,
+    snapshotCount,
+    dbSizeBytes: dbSize,
+    isAutomated: true
+  };
+}
 
 export interface UserWithPassword extends User {
   password?: string;
@@ -196,8 +239,6 @@ export function realignFutureNights(db: DatabaseSchema, startingSelector?: strin
   }
 }
 
-import crypto from "crypto";
-
 // Guaranteed unique ID generator combining timestamp and random cryptographic bytes
 export function generateUniqueId(prefix: string = "id"): string {
   return `${prefix}-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
@@ -222,18 +263,45 @@ function saveDbToDiskAtomic(data: DatabaseSchema): void {
 
   const tempFile = `${DB_FILE}.tmp.${Date.now()}.${crypto.randomBytes(3).toString("hex")}`;
   const bakFile = `${DB_FILE}.bak`;
+  const backupDir = path.join(dir, "backups");
 
   try {
     const json = JSON.stringify(data, null, 2);
     // Write full contents to temp file first
     fs.writeFileSync(tempFile, json, "utf8");
 
-    // Keep a backup of current database if it exists
+    // Keep an immediate backup of current database if it exists
     if (fs.existsSync(DB_FILE)) {
       try {
         fs.copyFileSync(DB_FILE, bakFile);
       } catch (bakErr) {
         // Backup copy is best-effort
+      }
+
+      // Also create rotating historical snapshots (at most once every 15 minutes)
+      const now = Date.now();
+      if (now - lastSnapshotTime > 15 * 60 * 1000) {
+        try {
+          if (!fs.existsSync(backupDir)) {
+            fs.mkdirSync(backupDir, { recursive: true });
+          }
+          const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+          const snapFile = path.join(backupDir, `server-db-snapshot-${stamp}.json`);
+          fs.copyFileSync(DB_FILE, snapFile);
+          lastSnapshotTime = now;
+
+          // Prune older snapshots if more than 10
+          const files = fs.readdirSync(backupDir)
+            .filter(f => f.startsWith("server-db-snapshot-") && f.endsWith(".json"))
+            .sort();
+          if (files.length > 10) {
+            for (let i = 0; i < files.length - 10; i++) {
+              fs.unlinkSync(path.join(backupDir, files[i]));
+            }
+          }
+        } catch (snapErr) {
+          // Snapshots are best-effort
+        }
       }
     }
 

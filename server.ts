@@ -10,7 +10,9 @@ import {
   canonicalizeHostName,
   HOST_ROTATION,
   getRotationIndex,
-  realignFutureNights
+  realignFutureNights,
+  getBackupStats,
+  getDbFilePath
 } from "./server/db.ts";
 import { fetchMovieMetadata } from "./server/gemini.ts";
 import { MovieNight, Review, NightOverview, EdmRecipient, EdmLog } from "./src/types.ts";
@@ -98,6 +100,35 @@ async function startServer() {
     }
   });
 
+  // Database Backup: Status check (Admin only or system check)
+  app.get("/api/admin/backup/status", (req, res) => {
+    try {
+      const stats = getBackupStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to check backup status" });
+    }
+  });
+
+  // Database Backup: Direct download endpoint for admins
+  app.get("/api/admin/backup/download", (req, res) => {
+    const requester = (req.query.requester as string)?.toLowerCase()?.trim();
+    if (requester !== "james" && requester !== "ash") {
+      return res.status(403).json({ error: "Unauthorized. Only admins can export database backups." });
+    }
+    try {
+      const dbPath = getDbFilePath();
+      const resolvedPath = path.resolve(dbPath);
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10);
+      res.setHeader("Content-Disposition", `attachment; filename="movie-club-backup-${dateStr}.json"`);
+      res.setHeader("Content-Type", "application/json");
+      res.sendFile(resolvedPath);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to download backup file" });
+    }
+  });
+
   // Auth: Get user avatar image directly as binary stream
   app.get("/api/users/:username/avatar", (req, res) => {
     try {
@@ -114,7 +145,9 @@ async function startServer() {
           const mime = matches[1];
           const imgBuffer = Buffer.from(matches[2], "base64");
           res.setHeader("Content-Type", `image/${mime === "jpg" ? "jpeg" : mime}`);
-          res.setHeader("Cache-Control", "no-cache, must-revalidate");
+          res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+          res.setHeader("Pragma", "no-cache");
+          res.setHeader("Expires", "0");
           return res.send(imgBuffer);
         }
       }
@@ -142,7 +175,7 @@ async function startServer() {
         }
         return u;
       });
-      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.json(safeUsers);
     } catch (error) {
       res.status(500).json({ error: "Failed to load users" });
@@ -169,19 +202,23 @@ async function startServer() {
 
     try {
       const updatedUser = await mutateDb((db) => {
-        const userIndex = db.users.findIndex(u => u.username.toLowerCase() === targetLower);
-        if (userIndex === -1) {
-          return null;
+        let user = db.users.find(u => u.username.toLowerCase() === targetLower);
+        if (!user) {
+          user = {
+            username: username,
+            name: username,
+            isAdmin: targetLower === "james" || targetLower === "ash",
+            isAsh: targetLower === "ash",
+            avatarUrl: avatarUrl
+          };
+          db.users.push(user);
+        } else {
+          user.avatarUrl = avatarUrl;
         }
-        db.users[userIndex].avatarUrl = avatarUrl;
-        return db.users[userIndex];
+        return user;
       });
 
-      if (!updatedUser) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      res.json({ message: "Avatar updated successfully", avatarUrl });
+      res.json({ message: "Avatar updated successfully", avatarUrl: updatedUser.avatarUrl });
     } catch (error) {
       res.status(500).json({ error: "Failed to update avatar" });
     }

@@ -388,14 +388,16 @@
       "name": "James Macintosh",
       "isAdmin": true,
       "isAsh": false,
-      "password": "Admin"
+      "password": "Admin",
+      "avatarUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
     },
     {
       "username": "Ash",
       "name": "Ash Macintosh",
       "isAdmin": true,
       "isAsh": true,
-      "password": "Admin"
+      "password": "Admin",
+      "avatarUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
     },
     {
       "username": "Tom",

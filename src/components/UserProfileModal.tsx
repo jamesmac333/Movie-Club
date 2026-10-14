@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { User, MOVIE_CLUB_USERS } from "../types.ts";
-import { Lock, KeyRound, UserCog, Check, AlertCircle, Eye, EyeOff, Upload, Camera, Image, X, Mail } from "lucide-react";
+import { Lock, KeyRound, UserCog, Check, AlertCircle, Eye, EyeOff, Upload, Camera, Image, X, Mail, Database, Download, ShieldCheck, HardDrive } from "lucide-react";
 import EdmAdminManager from "./EdmAdminManager.tsx";
 
 interface UserProfileModalProps {
@@ -54,6 +54,30 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
     setTargetAvatarSuccess("");
     setTargetAvatarError("");
   }, [selectedTarget]);
+
+  // Backup statistics for admins
+  const [backupStats, setBackupStats] = useState<{
+    primaryDbFile?: string;
+    automaticBackupFile?: string;
+    hasBackup?: boolean;
+    backupLastModified?: string | null;
+    snapshotCount?: number;
+    dbSizeBytes?: number;
+    isAutomated?: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (isAdmin && activeTab === "admin") {
+      fetch("/api/admin/backup/status")
+        .then((res) => res.json())
+        .then((data) => setBackupStats(data))
+        .catch(() => {});
+    }
+  }, [isAdmin, activeTab]);
+
+  const handleDownloadBackup = () => {
+    window.location.href = `/api/admin/backup/download?requester=${encodeURIComponent(currentUser.username)}`;
+  };
 
   const handleTargetFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -131,25 +155,55 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
 
   const processTargetFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      setTargetAvatarError("Please select an image file (PNG, JPG, etc.)");
+      setTargetAvatarError("Please select an image file (PNG, JPG, WebP, etc.)");
       return;
     }
     setTargetAvatarError("");
     setTargetAvatarSuccess("");
     setTargetSelectedFile(file);
 
+    // Instant preview so the Save button is immediately active and preview is shown
+    const quickReader = new FileReader();
+    quickReader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (dataUrl) {
+        setTargetAvatarPreview(dataUrl);
+      }
+    };
+    quickReader.readAsDataURL(file);
+
+    // Crop and compress in background for optimal size
     compressAvatar(file)
       .then((dataUrl) => {
         setTargetAvatarPreview(dataUrl);
       })
-      .catch(() => {
-        setTargetAvatarError("Failed to process image. Try another photo.");
+      .catch((err) => {
+        console.warn("Avatar compression fallback to raw dataUrl", err);
       });
   };
 
-  const handleTargetAvatarUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!targetAvatarPreview) return;
+  const handleTargetAvatarUpload = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
+
+    let uploadData = targetAvatarPreview;
+    if (!uploadData && targetSelectedFile) {
+      try {
+        uploadData = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(targetSelectedFile);
+        });
+      } catch (readErr) {
+        setTargetAvatarError("Failed to read image file.");
+        return;
+      }
+    }
+
+    if (!uploadData) {
+      setTargetAvatarError("Please select a picture first.");
+      return;
+    }
 
     setTargetAvatarLoading(true);
     setTargetAvatarSuccess("");
@@ -160,7 +214,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          avatarUrl: targetAvatarPreview,
+          avatarUrl: uploadData,
           requester: currentUser.username
         })
       });
@@ -170,7 +224,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
         throw new Error(data.error || "Failed to update member profile picture");
       }
 
-      setTargetAvatarSuccess("Member profile picture updated successfully!");
+      setTargetAvatarSuccess(`Profile picture for ${users.find(u => u.username === selectedTarget)?.name || selectedTarget} saved successfully!`);
       setTargetSelectedFile(null);
       if (onUserUpdate) {
         onUserUpdate();
@@ -212,25 +266,55 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
 
   const processFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      setAvatarError("Please select an image file (PNG, JPG, etc.)");
+      setAvatarError("Please select an image file (PNG, JPG, WebP, etc.)");
       return;
     }
     setAvatarError("");
     setAvatarSuccess("");
     setSelectedFile(file);
 
+    // Instant preview so the Save button is immediately active and preview is shown
+    const quickReader = new FileReader();
+    quickReader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (dataUrl) {
+        setAvatarPreview(dataUrl);
+      }
+    };
+    quickReader.readAsDataURL(file);
+
+    // Crop and compress in background for optimal size
     compressAvatar(file)
       .then((dataUrl) => {
         setAvatarPreview(dataUrl);
       })
-      .catch(() => {
-        setAvatarError("Failed to process image. Try another photo.");
+      .catch((err) => {
+        console.warn("Avatar compression fallback to raw dataUrl", err);
       });
   };
 
-  const handleAvatarUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!avatarPreview) return;
+  const handleAvatarUpload = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
+
+    let uploadData = avatarPreview;
+    if (!uploadData && selectedFile) {
+      try {
+        uploadData = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(selectedFile);
+        });
+      } catch (readErr) {
+        setAvatarError("Failed to read image file.");
+        return;
+      }
+    }
+
+    if (!uploadData) {
+      setAvatarError("Please select an image file first.");
+      return;
+    }
 
     setAvatarLoading(true);
     setAvatarSuccess("");
@@ -241,7 +325,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          avatarUrl: avatarPreview,
+          avatarUrl: uploadData,
           requester: currentUser.username
         })
       });
@@ -251,7 +335,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
         throw new Error(data.error || "Failed to upload avatar");
       }
 
-      setAvatarSuccess("Profile picture updated successfully!");
+      setAvatarSuccess("Profile picture updated and saved successfully!");
       setSelectedFile(null);
       if (onUserUpdate) {
         onUserUpdate();
@@ -388,7 +472,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                   : "text-zinc-500 hover:text-zinc-300"
               }`}
             >
-              My Password
+              My Profile & Password
             </button>
             <button
               onClick={() => { setActiveTab("admin"); setSuccessMsg(""); setErrorMsg(""); }}
@@ -435,16 +519,21 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
             <div className="space-y-6">
               {/* Profile Picture Manual Upload Section */}
               <div className="bg-zinc-900/10 border border-zinc-800/80 rounded-xl p-4 sm:p-5 space-y-4">
-                <h4 className="text-xs uppercase tracking-widest text-zinc-400 font-bold border-b border-zinc-800/60 pb-2 flex items-center gap-2">
-                  <Camera className="w-3.5 h-3.5 text-amber-500" />
-                  Profile Picture
-                </h4>
+                <div className="border-b border-zinc-800/60 pb-2 flex items-center justify-between">
+                  <h4 className="text-xs uppercase tracking-widest text-zinc-300 font-bold flex items-center gap-2">
+                    <Camera className="w-3.5 h-3.5 text-amber-500" />
+                    Profile Picture
+                  </h4>
+                  <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">
+                    {currentUser.username}
+                  </span>
+                </div>
 
                 <form onSubmit={handleAvatarUpload} className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-center gap-5">
                     {/* Current or Preview Image */}
-                    <div className="relative group shrink-0">
-                      <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-amber-500/30 bg-zinc-900 flex items-center justify-center relative">
+                    <div className="relative group shrink-0 flex flex-col items-center gap-1.5">
+                      <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-amber-500/40 bg-zinc-900 flex items-center justify-center relative shadow-md">
                         {avatarPreview ? (
                           <img 
                             src={avatarPreview} 
@@ -467,14 +556,17 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                           </div>
                         )}
                       </div>
+                      <span className="text-[10px] text-zinc-400 font-medium">
+                        {avatarPreview ? "New Preview" : "Current Photo"}
+                      </span>
                     </div>
 
                     {/* File Dropzone / Picker */}
                     <div 
                       className={`flex-1 w-full border border-dashed rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center ${
                         dragActive 
-                          ? "border-amber-500 bg-amber-500/5" 
-                          : "border-zinc-800 hover:border-zinc-700 bg-zinc-950/40"
+                          ? "border-amber-500 bg-amber-500/10" 
+                          : "border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 hover:bg-zinc-950/70"
                       }`}
                       onDragEnter={handleDrag}
                       onDragOver={handleDrag}
@@ -494,48 +586,117 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                         onChange={handleFileChange} 
                         className="hidden" 
                       />
-                      <Upload className="w-5 h-5 text-zinc-500 mb-1.5" />
-                      <span className="text-xs font-semibold text-zinc-300">
+                      <Upload className="w-5 h-5 text-amber-500 mb-1.5" />
+                      <span className="text-xs font-semibold text-zinc-200">
                         {selectedFile ? selectedFile.name : "Choose an image or drop here"}
                       </span>
                       <span className="text-[10px] text-zinc-500 mt-1 font-mono uppercase tracking-wider">
-                        Upload your photo (JPG, PNG, WebP)
+                        Supports JPG, PNG, WebP & GIF
                       </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          personalFileInputRef.current?.click();
+                        }}
+                        className="mt-2.5 px-3 py-1 bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-amber-500/30 hover:border-amber-500/60 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        Browse Image
+                      </button>
                     </div>
                   </div>
 
                   {avatarSuccess && (
-                    <p className="text-[11px] font-semibold text-emerald-400 bg-emerald-950/10 border border-emerald-900/30 p-2.5 rounded-lg flex items-center gap-1.5 font-mono">
-                      <span>✓ {avatarSuccess}</span>
-                    </p>
+                    <div className="text-xs font-semibold text-emerald-400 bg-emerald-950/20 border border-emerald-900/50 p-3 rounded-lg flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>{avatarSuccess}</span>
+                    </div>
                   )}
 
                   {avatarError && (
-                    <p className="text-[11px] font-semibold text-red-400 bg-red-950/10 border border-red-900/30 p-2.5 rounded-lg flex items-center gap-1.5 font-mono">
-                      <span>⚠️ {avatarError}</span>
-                    </p>
+                    <div className="text-xs font-semibold text-red-400 bg-red-950/20 border border-red-900/50 p-3 rounded-lg flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                      <span>{avatarError}</span>
+                    </div>
                   )}
 
-                  {avatarPreview && (
-                    <div className="flex gap-2 justify-end">
+                  {/* PROMINENT SAVE BUTTON SECTION */}
+                  {selectedFile || avatarPreview ? (
+                    <div className="p-3.5 bg-amber-500/10 border-2 border-amber-500/40 rounded-xl shadow-lg shadow-amber-500/5 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fadeIn">
+                      <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border border-amber-500/60 shrink-0 bg-zinc-900">
+                          {avatarPreview ? (
+                            <img src={avatarPreview} alt="Selected preview" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Camera className="w-5 h-5 text-amber-500" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>New Photo Selected</span>
+                          </div>
+                          <div className="text-xs font-medium text-zinc-200 truncate">
+                            {selectedFile?.name || "Photo ready to apply"}
+                          </div>
+                          {selectedFile && (
+                            <div className="text-[10px] text-zinc-400 font-mono">
+                              {(selectedFile.size / 1024).toFixed(1)} KB • Ready to save
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAvatarPreview(null);
+                            setSelectedFile(null);
+                            setAvatarError("");
+                            setAvatarSuccess("");
+                          }}
+                          disabled={avatarLoading}
+                          className="px-3.5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-bold uppercase rounded-lg border border-zinc-800 transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleAvatarUpload}
+                          disabled={avatarLoading}
+                          className="flex-1 sm:flex-initial px-5 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 text-xs font-black uppercase tracking-wider rounded-lg shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          {avatarLoading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
+                              <span>Saving Picture...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-4 h-4 stroke-[3]" />
+                              <span>Save New Profile Picture</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-3 bg-zinc-950/40 border border-zinc-900 rounded-xl">
+                      <div className="text-xs text-zinc-400 flex items-center gap-2">
+                        <Camera className="w-4 h-4 text-zinc-500" />
+                        <span>Select a picture above to save as your new profile photo</span>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          setAvatarPreview(null);
-                          setSelectedFile(null);
-                          setAvatarError("");
-                          setAvatarSuccess("");
-                        }}
-                        className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 text-xs font-bold uppercase rounded-lg border border-zinc-800/80 transition-colors cursor-pointer"
+                        disabled
+                        className="px-4 py-2 bg-zinc-900 text-zinc-600 border border-zinc-800/60 rounded-lg text-xs font-bold uppercase tracking-wider cursor-not-allowed opacity-60 flex items-center gap-1.5"
                       >
-                        Reset
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={avatarLoading}
-                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-zinc-950 text-xs font-bold uppercase rounded-lg shadow-lg shadow-amber-500/10 transition-colors cursor-pointer flex items-center gap-1.5"
-                      >
-                        {avatarLoading ? "Saving..." : "Save Picture"}
+                        <Check className="w-3.5 h-3.5" />
+                        Save Picture
                       </button>
                     </div>
                   )}
@@ -631,8 +792,8 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                 <form onSubmit={handleTargetAvatarUpload} className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-center gap-5">
                     {/* Preview or Current */}
-                    <div className="relative group shrink-0">
-                      <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-amber-500/30 bg-zinc-900 flex items-center justify-center relative">
+                    <div className="relative group shrink-0 flex flex-col items-center gap-1.5">
+                      <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-amber-500/40 bg-zinc-900 flex items-center justify-center relative shadow-md">
                         {targetAvatarPreview ? (
                           <img 
                             src={targetAvatarPreview} 
@@ -657,14 +818,17 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                           </div>
                         )}
                       </div>
+                      <span className="text-[10px] text-zinc-400 font-medium">
+                        {targetAvatarPreview ? "New Preview" : "Current Photo"}
+                      </span>
                     </div>
 
                     {/* File Drag zone */}
                     <div 
                       className={`flex-1 w-full border border-dashed rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center ${
                         targetDragActive 
-                          ? "border-amber-500 bg-amber-500/5" 
-                          : "border-zinc-800 hover:border-zinc-700 bg-zinc-950/40"
+                          ? "border-amber-500 bg-amber-500/10" 
+                          : "border-zinc-800 hover:border-zinc-700 bg-zinc-950/40 hover:bg-zinc-950/70"
                       }`}
                       onDragEnter={handleTargetDrag}
                       onDragOver={handleTargetDrag}
@@ -684,48 +848,117 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                         onChange={handleTargetFileChange} 
                         className="hidden" 
                       />
-                      <Upload className="w-5 h-5 text-zinc-500 mb-1.5" />
-                      <span className="text-xs font-semibold text-zinc-300">
+                      <Upload className="w-5 h-5 text-amber-500 mb-1.5" />
+                      <span className="text-xs font-semibold text-zinc-200">
                         {targetSelectedFile ? targetSelectedFile.name : "Choose profile picture or drop here"}
                       </span>
                       <span className="text-[10px] text-zinc-500 mt-1 font-mono uppercase tracking-wider">
                         Override for {users.find(u => u.username === selectedTarget)?.name || selectedTarget}
                       </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          targetFileInputRef.current?.click();
+                        }}
+                        className="mt-2.5 px-3 py-1 bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-amber-500/30 hover:border-amber-500/60 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        Browse Image
+                      </button>
                     </div>
                   </div>
 
                   {targetAvatarSuccess && (
-                    <p className="text-[11px] font-semibold text-emerald-400 bg-emerald-950/10 border border-emerald-900/30 p-2.5 rounded-lg flex items-center gap-1.5 font-mono">
-                      <span>✓ {targetAvatarSuccess}</span>
-                    </p>
+                    <div className="text-xs font-semibold text-emerald-400 bg-emerald-950/20 border border-emerald-900/50 p-3 rounded-lg flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>{targetAvatarSuccess}</span>
+                    </div>
                   )}
 
                   {targetAvatarError && (
-                    <p className="text-[11px] font-semibold text-red-400 bg-red-950/10 border border-red-900/30 p-2.5 rounded-lg flex items-center gap-1.5 font-mono">
-                      <span>⚠️ {targetAvatarError}</span>
-                    </p>
+                    <div className="text-xs font-semibold text-red-400 bg-red-950/20 border border-red-900/50 p-3 rounded-lg flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                      <span>{targetAvatarError}</span>
+                    </div>
                   )}
 
-                  {targetAvatarPreview && (
-                    <div className="flex gap-2 justify-end">
+                  {/* PROMINENT TARGET SAVE BUTTON SECTION */}
+                  {targetSelectedFile || targetAvatarPreview ? (
+                    <div className="p-3.5 bg-amber-500/10 border-2 border-amber-500/40 rounded-xl shadow-lg shadow-amber-500/5 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fadeIn">
+                      <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border border-amber-500/60 shrink-0 bg-zinc-900">
+                          {targetAvatarPreview ? (
+                            <img src={targetAvatarPreview} alt="Selected preview" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Camera className="w-5 h-5 text-amber-500" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>New Photo Selected for {users.find(u => u.username === selectedTarget)?.name || selectedTarget}</span>
+                          </div>
+                          <div className="text-xs font-medium text-zinc-200 truncate">
+                            {targetSelectedFile?.name || "Photo ready to apply"}
+                          </div>
+                          {targetSelectedFile && (
+                            <div className="text-[10px] text-zinc-400 font-mono">
+                              {(targetSelectedFile.size / 1024).toFixed(1)} KB • Ready to save
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTargetAvatarPreview(null);
+                            setTargetSelectedFile(null);
+                            setTargetAvatarError("");
+                            setTargetAvatarSuccess("");
+                          }}
+                          disabled={targetAvatarLoading}
+                          className="px-3.5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-bold uppercase rounded-lg border border-zinc-800 transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleTargetAvatarUpload}
+                          disabled={targetAvatarLoading}
+                          className="flex-1 sm:flex-initial px-5 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 text-xs font-black uppercase tracking-wider rounded-lg shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          {targetAvatarLoading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
+                              <span>Saving Member Picture...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-4 h-4 stroke-[3]" />
+                              <span>Save Member Profile Picture</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-3 bg-zinc-950/40 border border-zinc-900 rounded-xl">
+                      <div className="text-xs text-zinc-400 flex items-center gap-2">
+                        <Camera className="w-4 h-4 text-zinc-500" />
+                        <span>Select a picture to override profile photo for {users.find(u => u.username === selectedTarget)?.name || selectedTarget}</span>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          setTargetAvatarPreview(null);
-                          setTargetSelectedFile(null);
-                          setTargetAvatarError("");
-                          setTargetAvatarSuccess("");
-                        }}
-                        className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 text-xs font-bold uppercase rounded-lg border border-zinc-800/80 transition-colors cursor-pointer"
+                        disabled
+                        className="px-4 py-2 bg-zinc-900 text-zinc-600 border border-zinc-800/60 rounded-lg text-xs font-bold uppercase tracking-wider cursor-not-allowed opacity-60 flex items-center gap-1.5"
                       >
-                        Reset
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={targetAvatarLoading}
-                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-zinc-950 text-xs font-bold uppercase rounded-lg shadow-lg shadow-amber-500/10 transition-colors cursor-pointer flex items-center gap-1.5"
-                      >
-                        {targetAvatarLoading ? "Saving..." : "Save Picture"}
+                        <Check className="w-3.5 h-3.5" />
+                        Save Member Picture
                       </button>
                     </div>
                   )}
@@ -771,6 +1004,60 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                     {loading ? "Overriding Password..." : "Set Member Password"}
                   </button>
                 </form>
+              </div>
+
+              {/* Database Storage & Automatic Backups */}
+              <div className="bg-zinc-900/10 border border-zinc-800/80 rounded-xl p-4 sm:p-5 space-y-4">
+                <div className="flex items-center justify-between border-b border-zinc-800/60 pb-2">
+                  <h4 className="text-xs uppercase tracking-widest text-zinc-400 font-bold flex items-center gap-2">
+                    <Database className="w-3.5 h-3.5 text-amber-500" />
+                    Database Storage & Automatic Backups
+                  </h4>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Auto-Backup Active
+                  </span>
+                </div>
+
+                <div className="text-xs text-zinc-400 leading-relaxed space-y-2">
+                  <p>
+                    All member profile photos, movie nights, reviews, ratings, and EDM logs are stored together in your unified database (<span className="font-mono text-zinc-300">server-db.json</span>).
+                  </p>
+                  <p>
+                    An automatic backup copy (<span className="font-mono text-zinc-300">server-db.json.bak</span>) is created synchronously on every single save, alongside rolling historical snapshots. In the event of an unexpected interruption, the server automatically recovers from the backup.
+                  </p>
+                </div>
+
+                <div className="bg-zinc-950/60 border border-zinc-900 rounded-lg p-3 text-[11px] font-mono text-zinc-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <div className="space-y-0.5">
+                    <div className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <HardDrive className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Database File Path</span>
+                    </div>
+                    <div className="text-zinc-500 truncate max-w-xs sm:max-w-md">
+                      {backupStats?.primaryDbFile || "server-db.json"}
+                    </div>
+                  </div>
+                  {backupStats?.dbSizeBytes ? (
+                    <span className="text-zinc-400 font-semibold bg-zinc-900 px-2 py-1 rounded border border-zinc-800 shrink-0">
+                      {(backupStats.dbSizeBytes / 1024).toFixed(1)} KB
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={handleDownloadBackup}
+                    className="w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-500/60 font-bold rounded-lg text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Full Database Backup (.json)
+                  </button>
+                  <span className="block text-[10px] text-zinc-500 mt-1.5">
+                    Exports the full JSON file containing all movie nights, member avatars, reviews, and logs.
+                  </span>
+                </div>
               </div>
             </div>
           ) : (
