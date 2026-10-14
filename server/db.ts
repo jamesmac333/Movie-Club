@@ -65,50 +65,18 @@ export function getRotationIndex(selectorName: string): number {
 }
 
 const getInitialData = (): DatabaseSchema => {
-  const initialNights: MovieNight[] = [
-    {
-      id: "night-1",
-      date: "2026-10-23T19:00:00",
-      selector: "Max Smith",
-      movie: null,
-      status: "scheduled"
-    },
-    {
-      id: "night-2",
-      date: "2026-11-06T19:00:00",
-      selector: "Ash Macintosh",
-      movie: null,
-      status: "scheduled"
-    },
-    {
-      id: "night-3",
-      date: "2026-11-20T19:00:00",
-      selector: "Madison Hill",
-      movie: null,
-      status: "scheduled"
-    },
-    {
-      id: "night-4",
-      date: "2026-12-04T19:00:00",
-      selector: "Amy Walsh",
-      movie: null,
-      status: "scheduled"
-    },
-    {
-      id: "night-5",
-      date: "2026-12-18T19:00:00",
-      selector: "Tom Sakai",
-      movie: null,
-      status: "scheduled"
-    },
-    {
-      id: "night-6",
-      date: "2027-01-01T19:00:00",
-      selector: "James Macintosh",
-      movie: null,
-      status: "scheduled"
+  try {
+    const localFile = path.join(process.cwd(), "server-db.json");
+    if (fs.existsSync(localFile)) {
+      const raw = fs.readFileSync(localFile, "utf8");
+      const parsed = JSON.parse(raw);
+      if (parsed.nights && parsed.nights.length > 0) {
+        return parsed;
+      }
     }
-  ];
+  } catch (err) {
+    console.error("Failed to read bundled server-db.json:", err);
+  }
 
   const initialUsers: UserWithPassword[] = [
     { username: "James", name: "James Macintosh", isAdmin: true, isAsh: false, password: "Admin" },
@@ -120,7 +88,7 @@ const getInitialData = (): DatabaseSchema => {
   ];
 
   return {
-    nights: initialNights,
+    nights: [],
     reviews: [],
     overviews: [],
     users: initialUsers,
@@ -130,6 +98,7 @@ const getInitialData = (): DatabaseSchema => {
     edmLogs: []
   };
 };
+
 
 export function ensureFutureNights(db: DatabaseSchema) {
   // Sort nights chronologically by date
