@@ -33,7 +33,15 @@ export default function App() {
     const saved = sessionStorage.getItem("movie_club_user");
     if (saved) {
       try {
-        setCurrentUser(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        const staticMatch = MOVIE_CLUB_USERS.find(
+          u => u.username.toLowerCase() === parsed.username?.toLowerCase()
+        );
+        if (staticMatch && (!parsed.avatarUrl || parsed.avatarUrl.startsWith("/src/"))) {
+          parsed.avatarUrl = staticMatch.avatarUrl;
+          sessionStorage.setItem("movie_club_user", JSON.stringify(parsed));
+        }
+        setCurrentUser(parsed);
       } catch (e) {
         console.error("Failed to parse saved user", e);
       }
@@ -49,9 +57,11 @@ export default function App() {
         const dbUsers: User[] = await res.json();
         const merged = MOVIE_CLUB_USERS.map(staticUser => {
           const dbUser = dbUsers.find(u => u.username.toLowerCase() === staticUser.username.toLowerCase());
+          const dbAvatar = dbUser?.avatarUrl;
+          const hasValidCustomAvatar = dbAvatar && !dbAvatar.startsWith("/src/") && dbAvatar.trim().length > 0;
           return {
             ...staticUser,
-            avatarUrl: dbUser?.avatarUrl || staticUser.avatarUrl
+            avatarUrl: hasValidCustomAvatar ? dbAvatar : staticUser.avatarUrl
           };
         });
         setClubUsers(merged);

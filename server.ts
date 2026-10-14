@@ -119,7 +119,7 @@ async function startServer() {
         }
       }
 
-      if (user.avatarUrl.startsWith("http://") || user.avatarUrl.startsWith("https://")) {
+      if (user.avatarUrl.startsWith("http://") || user.avatarUrl.startsWith("https://") || user.avatarUrl.startsWith("/")) {
         return res.redirect(user.avatarUrl);
       }
 

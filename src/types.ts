@@ -1,9 +1,9 @@
-const jamesAvatar = "/src/assets/images/avatar_james_photo_1782723740133.jpg";
-const ashAvatar = "/src/assets/images/avatar_ash_photo_1782723670472.jpg";
-const tomAvatar = "/src/assets/images/avatar_tom_photo_1782723727773.jpg";
-const madisonAvatar = "/src/assets/images/avatar_madison_photo_1782723690492.jpg";
-const maxAvatar = "/src/assets/images/avatar_max_photo_1782723701420.jpg";
-const amyAvatar = "/src/assets/images/avatar_amy_photo_1782723714069.jpg";
+import jamesAvatar from "./assets/images/avatar_james_photo_1782723740133.jpg";
+import ashAvatar from "./assets/images/avatar_ash_photo_1782723670472.jpg";
+import tomAvatar from "./assets/images/avatar_tom_photo_1782723727773.jpg";
+import madisonAvatar from "./assets/images/avatar_madison_photo_1782723690492.jpg";
+import maxAvatar from "./assets/images/avatar_max_photo_1782723701420.jpg";
+import amyAvatar from "./assets/images/avatar_amy_photo_1782723714069.jpg";
 
 export interface MovieMetadata {
   title: string;
