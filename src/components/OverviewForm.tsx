@@ -27,27 +27,64 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
   // List of movie nights that have a movie selected, ready for an overview
   const reviewableNights = nights.filter(n => n.movie !== null);
 
+  const compressImage = (file: File, maxWidth = 1280, maxHeight = 1280, quality = 0.82): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxWidth || height > maxHeight) {
+            if (width / maxWidth > height / maxHeight) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(e.target?.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", quality);
+          resolve(dataUrl);
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error("Failed to read image file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const processFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
       setError("Please select an image file (PNG, JPG, etc.)");
       return;
     }
 
-    // Limit file size to 8MB in browser to keep transfers smooth
-    if (file.size > 8 * 1024 * 1024) {
-      setError("Image is too large. Please select an image under 8MB.");
+    // Support photos up to 25MB by auto-compressing them in browser canvas
+    if (file.size > 25 * 1024 * 1024) {
+      setError("Image is too large. Please select an image under 25MB.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImageBlob(reader.result as string);
-      setError("");
-    };
-    reader.onerror = () => {
-      setError("Failed to read image file. Try again.");
-    };
-    reader.readAsDataURL(file);
+    compressImage(file)
+      .then((compressedBase64) => {
+        setImageBlob(compressedBase64);
+        setError("");
+      })
+      .catch((err) => {
+        console.error("Compression error:", err);
+        setError("Failed to process image. Please try another photo.");
+      });
   };
 
   const handleDrag = (e: React.DragEvent) => {

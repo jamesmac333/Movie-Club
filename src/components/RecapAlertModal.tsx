@@ -164,13 +164,16 @@ export default function RecapAlertModal({
             </div>
           )}
 
-          {/* Full Narrative Recap Story */}
-          <div className="bg-[#191411]/60 border border-zinc-800/70 rounded-2xl sm:rounded-3xl p-5 sm:p-7 space-y-4">
-            <div className="flex items-center gap-2 text-xs font-mono text-amber-500 tracking-wider uppercase font-bold">
-              <Quote className="w-4 h-4 text-amber-500" />
-              The Night Chronicles
+          {/* Full Narrative Recap Story (Light/White Card with Dark Text for Maximum Legibility) */}
+          <div className="bg-white text-zinc-900 border-2 border-amber-300/80 rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+              <div className="flex items-center gap-2 text-xs font-mono text-amber-800 tracking-wider uppercase font-bold">
+                <Quote className="w-4 h-4 text-amber-600" />
+                The Night Chronicles • Curated by {overview.author || "Ash Macintosh"}
+              </div>
+              <span className="text-[11px] font-mono text-zinc-500 hidden sm:inline">Official Session Chronicle</span>
             </div>
-            <div className="text-zinc-200 text-base sm:text-lg leading-relaxed font-sans font-light whitespace-pre-line">
+            <div className="text-zinc-900 text-base sm:text-lg leading-relaxed font-serif sm:font-sans font-normal whitespace-pre-line selection:bg-amber-100">
               {overview.content}
             </div>
           </div>

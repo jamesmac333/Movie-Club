@@ -67,10 +67,6 @@ export default function CalendarView({
   const [selectorLoading, setSelectorLoading] = useState(false);
   const [selectorSuccess, setSelectorSuccess] = useState("");
 
-  // Re-align all rotation state
-  const [realigningAll, setRealigningAll] = useState(false);
-  const [realignAllMessage, setRealignAllMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-  const [showRealignConfirm, setShowRealignConfirm] = useState(false);
 
   const isAdmin = currentUser?.isAdmin || false;
 
@@ -116,29 +112,6 @@ export default function CalendarView({
     }
   };
 
-  const handleTriggerRealignAll = async () => {
-    if (!onRealignRotation) return;
-    setRealigningAll(true);
-    setRealignAllMessage(null);
-    try {
-      await onRealignRotation();
-      setShowRealignConfirm(false);
-      setRealignAllMessage({
-        text: "Future schedule re-aligned: Max > Ash > Madi > Amy > Tom > James!",
-        type: "success"
-      });
-      setTimeout(() => {
-        setRealignAllMessage(null);
-      }, 4500);
-    } catch (e: any) {
-      setRealignAllMessage({
-        text: e.message || "Failed to realign schedule",
-        type: "error"
-      });
-    } finally {
-      setRealigningAll(false);
-    }
-  };
 
   const handleSaveDate = async (id: string) => {
     if (!editDate) {
@@ -620,94 +593,7 @@ export default function CalendarView({
         )}
       </div>
 
-      {/* Admin Rotation Manager Banner */}
-      {isAdmin && onRealignRotation && (
-        <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-950/20 via-zinc-950/90 to-[#0c0c0c] border border-amber-500/30 shadow-lg">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/40 font-bold tracking-wider">
-                  Official Host Rotation
-                </span>
-                <span className="text-xs font-mono text-zinc-200 font-semibold flex items-center gap-1.5 flex-wrap">
-                  <span className="text-amber-400">Max</span>
-                  <span className="text-zinc-600">→</span>
-                  <span className="text-amber-400">Ash</span>
-                  <span className="text-zinc-600">→</span>
-                  <span className="text-amber-400">Madi</span>
-                  <span className="text-zinc-600">→</span>
-                  <span className="text-amber-400">Amy</span>
-                  <span className="text-zinc-600">→</span>
-                  <span className="text-amber-400">Tom</span>
-                  <span className="text-zinc-600">→</span>
-                  <span className="text-amber-400">James</span>
-                  <span className="text-[10px] text-zinc-500 font-normal">(repeats continuously)</span>
-                </span>
-              </div>
-              <p className="text-xs text-zinc-400 font-sans">
-                Admins can manually reassign any future session using the <span className="text-amber-400 font-medium">Change Host</span> button on each session card, or reset all future upcoming sessions to the standard sequence.
-              </p>
-            </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              {!showRealignConfirm ? (
-                <button
-                  type="button"
-                  onClick={() => setShowRealignConfirm(true)}
-                  className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 text-xs font-mono font-medium transition-all flex items-center gap-2 cursor-pointer shadow-sm group"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
-                  <span>Re-align All to Standard Order</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-2 bg-zinc-900/90 p-1.5 rounded-xl border border-amber-500/50 shadow-md">
-                  <span className="text-[11px] font-mono text-amber-300 px-2 font-medium">
-                    Reset order starting Max?
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleTriggerRealignAll}
-                    disabled={realigningAll}
-                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1 shadow-sm"
-                  >
-                    {realigningAll ? (
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Check className="w-3 h-3" />
-                    )}
-                    <span>Confirm</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowRealignConfirm(false)}
-                    disabled={realigningAll}
-                    className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs transition-all cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {realignAllMessage && (
-            <div
-              className={`mt-3 p-2.5 rounded-xl text-xs flex items-center gap-2 ${
-                realignAllMessage.type === "success"
-                  ? "bg-emerald-950/40 border border-emerald-900/60 text-emerald-300"
-                  : "bg-red-950/40 border border-red-900/60 text-red-300"
-              }`}
-            >
-              {realignAllMessage.type === "success" ? (
-                <CheckCircle className="w-4 h-4 shrink-0 text-emerald-400" />
-              ) : (
-                <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
-              )}
-              <span>{realignAllMessage.text}</span>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* IN THE SCHEDULE TAB: Button to toggle & reveal all previous sessions */}
       {!futureOnly && previousNights.length > 0 && (
@@ -772,7 +658,7 @@ export default function CalendarView({
         </div>
       )}
 
-      {/* UPCOMING SESSIONS LIST (Next sessions in rotation) */}
+      {/* UPCOMING SESSIONS LIST */}
       <div className="space-y-4">
         {!futureOnly && previousNights.length > 0 && (
           <div className="flex items-center justify-between px-1 pt-2 pb-1 text-xs uppercase font-mono tracking-wider text-zinc-400">
@@ -780,7 +666,6 @@ export default function CalendarView({
               <Clock className="w-3.5 h-3.5" />
               Upcoming Scheduled Sessions ({displayNights.length})
             </span>
-            <span className="text-zinc-500">6-Session Host Rotation Cycle</span>
           </div>
         )}
 
@@ -808,7 +693,7 @@ export default function CalendarView({
                   Showing next {limit} of {rawDisplayNights.length} upcoming sessions
                 </p>
                 <p className="text-[11px] text-zinc-500 font-sans">
-                  The full 6-session pipeline is queued and available in the Schedule tab.
+                  All upcoming scheduled movie nights are available in the Schedule tab.
                 </p>
               </div>
             </div>

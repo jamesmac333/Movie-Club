@@ -80,6 +80,37 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
     }
   };
 
+  const compressAvatar = (file: File, maxDim = 320, quality = 0.85): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          const minDim = Math.min(width, height);
+          const startX = (width - minDim) / 2;
+          const startY = (height - minDim) / 2;
+
+          const canvas = document.createElement("canvas");
+          canvas.width = maxDim;
+          canvas.height = maxDim;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(e.target?.result as string);
+            return;
+          }
+          // Square crop and compress
+          ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, maxDim, maxDim);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error("Failed to read image"));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const processTargetFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
       setTargetAvatarError("Please select an image file (PNG, JPG, etc.)");
@@ -87,15 +118,15 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
     }
     setTargetAvatarError("");
     setTargetAvatarSuccess("");
-    setTargetSelectedFile(file);
+    setSelectedFile(file);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setTargetAvatarPreview(event.target.result as string);
-      }
-    };
-    reader.readAsDataURL(file);
+    compressAvatar(file)
+      .then((dataUrl) => {
+        setTargetAvatarPreview(dataUrl);
+      })
+      .catch(() => {
+        setTargetAvatarError("Failed to process image. Try another photo.");
+      });
   };
 
   const handleTargetAvatarUpload = async (e: React.FormEvent) => {
@@ -169,13 +200,13 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
     setAvatarSuccess("");
     setSelectedFile(file);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setAvatarPreview(event.target.result as string);
-      }
-    };
-    reader.readAsDataURL(file);
+    compressAvatar(file)
+      .then((dataUrl) => {
+        setAvatarPreview(dataUrl);
+      })
+      .catch(() => {
+        setAvatarError("Failed to process image. Try another photo.");
+      });
   };
 
   const handleAvatarUpload = async (e: React.FormEvent) => {

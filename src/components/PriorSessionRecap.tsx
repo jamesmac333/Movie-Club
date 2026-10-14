@@ -133,26 +133,26 @@ export default function PriorSessionRecap({ nights, reviews, overviews, onOpenRe
             </div>
           </div>
 
-          {/* Overview text content */}
+          {/* Overview text content (Light/White Card with Dark Text for effortless reading) */}
           {overview ? (
-            <div className="space-y-3">
-              <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="space-y-3 bg-white text-zinc-900 border border-amber-200/90 rounded-2xl p-5 sm:p-6 shadow-md">
+              <div className="flex items-start justify-between gap-3 flex-wrap border-b border-zinc-200 pb-2.5">
                 <div className="space-y-0.5">
-                  <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">Recap by Ash Macintosh</span>
-                  <h5 className="text-lg font-serif font-semibold text-zinc-200">{overview.title}</h5>
+                  <span className="text-[10px] font-mono text-amber-800 font-bold uppercase tracking-wider block">Recap by {overview.author || "Ash Macintosh"}</span>
+                  <h5 className="text-lg font-serif font-bold text-zinc-900">{overview.title}</h5>
                 </div>
                 {onOpenRecapModal && (
                   <button
                     onClick={() => onOpenRecapModal(overview, priorNight)}
-                    className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg border border-amber-500/30 hover:border-amber-500/50 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
+                    className="p-1.5 text-amber-800 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 rounded-lg border border-amber-300 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
                     title="Read in Pop-up Window"
                   >
-                    <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                    <BookOpen className="w-3.5 h-3.5 text-amber-700" />
                     <span>Pop-up Window</span>
                   </button>
                 )}
               </div>
-              <p className="text-zinc-400 text-sm leading-relaxed font-sans font-light">
+              <p className="text-zinc-800 text-sm sm:text-base leading-relaxed font-sans font-normal">
                 {overview.content}
               </p>
             </div>

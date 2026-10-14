@@ -331,6 +331,18 @@ function loadDbFromDisk(): DatabaseSchema {
     }
     if (!Array.isArray(parsed.edmLogs)) parsed.edmLogs = [];
 
+    // Clean up any historical logs where full uncompressed base64 photos were saved
+    let edmLogsCleaned = false;
+    for (const log of parsed.edmLogs) {
+      if (log.htmlContent && log.htmlContent.includes("data:image/") && log.htmlContent.length > 50000) {
+        log.htmlContent = log.htmlContent.replace(/src="data:image\/[^;]+;base64,[^"]{1000,}"/g, 'src="[Attached high-res photo in email]"');
+        edmLogsCleaned = true;
+      }
+    }
+    if (edmLogsCleaned) {
+      saveDbToDiskAtomic(parsed);
+    }
+
     // Auto-schedule future nights to ensure at least 8 are always in the pipeline
     const originalLength = parsed.nights.length;
     ensureFutureNights(parsed);

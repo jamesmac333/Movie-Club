@@ -335,21 +335,21 @@ export default function FeedView({
                   </div>
                 </div>
 
-                {/* Night Overview Section (Collapsed by default, expand to read all) */}
+                {/* Night Overview Section: Clean White Card with Dark Text for Maximum Legibility */}
                 {overview ? (
-                  <div className="space-y-3 bg-zinc-950/40 border border-zinc-900/80 rounded-2xl p-5 sm:p-6 transition-colors">
+                  <div className="space-y-3 bg-white text-zinc-900 border border-amber-200/90 rounded-2xl p-5 sm:p-6 shadow-md transition-colors">
                     <div className="space-y-1">
                       <div className="flex items-center justify-between gap-4 flex-wrap">
-                        <span className="text-xs font-mono text-amber-500/80 tracking-widest uppercase">The Next Day Overview by Ash</span>
+                        <span className="text-xs font-mono text-amber-800 font-bold tracking-widest uppercase">The Next Day Overview by Ash</span>
                         <div className="flex items-center gap-2">
                           {onOpenRecapModal && (
                             <button
                               type="button"
                               onClick={() => onOpenRecapModal(overview, night)}
-                              className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg border border-amber-500/30 hover:border-amber-500/50 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
+                              className="p-1.5 text-amber-800 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 rounded-lg border border-amber-300 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
                               title="Read in Pop-up Window"
                             >
-                              <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                              <BookOpen className="w-3.5 h-3.5 text-amber-700" />
                               <span>Pop-up Window</span>
                             </button>
                           )}
@@ -363,7 +363,7 @@ export default function FeedView({
                                   }
                                 }
                               }}
-                              className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg border border-transparent hover:border-red-900/40 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
+                              className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
                               title="Delete Overview Recap"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -376,11 +376,11 @@ export default function FeedView({
                       {/* Overview Title: Clicking toggles expand/collapse */}
                       <h4 
                         onClick={() => toggleOverviewExpand(night.id)}
-                        className="text-xl sm:text-2xl font-serif font-bold text-zinc-100 tracking-wide hover:text-amber-400 transition-colors cursor-pointer flex items-center gap-2 group/title"
+                        className="text-xl sm:text-2xl font-serif font-bold text-zinc-900 tracking-wide hover:text-amber-700 transition-colors cursor-pointer flex items-center gap-2 group/title"
                         title={isOverviewExpanded ? "Click to collapse overview" : "Click to expand full overview"}
                       >
                         <span>{overview.title}</span>
-                        <span className="text-zinc-600 group-hover/title:text-amber-400 transition-colors">
+                        <span className="text-zinc-400 group-hover/title:text-amber-700 transition-colors">
                           {isOverviewExpanded ? (
                             <ChevronUp className="w-4 h-4 inline" />
                           ) : (
@@ -395,8 +395,8 @@ export default function FeedView({
                       onClick={() => !isOverviewExpanded && toggleOverviewExpand(night.id)}
                       className={`space-y-3 ${!isOverviewExpanded ? "cursor-pointer group/ov" : ""}`}
                     >
-                      <p className={`text-zinc-300 text-sm sm:text-base leading-relaxed font-sans font-light transition-colors ${
-                        !isOverviewExpanded ? "line-clamp-2 sm:line-clamp-3 group-hover/ov:text-zinc-100" : ""
+                      <p className={`text-zinc-800 text-sm sm:text-base leading-relaxed font-sans font-normal transition-colors ${
+                        !isOverviewExpanded ? "line-clamp-2 sm:line-clamp-3 group-hover/ov:text-zinc-950" : ""
                       }`}>
                         {overview.content}
                       </p>
@@ -409,7 +409,7 @@ export default function FeedView({
                             e.stopPropagation();
                             toggleOverviewExpand(night.id);
                           }}
-                          className="text-amber-400 hover:text-amber-300 text-xs font-mono font-semibold flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-all cursor-pointer"
+                          className="text-amber-800 hover:text-amber-950 text-xs font-mono font-bold flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-amber-100 hover:bg-amber-200 border border-amber-300 transition-all cursor-pointer"
                         >
                           {isOverviewExpanded ? (
                             <>

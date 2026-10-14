@@ -72,18 +72,22 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
 
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en" xml:lang="en" class="notranslate" translate="no">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Language" content="en">
+  <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <title>${overview.title}</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #080808; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f4f4f5;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #080808; padding: 32px 16px;">
+<body class="notranslate" translate="no" style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #18181b; -webkit-text-size-adjust: 100%;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f3f4f6; padding: 32px 16px;">
     <tr>
       <td align="center">
-        <!-- Main Container -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #120e0c; border: 1px solid #3f2e21; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+        <!-- Main Container: Light White Editorial Card -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.06);">
           
           <!-- Golden Velvet Header Ribbon -->
           <tr>
@@ -92,18 +96,18 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
 
           <!-- Branding & Category Header -->
           <tr>
-            <td style="padding: 28px 32px 16px; background-color: #16110e; border-bottom: 1px solid #281f18;">
+            <td style="padding: 28px 32px 18px; background-color: #fafaf9; border-bottom: 1px solid #e7e5e4;">
               <table width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td>
-                    <span style="font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: bold; letter-spacing: 0.25em; color: #f59e0b; text-transform: uppercase;">
-                      ★ MOVIE CLUB ARCHIVES • FRESH RECAP PUBLISHED
+                    <span style="font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: bold; letter-spacing: 0.22em; color: #b45309; text-transform: uppercase;">
+                      ★ MOVIE CLUB ARCHIVES • OFFICIAL SESSION CHRONICLE
                     </span>
-                    <h1 style="margin: 8px 0 4px; font-size: 24px; font-weight: 800; font-family: Georgia, serif; font-style: italic; color: #fafafa; letter-spacing: -0.02em;">
+                    <h1 style="margin: 10px 0 6px; font-size: 26px; font-weight: 800; font-family: Georgia, serif; font-style: italic; color: #09090b; letter-spacing: -0.02em;">
                       ${overview.title}
                     </h1>
-                    <p style="margin: 0; font-size: 13px; color: #a1a1aa;">
-                      Curated & Written by <strong style="color: #fbbf24;">${overview.author || 'Ash Macintosh'}</strong> • Session of ${formattedDate}
+                    <p style="margin: 0; font-size: 13px; color: #52525b;">
+                      Curated & Written by <strong style="color: #b45309;">${overview.author || 'Ash Macintosh'}</strong> • Session of ${formattedDate}
                     </p>
                   </td>
                 </tr>
@@ -114,8 +118,8 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
           <!-- Hero Gathering Photo -->
           ${overview.imageUrl ? `
           <tr>
-            <td style="padding: 0; background-color: #000000; text-align: center;">
-              <img src="${overview.imageUrl}" alt="${overview.title}" style="width: 100%; max-height: 420px; object-fit: cover; display: block; border-bottom: 1px solid #281f18;" />
+            <td style="padding: 0; background-color: #f4f4f5; text-align: center;">
+              <img src="${overview.imageUrl}" alt="${overview.title}" style="width: 100%; max-height: 440px; object-fit: cover; display: block; border-bottom: 1px solid #e7e5e4;" />
             </td>
           </tr>
           ` : ''}
@@ -123,25 +127,25 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
           <!-- Film Badge & Quick Facts -->
           ${movie ? `
           <tr>
-            <td style="padding: 20px 32px; background-color: #191310; border-bottom: 1px solid #281f18;">
+            <td style="padding: 22px 32px; background-color: #fdfbf7; border-bottom: 1px solid #f2ede4;">
               <table width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   ${movie.posterUrl ? `
                   <td width="80" valign="top" style="padding-right: 18px;">
-                    <img src="${movie.posterUrl}" alt="${movie.title}" width="80" style="border-radius: 12px; border: 1px solid #3f2e21; display: block; box-shadow: 0 4px 14px rgba(0,0,0,0.6);" />
+                    <img src="${movie.posterUrl}" alt="${movie.title}" width="80" style="border-radius: 12px; border: 1px solid #e5e7eb; display: block; box-shadow: 0 4px 14px rgba(0,0,0,0.08);" />
                   </td>
                   ` : ''}
                   <td valign="middle">
-                    <span style="font-family: 'Courier New', Courier, monospace; font-size: 10px; color: #f59e0b; font-weight: bold; text-transform: uppercase; letter-spacing: 0.15em;">FEATURED FILM</span>
-                    <h2 style="margin: 4px 0; font-size: 19px; font-weight: bold; color: #fafafa;">${movie.title} <span style="font-size: 14px; color: #71717a; font-weight: normal;">(${movie.year || ''})</span></h2>
-                    <p style="margin: 0; font-size: 12px; color: #a1a1aa; line-height: 1.4;">
-                      Directed by <strong style="color: #d4d4d8;">${movie.director || 'N/A'}</strong> • Host: <strong style="color: #fbbf24;">${night.selector}</strong>
+                    <span style="font-family: 'Courier New', Courier, monospace; font-size: 10px; color: #b45309; font-weight: bold; text-transform: uppercase; letter-spacing: 0.15em;">FEATURED FILM</span>
+                    <h2 style="margin: 4px 0; font-size: 20px; font-weight: bold; color: #09090b;">${movie.title} <span style="font-size: 14px; color: #71717a; font-weight: normal;">(${movie.year || ''})</span></h2>
+                    <p style="margin: 0; font-size: 13px; color: #52525b; line-height: 1.4;">
+                      Directed by <strong style="color: #18181b;">${movie.director || 'N/A'}</strong> • Host: <strong style="color: #b45309;">${night.selector}</strong>
                       ${movie.runtime ? ` • ${movie.runtime} min` : ''}
                       ${movie.genre ? ` • ${movie.genre}` : ''}
                     </p>
                     ${avgRating ? `
                     <div style="margin-top: 8px;">
-                      <span style="display: inline-block; padding: 3px 8px; background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 6px; font-size: 11px; font-weight: bold; color: #fbbf24; font-family: 'Courier New', Courier, monospace;">
+                      <span style="display: inline-block; padding: 3px 10px; background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; font-size: 11px; font-weight: bold; color: #92400e; font-family: 'Courier New', Courier, monospace;">
                         ★ CLUB SCORE: ${avgRating} / 5.0 (${nightReviews.length} reviews)
                       </span>
                     </div>
@@ -153,31 +157,31 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
           </tr>
           ` : ''}
 
-          <!-- Ash's Night Overview Narrative Body -->
+          <!-- Ash's Night Overview Narrative Body (Light White Background with Dark, Ultra-Legible Text) -->
           <tr>
-            <td style="padding: 28px 32px; background-color: #120e0c;">
-              <h3 style="margin: 0 0 12px; font-size: 12px; font-family: 'Courier New', Courier, monospace; font-weight: bold; letter-spacing: 0.2em; text-transform: uppercase; color: #a1a1aa;">
+            <td style="padding: 32px 32px; background-color: #ffffff;">
+              <h3 style="margin: 0 0 14px; font-size: 12px; font-family: 'Courier New', Courier, monospace; font-weight: bold; letter-spacing: 0.2em; text-transform: uppercase; color: #71717a;">
                 THE NIGHT'S CHRONICLE
               </h3>
-              <div style="font-size: 15px; line-height: 1.7; color: #e4e4e7; white-space: pre-wrap;">${overview.content}</div>
+              <div style="font-size: 16px; line-height: 1.85; color: #18181b; font-family: Georgia, 'Times New Roman', serif; white-space: pre-wrap;">${overview.content}</div>
             </td>
           </tr>
 
           <!-- Ash's Top Review Highlight (if present) -->
           ${topReview ? `
           <tr>
-            <td style="padding: 0 32px 28px;">
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: rgba(245, 158, 11, 0.06); border: 1px dashed rgba(245, 158, 11, 0.35); border-radius: 16px; padding: 18px 20px;">
+            <td style="padding: 0 32px 28px; background-color: #ffffff;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #fffbeb; border: 1px dashed #fcd34d; border-radius: 16px; padding: 18px 20px;">
                 <tr>
                   <td>
-                    <span style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: bold; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.2em;">
+                    <span style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: bold; color: #b45309; text-transform: uppercase; letter-spacing: 0.2em;">
                       ${topReview.isStarred ? "★ ASH'S CURATED BEST REVIEW PICK" : "★ TOP CLUB REVIEW"}
                     </span>
-                    <p style="margin: 8px 0; font-size: 14px; font-style: italic; color: #fef3c7; line-height: 1.5;">
+                    <p style="margin: 8px 0; font-size: 15px; font-style: italic; color: #78350f; line-height: 1.55; font-family: Georgia, serif;">
                       "${topReview.comment}"
                     </p>
-                    <div style="font-size: 12px; color: #fbbf24; font-weight: bold;">
-                      — ${topReview.user} <span style="color: #71717a; font-weight: normal;">(Score: ${topReview.rating}/5)</span>
+                    <div style="font-size: 13px; color: #92400e; font-weight: bold;">
+                      — ${topReview.user} <span style="color: #78716c; font-weight: normal;">(Score: ${topReview.rating}/5)</span>
                     </div>
                   </td>
                 </tr>
@@ -188,8 +192,8 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
 
           <!-- Call to action button -->
           <tr>
-            <td align="center" style="padding: 12px 32px 36px;">
-              <a href="${process.env.APP_URL || 'https://movieclub.local'}" style="display: inline-block; background-color: #f59e0b; color: #09090b; font-weight: bold; font-size: 13px; text-decoration: none; padding: 12px 28px; border-radius: 12px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);">
+            <td align="center" style="padding: 8px 32px 36px; background-color: #ffffff;">
+              <a href="${process.env.APP_URL || 'https://movieclub.local'}" style="display: inline-block; background-color: #d97706; color: #ffffff; font-weight: bold; font-size: 13px; text-decoration: none; padding: 13px 30px; border-radius: 12px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(217, 119, 6, 0.35);">
                 Enter Movie Club Platform →
               </a>
             </td>
@@ -197,9 +201,9 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
 
           <!-- Footer -->
           <tr>
-            <td style="padding: 20px 32px; background-color: #0b0907; border-top: 1px solid #281f18; text-align: center;">
-              <p style="margin: 0; font-size: 11px; color: #71717a; font-family: 'Courier New', Courier, monospace;">
-                Movie Club Fortnightly NZT 19:00 • Sent to official club EDM distribution list
+            <td style="padding: 22px 32px; background-color: #fafaf9; border-top: 1px solid #e7e5e4; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #78716c; font-family: 'Courier New', Courier, monospace;">
+                Movie Club Fortnightly NZT 19:00 • Sent in English to official club EDM distribution list
               </p>
             </td>
           </tr>
@@ -213,6 +217,7 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
   `.trim();
 }
 
+
 /**
  * Generate cinema styling HTML email for newly selected movie
  */
@@ -222,13 +227,16 @@ export function generateMovieSelectedEmailHtml(night: MovieNight): string {
 
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en" xml:lang="en" class="notranslate" translate="no">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Language" content="en">
+  <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <title>The Curtain Rises: ${movie.title}</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #080808; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f4f4f5;">
+<body class="notranslate" translate="no" style="margin: 0; padding: 0; background-color: #080808; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f4f4f5;">
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #080808; padding: 32px 16px;">
     <tr>
       <td align="center">
@@ -244,7 +252,7 @@ export function generateMovieSelectedEmailHtml(night: MovieNight): string {
           <tr>
             <td style="padding: 32px 32px 20px; text-align: center; background-color: #191310; border-bottom: 1px dashed #3f2e21;">
               <span style="font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: bold; letter-spacing: 0.25em; color: #fbbf24; text-transform: uppercase;">
-                ★ THE CURTAIN RISES • NEXT FILM SELECTED ★
+                ★ THE CURTAIN RISES • NEXT FILM SELECTED (ENGLISH EDITION) ★
               </span>
               <h1 style="margin: 12px 0 6px; font-size: 28px; font-weight: 900; font-family: Georgia, serif; font-style: italic; color: #fafafa; letter-spacing: -0.02em;">
                 A Selection is Made!
@@ -343,13 +351,16 @@ export function generateTestEmailHtml(adminName: string, recipientCount: number)
 
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en" xml:lang="en" class="notranslate" translate="no">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Language" content="en">
+  <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <title>Movie Club EDM Test Transmission</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #080808; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f4f4f5;">
+<body class="notranslate" translate="no" style="margin: 0; padding: 0; background-color: #080808; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f4f4f5;">
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #080808; padding: 32px 16px;">
     <tr>
       <td align="center">
@@ -491,12 +502,22 @@ export async function sendEdm({
   return log;
 }
 
+function sanitizeHtmlForLog(htmlStr?: string): string {
+  if (!htmlStr) return "";
+  // Replace large inline base64 image URIs in logs to prevent bloating server-db.json
+  return htmlStr.replace(/src="data:image\/[^;]+;base64,[^"]{1000,}"/g, 'src="[Attached high-res photo in email]"');
+}
+
 async function recordEdmLog(log: EdmLog) {
   try {
+    const cleanLog: EdmLog = {
+      ...log,
+      htmlContent: sanitizeHtmlForLog(log.htmlContent)
+    };
     await mutateDb((currentDb) => {
       if (!currentDb.edmLogs) currentDb.edmLogs = [];
       // Keep last 50 logs for tidy history
-      currentDb.edmLogs.unshift(log);
+      currentDb.edmLogs.unshift(cleanLog);
       if (currentDb.edmLogs.length > 50) {
         currentDb.edmLogs = currentDb.edmLogs.slice(0, 50);
       }

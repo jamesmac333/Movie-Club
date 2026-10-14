@@ -98,11 +98,51 @@ async function startServer() {
     }
   });
 
-  // Auth: Get users
+  // Auth: Get user avatar image directly as binary stream
+  app.get("/api/users/:username/avatar", (req, res) => {
+    try {
+      const { username } = req.params;
+      const db = readDb();
+      const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+      if (!user || !user.avatarUrl) {
+        return res.status(404).send("Avatar not found");
+      }
+
+      if (user.avatarUrl.startsWith("data:image/")) {
+        const matches = user.avatarUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+        if (matches) {
+          const mime = matches[1];
+          const imgBuffer = Buffer.from(matches[2], "base64");
+          res.setHeader("Content-Type", `image/${mime === "jpg" ? "jpeg" : mime}`);
+          res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+          return res.send(imgBuffer);
+        }
+      }
+
+      if (user.avatarUrl.startsWith("http://") || user.avatarUrl.startsWith("https://")) {
+        return res.redirect(user.avatarUrl);
+      }
+
+      res.status(404).send("Invalid avatar format");
+    } catch (err) {
+      res.status(500).send("Error serving avatar");
+    }
+  });
+
+  // Auth: Get users (lightweight, safe for mobile & proxies)
   app.get("/api/users", (req, res) => {
     try {
       const db = readDb();
-      const safeUsers = db.users.map(({ password, ...u }) => u);
+      const safeUsers = db.users.map(({ password, ...u }) => {
+        if (u.avatarUrl && u.avatarUrl.startsWith("data:image/")) {
+          return {
+            ...u,
+            avatarUrl: `/api/users/${encodeURIComponent(u.username)}/avatar`
+          };
+        }
+        return u;
+      });
+      res.setHeader("Cache-Control", "no-cache");
       res.json(safeUsers);
     } catch (error) {
       res.status(500).json({ error: "Failed to load users" });
@@ -658,12 +698,58 @@ async function startServer() {
     }
   });
 
-  // 9. Get all night overviews
+  // 9.5. Get overview memory gathering photo directly as binary image stream
+  app.get("/api/overviews/:id/image", (req, res) => {
+    try {
+      const { id } = req.params;
+      const db = readDb();
+      const ov = (db.overviews || []).find((o) => o.id === id);
+      if (!ov || !ov.imageUrl) {
+        return res.status(404).send("Image not found");
+      }
+
+      if (ov.imageUrl.startsWith("data:image/")) {
+        const matches = ov.imageUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+        if (matches) {
+          const mime = matches[1];
+          const imgBuffer = Buffer.from(matches[2], "base64");
+          res.setHeader("Content-Type", `image/${mime === "jpg" ? "jpeg" : mime}`);
+          res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+          return res.send(imgBuffer);
+        }
+      }
+
+      if (ov.imageUrl.startsWith("http://") || ov.imageUrl.startsWith("https://")) {
+        return res.redirect(ov.imageUrl);
+      }
+
+      res.status(404).send("Invalid image format");
+    } catch (err) {
+      console.error("Failed to serve overview image:", err);
+      res.status(500).send("Error serving image");
+    }
+  });
+
+  // 9. Get all night overviews (lightweight, safe for mobile & proxies)
   app.get("/api/overviews", (req, res) => {
     try {
       const db = readDb();
-      res.json(db.overviews);
+      // Transform raw inline data URIs into lightweight /api/overviews/:id/image URLs.
+      // This reduces payload from 37.5MB down to ~1.5KB, eliminating Cloud Run 32MB errors,
+      // Vercel 4.5MB proxy errors, and mobile browser crashes!
+      const safeOverviews = (db.overviews || []).map((ov) => {
+        if (ov.imageUrl && ov.imageUrl.startsWith("data:image/")) {
+          return {
+            ...ov,
+            imageUrl: `/api/overviews/${ov.id}/image`
+          };
+        }
+        return ov;
+      });
+      res.setHeader("Cache-Control", "no-cache");
+      res.json(safeOverviews);
     } catch (error) {
+      console.error("Failed to fetch overviews:", error);
       res.status(500).json({ error: "Failed to fetch night overviews" });
     }
   });
@@ -736,7 +822,15 @@ async function startServer() {
         console.error("Failed to initiate overview EDM:", err);
       }
 
-      res.json({ message: "Night overview posted successfully", overview: newOverview });
+      res.json({
+        message: "Night overview posted successfully",
+        overview: {
+          ...newOverview,
+          imageUrl: newOverview.imageUrl.startsWith("data:image/")
+            ? `/api/overviews/${newOverview.id}/image`
+            : newOverview.imageUrl
+        }
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to save night overview" });
     }

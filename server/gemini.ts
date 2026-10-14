@@ -103,13 +103,17 @@ export async function fetchMovieMetadata(title: string, selector: string): Promi
   
   const prompt = `Search for the movie "${title}" on TMDb (The Movie Database) or other official sources.
   Using your Google Search tool, find the official details of this movie.
+  
+  CRITICAL LANGUAGE REQUIREMENT:
+  All returned fields MUST be in English only. Never output Japanese, Chinese, or any non-English language in any field. If the movie is a foreign or international film, translate the synopsis and overview completely and accurately into natural, compelling English.
+  
   Retrieve:
-  1. The official movie title.
+  1. The official movie title in English (or internationally recognized English release title).
   2. The release year of the movie.
   3. The primary director.
-  4. Comma-separated list of genres (e.g. Action, Sci-Fi).
+  4. Comma-separated list of genres in English (e.g. Action, Sci-Fi, Drama).
   5. Movie duration/runtime in minutes (integer, e.g. 148).
-  6. A compelling 2-3 sentence synopsis/overview.
+  6. A compelling 2-3 sentence synopsis/overview written entirely in English.
   7. Age rating (e.g. PG, PG-13, R, M, etc.).
   8. The official TMDb poster image URL. Official TMDb posters usually follow the format "https://image.tmdb.org/t/p/w500/..." or "https://image.tmdb.org/t/p/original/...". Find the poster path and construct a high-quality "https://image.tmdb.org/t/p/w500/<poster_path_hash>.jpg" URL. If you can't find the direct tmdb poster path, find a high-quality poster image URL for this specific movie.
   9. The official YouTube trailer video URL for this movie (e.g. "https://www.youtube.com/watch?v=dQw4w9WgXcQ"). If you cannot find a direct YouTube trailer link, generate a search results link on YouTube like "https://www.youtube.com/results?search_query=..." for the official movie trailer.`;

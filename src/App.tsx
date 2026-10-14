@@ -82,17 +82,35 @@ export default function App() {
         fetch("/api/overviews")
       ]);
 
-      if (!nightsRes.ok || !reviewsRes.ok || !overviewsRes.ok) {
+      // Nights are the core application data
+      if (!nightsRes.ok) {
         throw new Error("Failed to load server data");
       }
 
       const nightsData = await nightsRes.json();
-      const reviewsData = await reviewsRes.json();
-      const overviewsData = await overviewsRes.json();
-
       setNights(nightsData);
-      setReviews(reviewsData);
-      setOverviews(overviewsData);
+
+      // Reviews resilience
+      if (reviewsRes.ok) {
+        try {
+          const reviewsData = await reviewsRes.json();
+          setReviews(reviewsData);
+        } catch (revErr) {
+          console.warn("Could not parse reviews JSON", revErr);
+        }
+      }
+
+      // Overviews recap resilience (does not take down the entire club portal if an overview photo is large)
+      if (overviewsRes.ok) {
+        try {
+          const overviewsData = await overviewsRes.json();
+          setOverviews(overviewsData);
+        } catch (ovErr) {
+          console.warn("Could not parse overviews JSON", ovErr);
+        }
+      } else {
+        console.warn("Overviews endpoint returned status", overviewsRes.status);
+      }
     } catch (e: any) {
       setError("Failed to connect to the Movie Club server. Please refresh.");
       console.error(e);
@@ -109,13 +127,16 @@ export default function App() {
         fetch("/api/overviews")
       ]);
 
-      if (nightsRes.ok && reviewsRes.ok && overviewsRes.ok) {
+      if (nightsRes.ok) {
         const nightsData = await nightsRes.json();
-        const reviewsData = await reviewsRes.json();
-        const overviewsData = await overviewsRes.json();
-
         setNights(nightsData);
+      }
+      if (reviewsRes.ok) {
+        const reviewsData = await reviewsRes.json();
         setReviews(reviewsData);
+      }
+      if (overviewsRes.ok) {
+        const overviewsData = await overviewsRes.json();
         setOverviews(overviewsData);
       }
     } catch (e) {
