@@ -61,6 +61,8 @@ export default function App() {
           const hasValidCustomAvatar = dbAvatar && !dbAvatar.startsWith("/src/") && dbAvatar.trim().length > 0;
           return {
             ...staticUser,
+            isAdmin: dbUser?.isAdmin !== undefined ? dbUser.isAdmin : staticUser.isAdmin,
+            isAsh: dbUser?.isAsh !== undefined ? dbUser.isAsh : staticUser.isAsh,
             avatarUrl: hasValidCustomAvatar ? dbAvatar : staticUser.avatarUrl
           };
         });
@@ -552,7 +554,8 @@ export default function App() {
       throw new Error(errData.error || "Failed to publish overview recap");
     }
 
-    const createdOverview: NightOverview = await response.json();
+    const data = await response.json();
+    const createdOverview: NightOverview = data.overview || data;
     await fetchInitialData();
     setActiveTab("feed"); // Redirect to feed to let everyone see!
 

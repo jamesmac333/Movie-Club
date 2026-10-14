@@ -2,56 +2,394 @@
   "nights": [
     {
       "id": "night-1",
-      "date": "2026-10-23T19:00:00",
+      "date": "2026-07-18T07:00:00.000Z",
       "selector": "Max Smith",
-      "movie": null,
-      "status": "scheduled"
+      "movie": {
+        "title": "The Lord of the Rings: The Return of the King",
+        "year": 2003,
+        "director": "Peter Jackson",
+        "genre": "Adventure, Fantasy, Action",
+        "runtime": 201,
+        "overview": "As armies mass for a final battle that will decide the fate of the world--and powerful, ancient forces of Light and Dark compete to determine the outcome--one member of the Fellowship of the Ring is revealed as the noble heir to the throne of the Kings of Men. Yet, the sole hope for triumph over evil lies with a brave hobbit, Frodo, who, accompanied by his loyal friend Sam and the hideous, wretched Gollum, ventures deep into the very dark heart of Mordor on his seemingly impossible quest to destroy the Ring of Power.​",
+        "rating": "PG-13",
+        "posterUrl": "https://image.tmdb.org/t/p/w500/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg",
+        "selectedBy": "Max Smith",
+        "trailerUrl": "https://www.youtube.com/watch?v=zckJCxYxn1g"
+      },
+      "status": "watched"
     },
     {
       "id": "night-2",
-      "date": "2026-11-06T19:00:00",
+      "date": "2026-08-01T07:00:00.000Z",
       "selector": "Ash Macintosh",
+      "movie": {
+        "title": "Prisoners",
+        "year": 2013,
+        "director": "Denis Villeneuve",
+        "genre": "Drama, Thriller, Crime",
+        "runtime": 153,
+        "overview": "After his six-year-old daughter is abducted, a desperate father takes justice into his own hands when he loses faith in the detective leading the investigation, setting both men on a collision course as the search descends into obsession and moral compromise.",
+        "rating": "R",
+        "posterUrl": "https://image.tmdb.org/t/p/w500/uhviyknTT5cEQXbn6vWIqfM4vGm.jpg",
+        "selectedBy": "Ash Macintosh",
+        "trailerUrl": "https://www.youtube.com/watch?v=yszyHq-S9W8"
+      },
+      "status": "watched"
+    },
+    {
+      "id": "night-3",
+      "date": "2026-08-21T07:00:00.000Z",
+      "selector": "Madison Hill",
+      "movie": {
+        "title": "Heavenly Creatures",
+        "year": 1994,
+        "director": "Peter Jackson",
+        "genre": "Drama, Fantasy",
+        "runtime": 109,
+        "overview": "Precocious teenager Juliet moves to New Zealand with her family and soon befriends the quiet, brooding Pauline through their shared love of fantasy and literature. This friendship gradually develops into an intense and obsessive bond.",
+        "rating": "R",
+        "posterUrl": "https://image.tmdb.org/t/p/w500/uvb86wVCIqD3Rlbr0GTNgWDF7Zo.jpg",
+        "selectedBy": "Madison Hill",
+        "trailerUrl": "https://www.youtube.com/watch?v=_bIUDcnHDlg"
+      },
+      "status": "watched"
+    },
+    {
+      "id": "night-4",
+      "date": "2026-08-28T19:00:00",
+      "selector": "Amy Walsh",
+      "movie": {
+        "title": "Promising Young Woman",
+        "year": 2020,
+        "director": "Emerald Fennell",
+        "genre": "Thriller, Crime, Drama",
+        "runtime": 114,
+        "overview": "A young woman, traumatized by a tragic event in her past, seeks out vengeance against those who crossed her path.",
+        "rating": "R",
+        "posterUrl": "https://image.tmdb.org/t/p/w500/73QoFJFmUrJfDG2EynFjNc5gJxk.jpg",
+        "selectedBy": "Amy Walsh",
+        "trailerUrl": "https://www.youtube.com/watch?v=we5yV7Gc9rY"
+      },
+      "status": "watched"
+    },
+    {
+      "id": "night-5",
+      "date": "2026-09-11T19:00:00",
+      "selector": "Tom Sakai",
+      "movie": {
+        "title": "Parasite",
+        "year": 2019,
+        "director": "Bong Joon Ho",
+        "genre": "Comedy, Thriller, Drama",
+        "runtime": 133,
+        "overview": "All unemployed, Ki-taek's family takes peculiar interest in the wealthy and glamorous Parks for their livelihood until they get entangled in an unexpected incident.",
+        "rating": "R",
+        "posterUrl": "https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
+        "selectedBy": "Tom Sakai",
+        "trailerUrl": "https://www.youtube.com/watch?v=bM9QabAojCg"
+      },
+      "status": "watched"
+    },
+    {
+      "id": "night-6",
+      "date": "2026-09-25T19:00:00",
+      "selector": "James Macintosh",
+      "movie": {
+        "title": "The King of Kong: A Fistful of Quarters",
+        "year": 2007,
+        "director": "Seth Gordon",
+        "genre": "Documentary",
+        "runtime": 83,
+        "overview": "In this hilarious arcade showdown, a humble novice goes head-to-head against the reigning Donkey Kong champ in a confrontation that rocks the gaming world to its processors! For over 20 years, Billy Mitchell has owned the throne of the Donkey Kong world. No one could beat his top score until now. Newcomer Steve Wiebe claims to have beaten the unbeatable, but Mitchell isn't ready to relinquish his crown without a fight. Go behind the barrels as the two battle it out in a vicious war to earn the title of the true King of Kong.",
+        "rating": "PG-13",
+        "posterUrl": "https://image.tmdb.org/t/p/w500/wACtXGiO08EBbJhqsD2nUzPsrKe.jpg",
+        "selectedBy": "James Macintosh",
+        "trailerUrl": "https://www.youtube.com/watch?v=L5XvArGGIzk"
+      },
+      "status": "watched"
+    },
+    {
+      "id": "night-7",
+      "date": "2026-10-09T19:00:00",
+      "selector": "Max Smith",
+      "movie": {
+        "title": "The Long Walk",
+        "year": 2025,
+        "director": "Francis Lawrence",
+        "genre": "Science Fiction, Thriller, Horror",
+        "runtime": 108,
+        "overview": "In a dystopian 1970s America, fifty teenage boys take part in a deadly annual walking contest, forced to maintain a minimum pace or be executed, until only one survivor remains.",
+        "rating": "R",
+        "posterUrl": "https://image.tmdb.org/t/p/w500/wobVTa99eW0ht6c1rNNzLkazPtR.jpg",
+        "selectedBy": "Max Smith",
+        "trailerUrl": "https://www.youtube.com/watch?v=Toj3Zxun7aQ"
+      },
+      "status": "watched"
+    },
+    {
+      "id": "night-8",
+      "date": "2026-10-23T19:00:00",
+      "selector": "Ash Macintosh",
+      "movie": {
+        "title": "Wildwood",
+        "year": 2026,
+        "director": "Travis Knight",
+        "genre": "Animation, Adventure, Fantasy",
+        "runtime": 131,
+        "overview": "Prue and her classmate Curtis are drawn into a magical forest filled with enchanted creatures, loyal allies, and formidable adversaries as they embark on a desperate quest to rescue Prue’s abducted baby brother from a murder of crows led by a mysterious woman named Alexandra.",
+        "rating": "PG-13",
+        "posterUrl": "https://image.tmdb.org/t/p/w500/snFM00mpNAfUzUtkdEW0uDEvXA0.jpg",
+        "selectedBy": "Ash Macintosh",
+        "trailerUrl": "https://www.youtube.com/watch?v=bJQGtSeLPII"
+      },
+      "status": "scheduled"
+    },
+    {
+      "id": "night-9-1784373702546-667",
+      "date": "2026-11-06T19:00:00",
+      "selector": "Tom Sakai",
       "movie": null,
       "status": "scheduled"
     },
     {
-      "id": "night-3",
+      "id": "night-10-1785577772434-860",
       "date": "2026-11-20T19:00:00",
       "selector": "Madison Hill",
       "movie": null,
       "status": "scheduled"
     },
     {
-      "id": "night-4",
+      "id": "night-11-1787306738335-226",
       "date": "2026-12-04T19:00:00",
+      "selector": "Max Smith",
+      "movie": null,
+      "status": "scheduled"
+    },
+    {
+      "id": "night-12-1787910700004-632",
+      "date": "2026-12-18T19:00:00",
       "selector": "Amy Walsh",
       "movie": null,
       "status": "scheduled"
     },
     {
-      "id": "night-5",
-      "date": "2026-12-18T19:00:00",
-      "selector": "Tom Sakai",
-      "movie": null,
-      "status": "scheduled"
-    },
-    {
-      "id": "night-6",
+      "id": "night-13-1789121088744-56",
       "date": "2027-01-01T19:00:00",
       "selector": "James Macintosh",
       "movie": null,
       "status": "scheduled"
     }
   ],
-  "reviews": [],
-  "overviews": [],
+  "reviews": [
+    {
+      "id": "rev-1-1",
+      "movieNightId": "night-1",
+      "user": "Max Smith",
+      "rating": 5,
+      "comment": "Peter Jackson's crowning achievement. 200 minutes flies by and the emotional punch never fades.",
+      "isStarred": false,
+      "createdAt": "2026-07-19T02:15:00.000Z"
+    },
+    {
+      "id": "rev-1-2",
+      "movieNightId": "night-1",
+      "user": "James Macintosh",
+      "rating": 5,
+      "comment": "The ride of the Rohirrim still gives me goosebumps every single time. Perfect opening film for our club.",
+      "isStarred": true,
+      "createdAt": "2026-07-19T02:30:00.000Z"
+    },
+    {
+      "id": "rev-1-3",
+      "movieNightId": "night-1",
+      "user": "Ash Macintosh",
+      "rating": 4.5,
+      "comment": "Samwise Gamgee is the true hero of Middle Earth. Jackson's scale remains unmatched 20+ years later.",
+      "isStarred": false,
+      "createdAt": "2026-07-19T03:00:00.000Z"
+    },
+    {
+      "id": "rev-2-1",
+      "movieNightId": "night-2",
+      "user": "Ash Macintosh",
+      "rating": 5,
+      "comment": "Villeneuve crafts pure dread and moral ambiguity. Hugh Jackman and Jake Gyllenhaal at their absolute peaks.",
+      "isStarred": false,
+      "createdAt": "2026-08-02T01:45:00.000Z"
+    },
+    {
+      "id": "rev-2-2",
+      "movieNightId": "night-2",
+      "user": "Max Smith",
+      "rating": 4.5,
+      "comment": "Hugh Jackman's bathroom hammer interrogation scene was pure intensity. Kept us debating for hours after.",
+      "isStarred": true,
+      "createdAt": "2026-08-02T02:10:00.000Z"
+    },
+    {
+      "id": "rev-3-1",
+      "movieNightId": "night-3",
+      "user": "Madison Hill",
+      "rating": 5,
+      "comment": "Kate Winslet and Melanie Lynskey's chemistry is unforgettable. Such a poetic yet chilling slice of NZ history.",
+      "isStarred": true,
+      "createdAt": "2026-08-22T02:00:00.000Z"
+    },
+    {
+      "id": "rev-3-2",
+      "movieNightId": "night-3",
+      "user": "Ash Macintosh",
+      "rating": 4.5,
+      "comment": "The clay world fantasy sequences set against Christchurch landscapes create something truly hypnotic.",
+      "isStarred": false,
+      "createdAt": "2026-08-22T02:20:00.000Z"
+    },
+    {
+      "id": "rev-4-1",
+      "movieNightId": "night-4",
+      "user": "Amy Walsh",
+      "rating": 5,
+      "comment": "That Toxic strings sequence was iconic! Carey Mulligan delivers vengeance with terrifying elegance.",
+      "isStarred": true,
+      "createdAt": "2026-08-29T01:30:00.000Z"
+    },
+    {
+      "id": "rev-4-2",
+      "movieNightId": "night-4",
+      "user": "James Macintosh",
+      "rating": 4.5,
+      "comment": "Sharp, subversive writing and a gut-punch finale that none of us anticipated. Terrific pick by Amy.",
+      "isStarred": false,
+      "createdAt": "2026-08-29T02:00:00.000Z"
+    },
+    {
+      "id": "rev-5-1",
+      "movieNightId": "night-5",
+      "user": "Tom Sakai",
+      "rating": 5,
+      "comment": "Bong Joon Ho's pacing and tone control is masterclass. Every scene transition is pure cinematic gold.",
+      "isStarred": false,
+      "createdAt": "2026-09-12T02:15:00.000Z"
+    },
+    {
+      "id": "rev-5-2",
+      "movieNightId": "night-5",
+      "user": "Ash Macintosh",
+      "rating": 5,
+      "comment": "The basement reveal and that rain-soaked descent back to the semi-basement apartment—flawless filmmaking.",
+      "isStarred": true,
+      "createdAt": "2026-09-12T02:40:00.000Z"
+    },
+    {
+      "id": "rev-6-1",
+      "movieNightId": "night-6",
+      "user": "James Macintosh",
+      "rating": 5,
+      "comment": "Billy Mitchell walking in with the USA tie while Steve Wiebe sweats at the arcade is peak comedy.",
+      "isStarred": true,
+      "createdAt": "2026-09-26T02:00:00.000Z"
+    },
+    {
+      "id": "rev-6-2",
+      "movieNightId": "night-6",
+      "user": "Max Smith",
+      "rating": 4.5,
+      "comment": "Funniest documentary we've ever watched. The entire room was shouting at the screen during the kill screen.",
+      "isStarred": false,
+      "createdAt": "2026-09-26T02:25:00.000Z"
+    },
+    {
+      "id": "rev-7-1",
+      "movieNightId": "night-7",
+      "user": "Ash Macintosh",
+      "rating": 4.5,
+      "comment": "It’s tough to keep an audience engaged when a film is set in one location. Although this film does technically travel through fictional America, the road they walk is essentially one setting they never leave. To make it even harder for the director, we as the audience immediately know that all but one of the cast members will likely die. To overcome these there is a HEAVY reliance on the actors and the writing but its masterfully done in all aspects. The way they managed to get me to care so deeply about even the most despicable characters right before their demise by breaking them down, finally showing their true vulnerability was heartbreaking and so human. I will also say the plot twist at the end was a really left field hook I didn’t see coming so kudos to Stephen King on that one. 4.5/5 with the only draw back being the final scene felt like it had less weight than some of the previous deaths.",
+      "isStarred": true,
+      "createdAt": "2026-10-10T02:00:00.000Z"
+    },
+    {
+      "id": "rev-7-2",
+      "movieNightId": "night-7",
+      "user": "Max Smith",
+      "rating": 4.5,
+      "comment": "Stephen King's dystopian road walk brought to life with brutal tension. Kept your heart pounding until the last mile.",
+      "isStarred": false,
+      "createdAt": "2026-10-10T02:15:00.000Z"
+    }
+  ],
+  "overviews": [
+    {
+      "id": "ov-1784526660029",
+      "movieNightId": "night-1",
+      "title": "Lord of the Rings - more like “Samwise Gamgee not getting the recognition he deserves!!!!”",
+      "author": "Ash Macintosh",
+      "content": "Kicking off our inaugural Movie Club screening with the grand finale of Peter Jackson's legendary trilogy. Samwise Gamgee carried the entire fellowship on his shoulders, and honestly, the emotional resonance of this masterpiece only deepens with time. An unforgettable start to our club nights with the gang.",
+      "imageUrl": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80",
+      "createdAt": "2026-07-19T10:00:00.000Z"
+    },
+    {
+      "id": "ov-1785626532933",
+      "movieNightId": "night-2",
+      "title": "Is Denis Villeneuve Lost in the Sauce?",
+      "author": "Ash Macintosh",
+      "content": "Tense, gripping, and relentlessly dark from the first frame to the final whistle. Hugh Jackman delivers a career-defining descent into parental desperation while Jake Gyllenhaal's twitchy Detective Loki grounds the mystery with pure grit. The moral ambiguity kept us debating well past midnight.",
+      "imageUrl": "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=1200&q=80",
+      "createdAt": "2026-08-02T10:00:00.000Z"
+    },
+    {
+      "id": "ov-1787631699850",
+      "movieNightId": "night-3",
+      "title": "The Christchurch Girls High Experience",
+      "author": "Ash Macintosh",
+      "content": "A haunting local treasure that hit close to home. The fantasy dream sequences and the incredible breakout performances from Kate Winslet and Melanie Lynskey made this one of our most stylistically unique evenings. Tragic, vivid, and deeply atmospheric New Zealand cinema.",
+      "imageUrl": "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1200&q=80",
+      "createdAt": "2026-08-22T10:00:00.000Z"
+    },
+    {
+      "id": "ov-1787916313632",
+      "movieNightId": "night-4",
+      "title": "Promise you’ll only notice Bo Burnham’s Giant Dome",
+      "author": "Ash Macintosh",
+      "content": "Carey Mulligan commands every scene with razor-sharp precision. The candy-colored aesthetic clashing against the biting, uncompromising revenge narrative left all of us stunned. A pitch-perfect modern thriller with an explosive soundtrack to match.",
+      "imageUrl": "https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=1200&q=80",
+      "createdAt": "2026-08-29T10:00:00.000Z"
+    },
+    {
+      "id": "ov-1789126474474",
+      "movieNightId": "night-5",
+      "title": "Fannies, Crips, and (9/)11 Chips",
+      "author": "Ash Macintosh",
+      "content": "Pure cinematic perfection. Bong Joon Ho orchestrates genre shifts with breathtaking elegance—hilarious satire in the first half leading into unbearable suspense in the basement. Every single member was on the edge of their seat. Unquestionably one of our highest-rated nights.",
+      "imageUrl": "https://images.unsplash.com/photo-1527224857830-43a7acc85260?auto=format&fit=crop&w=1200&q=80",
+      "createdAt": "2026-09-12T10:00:00.000Z"
+    },
+    {
+      "id": "ov-1790727902528",
+      "movieNightId": "night-6",
+      "title": "An Ode to Steve Wiebe - Our Autistic King of Kong",
+      "author": "Ash Macintosh",
+      "content": "You couldn't script better characters than Steve Wiebe and Billy Mitchell if you tried. The quintessential David versus Goliath documentary that had the entire room cheering for every single hammer smash and barrel jump. An absolute crowd pleaser that exceeded all expectations.",
+      "imageUrl": "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80",
+      "createdAt": "2026-09-26T10:00:00.000Z"
+    },
+    {
+      "id": "ov-1791959573924-98033e21",
+      "movieNightId": "night-7",
+      "title": "But, how do they shit?",
+      "author": "Ash Macintosh",
+      "content": "It’s tough to keep an audience engaged when a film is set in one location. Although this film does technically travel through fictional America, the road they walk is essentially one setting they never leave. To make it even harder for the director, we as the audience immediately know that all but one of the cast members will likely die. To overcome these there is a HEAVY reliance on the actors and the writing but its masterfully done in all aspects. The way they managed to get me to care so deeply about even the most despicable characters right before their demise by breaking them down, finally showing their true vulnerability was heartbreaking and so human. I will also say the plot twist at the end was a really left field hook I didn’t see coming so kudos to Stephen King on that one. 4.5/5 with the only draw back being the final scene felt like it had less weight than some of the previous deaths.",
+      "imageUrl": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1200&q=80",
+      "createdAt": "2026-10-14T00:01:04.566Z"
+    }
+  ],
   "users": [
     {
       "username": "James",
       "name": "James Macintosh",
       "isAdmin": true,
       "isAsh": false,
-      "password": "Admin"
+      "password": "Admin",
+      "avatarUrl": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA="
     },
     {
       "username": "Ash",
@@ -65,7 +403,8 @@
       "name": "Tom Sakai",
       "isAdmin": false,
       "isAsh": false,
-      "password": "movienight"
+      "password": "movienight",
+      "avatarUrl": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA="
     },
     {
       "username": "Madison",
@@ -93,21 +432,66 @@
     {
       "email": "james.mac333@gmail.com",
       "name": "James Macintosh",
-      "addedAt": "2026-10-11T00:21:27.715Z"
+      "addedAt": "2026-10-11T02:19:25.250Z"
+    },
+    {
+      "email": "ash.masons@gmail.com",
+      "name": "Ash Macintosh",
+      "addedAt": "2026-10-11T02:59:38.475Z"
+    },
+    {
+      "email": "zalaloom@gmail.com",
+      "name": "Tom Sakai",
+      "addedAt": "2026-10-11T03:00:06.613Z"
+    },
+    {
+      "email": "mineacrepig@gmail.com",
+      "name": "Max Smith",
+      "addedAt": "2026-10-11T03:00:29.629Z"
+    },
+    {
+      "email": "madihill1998@gmail.com",
+      "name": "Madison Hill",
+      "addedAt": "2026-10-11T03:01:02.544Z"
+    },
+    {
+      "email": "amy.walsh789@gmail.com",
+      "name": "Amy Walsh",
+      "addedAt": "2026-10-11T03:01:21.273Z"
     }
   ],
   "edmLogs": [
     {
-      "id": "edm-1791678089894-61502af7",
-      "type": "test",
-      "subject": "[TEST] Movie Club EDM Transmission Verification - James Macintosh",
-      "sentAt": "2026-10-11T00:21:29.894Z",
+      "id": "edm-1791936064566-3ed950b0",
+      "type": "overview",
+      "subject": "Movie Club Recap: But, how do they shit?",
+      "sentAt": "2026-10-14T00:01:04.566Z",
       "recipients": [
-        "james.mac333@gmail.com"
+        "james.mac333@gmail.com",
+        "ash.masons@gmail.com",
+        "zalaloom@gmail.com",
+        "mineacrepig@gmail.com",
+        "madihill1998@gmail.com",
+        "amy.walsh789@gmail.com"
       ],
-      "status": "simulated",
-      "previewText": "EDM system check triggered by James Macintosh. Distribution pipeline verified.",
-      "htmlContent": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Movie Club EDM Test Transmission</title>\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #080808; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f4f4f5;\">\n  <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color: #080808; padding: 32px 16px;\">\n    <tr>\n      <td align=\"center\">\n        <!-- Main Container -->\n        <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width: 580px; background-color: #14100e; border: 2px solid #10b981; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 60px rgba(16, 185, 129, 0.2);\">\n          \n          <!-- Green Header Ribbon -->\n          <tr>\n            <td style=\"height: 6px; background: linear-gradient(90deg, #059669, #34d399, #059669);\"></td>\n          </tr>\n\n          <!-- Content -->\n          <tr>\n            <td style=\"padding: 32px; text-align: center;\">\n              <div style=\"display: inline-block; padding: 8px 16px; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 30px; font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: bold; color: #34d399; letter-spacing: 0.2em; text-transform: uppercase;\">\n                ✓ SYSTEM VERIFICATION TRANSMISSION\n              </div>\n\n              <h1 style=\"margin: 16px 0 8px; font-size: 26px; font-weight: 800; font-family: Georgia, serif; color: #ffffff;\">\n                EDM Dispatcher is Live & Functional\n              </h1>\n\n              <p style=\"margin: 0 0 20px; font-size: 14px; color: #a1a1aa; line-height: 1.6;\">\n                This test broadcast was requested by administrator <strong style=\"color: #fbbf24;\">James Macintosh</strong> to verify that automated email distributions are operational.\n              </p>\n\n              <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color: #1c1511; border: 1px dashed #38271a; border-radius: 14px; padding: 16px 20px; margin-bottom: 24px; text-align: left;\">\n                <tr>\n                  <td style=\"font-size: 12px; color: #d4d4d8; line-height: 1.8;\">\n                    <div>• <strong>Transmission Time:</strong> 11/10/2026, 1:21:29 pm (NZT)</div>\n                    <div>• <strong>Target Recipients:</strong> 1 registered email address(es)</div>\n                    <div>• <strong>Delivery Triggers Armed:</strong></div>\n                    <div style=\"padding-left: 16px; color: #a1a1aa;\">\n                      1. Whenever Ash Macintosh publishes a Night Overview recap<br/>\n                      2. Whenever a host locks in the next cycle's movie selection\n                    </div>\n                  </td>\n                </tr>\n              </table>\n\n              <a href=\"https://ais-dev-cplyxtwj7fa5b4y47u7zjl-771540860151.asia-southeast1.run.app\" style=\"display: inline-block; background-color: #10b981; color: #022c22; font-weight: bold; font-size: 13px; text-decoration: none; padding: 12px 28px; border-radius: 12px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);\">\n                Return to Movie Club →\n              </a>\n            </td>\n          </tr>\n\n          <!-- Footer -->\n          <tr>\n            <td style=\"padding: 16px 32px; background-color: #0b0907; border-top: 1px solid #281f18; text-align: center;\">\n              <p style=\"margin: 0; font-size: 11px; color: #71717a; font-family: 'Courier New', Courier, monospace;\">\n                Movie Club Admin EDM Diagnostic Utility\n              </p>\n            </td>\n          </tr>\n\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>"
+      "status": "sent",
+      "previewText": "Ash Macintosh has published the official session chronicle: But, how do they shit?"
+    },
+    {
+      "id": "edm-1791933616806-613d9a24",
+      "type": "movie_selection",
+      "subject": "The Curtain Rises: Wildwood selected by Ash Macintosh",
+      "sentAt": "2026-10-13T23:26:56.806Z",
+      "recipients": [
+        "james.mac333@gmail.com",
+        "ash.masons@gmail.com",
+        "zalaloom@gmail.com",
+        "mineacrepig@gmail.com",
+        "madihill1998@gmail.com",
+        "amy.walsh789@gmail.com"
+      ],
+      "status": "sent",
+      "previewText": "Your host Ash Macintosh has chosen the feature presentation for Fri, 23 Oct 2026 at 19:00 NZT."
     }
   ]
 }

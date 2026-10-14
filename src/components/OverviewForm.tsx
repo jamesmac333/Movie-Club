@@ -21,8 +21,11 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Security check: Only Ash Macintosh gets to use this form!
-  const isAsh = currentUser?.username?.toLowerCase() === "ash" || currentUser?.isAsh === true;
+  // Security check: Ash Macintosh or James (admin) gets to use this form!
+  const isAuthorized = currentUser?.username?.toLowerCase() === "ash" || 
+                       currentUser?.username?.toLowerCase() === "james" || 
+                       currentUser?.isAsh === true || 
+                       currentUser?.isAdmin === true;
 
   // List of movie nights that have a movie selected, ready for an overview
   const reviewableNights = nights.filter(n => n.movie !== null);
@@ -31,33 +34,48 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
+        const rawDataUrl = e.target?.result as string;
+        if (!rawDataUrl) {
+          reject(new Error("Empty image file"));
+          return;
+        }
         const img = new Image();
         img.onload = () => {
-          let { width, height } = img;
-          if (width > maxWidth || height > maxHeight) {
-            if (width / maxWidth > height / maxHeight) {
-              height = Math.round((height * maxWidth) / width);
-              width = maxWidth;
-            } else {
-              width = Math.round((width * maxHeight) / height);
-              height = maxHeight;
+          try {
+            let { width, height } = img;
+            if (width > maxWidth || height > maxHeight) {
+              if (width / maxWidth > height / maxHeight) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              } else {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+              }
             }
-          }
 
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            resolve(e.target?.result as string);
-            return;
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              resolve(rawDataUrl);
+              return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL("image/jpeg", quality);
+            resolve(dataUrl);
+          } catch (canvasErr) {
+            resolve(rawDataUrl);
           }
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL("image/jpeg", quality);
-          resolve(dataUrl);
         };
-        img.onerror = () => reject(new Error("Failed to load image"));
-        img.src = e.target?.result as string;
+        img.onerror = () => {
+          if (file.size < 10 * 1024 * 1024 && rawDataUrl) {
+            resolve(rawDataUrl);
+          } else {
+            reject(new Error("Failed to load image"));
+          }
+        };
+        img.src = rawDataUrl;
       };
       reader.onerror = () => reject(new Error("Failed to read image file"));
       reader.readAsDataURL(file);
@@ -111,6 +129,7 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
     if (e.target.files && e.target.files[0]) {
       processFile(e.target.files[0]);
     }
+    e.target.value = "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -151,13 +170,13 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
     }
   };
 
-  if (!isAsh) {
+  if (!isAuthorized) {
     return (
       <div className="bg-zinc-950/20 border border-zinc-900 rounded-3xl p-8 text-center max-w-xl mx-auto space-y-4">
         <AlertCircle className="w-10 h-10 text-zinc-600 mx-auto" />
         <h3 className="text-xl font-serif font-bold text-zinc-300">Administrative Dashboard</h3>
         <p className="text-sm text-zinc-500 leading-relaxed">
-          Only <strong className="text-zinc-400">Ash Macintosh</strong> has access to draft and publish the fortnightly movie night overviews and friends photography. Please sign in as Ash to access this dashboard.
+          Only <strong className="text-zinc-400">Ash Macintosh</strong> and club administrators have access to draft and publish the fortnightly movie night overviews and friends photography. Please sign in as Ash or James to access this dashboard.
         </p>
       </div>
     );
@@ -177,7 +196,7 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
         </div>
         <div>
           <h2 className="text-2xl font-serif text-zinc-100 font-bold">Night Writer Dashboard</h2>
-          <p className="text-xs text-zinc-400 mt-0.5">Logged in as Ash Macintosh • Post Memory Overview & Friends Photo</p>
+          <p className="text-xs text-zinc-400 mt-0.5">Logged in as {currentUser?.name || "Editor"} • Post Memory Overview & Friends Photo</p>
         </div>
       </div>
 
@@ -260,7 +279,11 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
               onDragOver={handleDrag}
               onDragLeave={handleDrag}
               onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={(e) => {
+                if (e.target !== fileInputRef.current) {
+                  fileInputRef.current?.click();
+                }
+              }}
               className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center min-h-[180px] bg-zinc-900/10 ${
                 dragActive 
                   ? "border-amber-500 bg-amber-500/[0.03]" 
@@ -270,6 +293,7 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
               <input
                 type="file"
                 ref={fileInputRef}
+                onClick={(e) => e.stopPropagation()}
                 onChange={handleFileChange}
                 accept="image/*"
                 className="hidden"

@@ -114,12 +114,12 @@ async function startServer() {
           const mime = matches[1];
           const imgBuffer = Buffer.from(matches[2], "base64");
           res.setHeader("Content-Type", `image/${mime === "jpg" ? "jpeg" : mime}`);
-          res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+          res.setHeader("Cache-Control", "no-cache, must-revalidate");
           return res.send(imgBuffer);
         }
       }
 
-      if (user.avatarUrl.startsWith("http://") || user.avatarUrl.startsWith("https://") || user.avatarUrl.startsWith("/")) {
+      if (user.avatarUrl.startsWith("http://") || user.avatarUrl.startsWith("https://") || (user.avatarUrl.startsWith("/") && !user.avatarUrl.startsWith("/api/users/"))) {
         return res.redirect(user.avatarUrl);
       }
 
@@ -149,28 +149,38 @@ async function startServer() {
     }
   });
 
-  // Auth: Update user avatar (manually loaded, no AI processing - Admin Only)
-  app.put("/api/users/:username/avatar", (req, res) => {
+  // Auth: Update user avatar (manually loaded, no AI processing)
+  app.put("/api/users/:username/avatar", async (req, res) => {
     const { username } = req.params;
     const { avatarUrl, requester } = req.body;
 
-    if (!avatarUrl) {
+    if (!avatarUrl || typeof avatarUrl !== "string") {
       return res.status(400).json({ error: "Missing avatar data" });
     }
 
-    const reqLower = requester?.toLowerCase();
-    if (!requester || (reqLower !== "james" && reqLower !== "ash")) {
-      return res.status(403).json({ error: "Unauthorized. Only administrators can change profile pictures." });
+    const reqLower = requester?.toLowerCase()?.trim();
+    const targetLower = username.toLowerCase().trim();
+    const isSelf = !!reqLower && reqLower === targetLower;
+    const isAdmin = reqLower === "james" || reqLower === "ash";
+
+    if (!isSelf && !isAdmin) {
+      return res.status(403).json({ error: "Unauthorized. You can only update your own profile picture, or administrators can update any member." });
     }
 
     try {
-      const db = readDb();
-      const userIndex = db.users.findIndex(u => u.username.toLowerCase() === username.toLowerCase());
-      if (userIndex === -1) {
+      const updatedUser = await mutateDb((db) => {
+        const userIndex = db.users.findIndex(u => u.username.toLowerCase() === targetLower);
+        if (userIndex === -1) {
+          return null;
+        }
+        db.users[userIndex].avatarUrl = avatarUrl;
+        return db.users[userIndex];
+      });
+
+      if (!updatedUser) {
         return res.status(404).json({ error: "User not found" });
       }
-      db.users[userIndex].avatarUrl = avatarUrl;
-      writeDb(db);
+
       res.json({ message: "Avatar updated successfully", avatarUrl });
     } catch (error) {
       res.status(500).json({ error: "Failed to update avatar" });
@@ -754,13 +764,15 @@ async function startServer() {
     }
   });
 
-  // 10. Post a new night overview (Only Ash Macintosh)
+  // 10. Post a new night overview (Ash Macintosh or James)
   app.post("/api/overviews", async (req, res) => {
     const { movieNightId, title, content, imageUrl, requester } = req.body;
 
-    // Explicit security check: Only Ash can post overviews
-    if (requester?.toLowerCase() !== "ash") {
-      return res.status(403).json({ error: "Unauthorized. Only Ash Macintosh can write night overviews." });
+    const reqLower = requester?.toLowerCase()?.trim();
+    const isAuthorized = reqLower === "ash" || reqLower === "james";
+
+    if (!isAuthorized) {
+      return res.status(403).json({ error: "Unauthorized. Only Ash Macintosh or James can write night overviews." });
     }
 
     if (!movieNightId || !title || !content || !imageUrl) {
@@ -781,7 +793,7 @@ async function startServer() {
           title,
           content,
           imageUrl, // Stored as base64 or Unsplash url
-          author: "Ash Macintosh",
+          author: reqLower === "james" ? "James Macintosh" : "Ash Macintosh",
           createdAt: new Date().toISOString()
         };
 

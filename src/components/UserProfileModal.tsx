@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { User, MOVIE_CLUB_USERS } from "../types.ts";
 import { Lock, KeyRound, UserCog, Check, AlertCircle, Eye, EyeOff, Upload, Camera, Image, X, Mail } from "lucide-react";
 import EdmAdminManager from "./EdmAdminManager.tsx";
@@ -11,6 +11,8 @@ interface UserProfileModalProps {
 }
 
 export default function UserProfileModal({ currentUser, onClose, users = MOVIE_CLUB_USERS, onUserUpdate }: UserProfileModalProps) {
+  const personalFileInputRef = useRef<HTMLInputElement>(null);
+  const targetFileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<"personal" | "admin" | "edm">("personal");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -84,27 +86,43 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
+        const rawDataUrl = e.target?.result as string;
+        if (!rawDataUrl) {
+          reject(new Error("Empty image file"));
+          return;
+        }
         const img = new Image();
         img.onload = () => {
-          let { width, height } = img;
-          const minDim = Math.min(width, height);
-          const startX = (width - minDim) / 2;
-          const startY = (height - minDim) / 2;
+          try {
+            let { width, height } = img;
+            const minDim = Math.min(width, height);
+            const startX = (width - minDim) / 2;
+            const startY = (height - minDim) / 2;
 
-          const canvas = document.createElement("canvas");
-          canvas.width = maxDim;
-          canvas.height = maxDim;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            resolve(e.target?.result as string);
-            return;
+            const canvas = document.createElement("canvas");
+            canvas.width = maxDim;
+            canvas.height = maxDim;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              resolve(rawDataUrl);
+              return;
+            }
+            // Square crop and compress
+            ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, maxDim, maxDim);
+            resolve(canvas.toDataURL("image/jpeg", quality));
+          } catch (canvasErr) {
+            resolve(rawDataUrl);
           }
-          // Square crop and compress
-          ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, maxDim, maxDim);
-          resolve(canvas.toDataURL("image/jpeg", quality));
         };
-        img.onerror = () => reject(new Error("Failed to load image"));
-        img.src = e.target?.result as string;
+        img.onerror = () => {
+          // If browser image element failed to decode but file is reasonable size, fallback to raw data URL
+          if (file.size < 5 * 1024 * 1024 && rawDataUrl) {
+            resolve(rawDataUrl);
+          } else {
+            reject(new Error("Failed to load image"));
+          }
+        };
+        img.src = rawDataUrl;
       };
       reader.onerror = () => reject(new Error("Failed to read image"));
       reader.readAsDataURL(file);
@@ -118,7 +136,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
     }
     setTargetAvatarError("");
     setTargetAvatarSuccess("");
-    setSelectedFile(file);
+    setTargetSelectedFile(file);
 
     compressAvatar(file)
       .then((dataUrl) => {
@@ -138,7 +156,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
     setTargetAvatarError("");
 
     try {
-      const response = await fetch(`/api/users/${selectedTarget}/avatar`, {
+      const response = await fetch(`/api/users/${encodeURIComponent(selectedTarget)}/avatar`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -169,6 +187,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
       const file = e.target.files[0];
       processFile(file);
     }
+    e.target.value = "";
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -213,18 +232,12 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
     e.preventDefault();
     if (!avatarPreview) return;
 
-    const isAdmin = currentUser.isAdmin || currentUser.username.toLowerCase() === "james" || currentUser.username.toLowerCase() === "ash";
-    if (!isAdmin) {
-      setAvatarError("Only administrators can change profile pictures.");
-      return;
-    }
-
     setAvatarLoading(true);
     setAvatarSuccess("");
     setAvatarError("");
 
     try {
-      const response = await fetch(`/api/users/${currentUser.username}/avatar`, {
+      const response = await fetch(`/api/users/${encodeURIComponent(currentUser.username)}/avatar`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -457,43 +470,38 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                     </div>
 
                     {/* File Dropzone / Picker */}
-                    {isAdmin ? (
-                      <div 
-                        className={`flex-1 w-full border border-dashed rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center ${
-                          dragActive 
-                            ? "border-amber-500 bg-amber-500/5" 
-                            : "border-zinc-800 hover:border-zinc-700 bg-zinc-950/40"
-                        }`}
-                        onDragEnter={handleDrag}
-                        onDragOver={handleDrag}
-                        onDragLeave={handleDrag}
-                        onDrop={handleDrop}
-                        onClick={() => document.getElementById("avatar-file-input")?.click()}
-                      >
-                        <input 
-                          type="file" 
-                          id="avatar-file-input" 
-                          accept="image/*" 
-                          onChange={handleFileChange} 
-                          className="hidden" 
-                        />
-                        <Upload className="w-5 h-5 text-zinc-500 mb-1.5" />
-                        <span className="text-xs font-semibold text-zinc-300">
-                          {selectedFile ? selectedFile.name : "Choose an image or drop here"}
-                        </span>
-                        <span className="text-[10px] text-zinc-500 mt-1 font-mono uppercase tracking-wider">
-                          Raw Upload • No AI enhancement applied
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="flex-1 w-full border border-zinc-800/80 rounded-xl p-4 bg-zinc-950/30 flex flex-col items-center justify-center text-center">
-                        <Lock className="w-5 h-5 text-zinc-600 mb-1.5" />
-                        <span className="text-xs font-semibold text-zinc-400">Profile Picture Locked</span>
-                        <span className="text-[10px] text-zinc-500 mt-1 leading-relaxed max-w-[240px]">
-                          Only administrators (James or Ash) are authorized to modify profile pictures.
-                        </span>
-                      </div>
-                    )}
+                    <div 
+                      className={`flex-1 w-full border border-dashed rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center ${
+                        dragActive 
+                          ? "border-amber-500 bg-amber-500/5" 
+                          : "border-zinc-800 hover:border-zinc-700 bg-zinc-950/40"
+                      }`}
+                      onDragEnter={handleDrag}
+                      onDragOver={handleDrag}
+                      onDragLeave={handleDrag}
+                      onDrop={handleDrop}
+                      onClick={(e) => {
+                        if (e.target !== personalFileInputRef.current) {
+                          personalFileInputRef.current?.click();
+                        }
+                      }}
+                    >
+                      <input 
+                        type="file" 
+                        ref={personalFileInputRef}
+                        accept="image/*" 
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={handleFileChange} 
+                        className="hidden" 
+                      />
+                      <Upload className="w-5 h-5 text-zinc-500 mb-1.5" />
+                      <span className="text-xs font-semibold text-zinc-300">
+                        {selectedFile ? selectedFile.name : "Choose an image or drop here"}
+                      </span>
+                      <span className="text-[10px] text-zinc-500 mt-1 font-mono uppercase tracking-wider">
+                        Upload your photo (JPG, PNG, WebP)
+                      </span>
+                    </div>
                   </div>
 
                   {avatarSuccess && (
@@ -662,12 +670,17 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                       onDragOver={handleTargetDrag}
                       onDragLeave={handleTargetDrag}
                       onDrop={handleTargetDrop}
-                      onClick={() => document.getElementById("target-avatar-file-input")?.click()}
+                      onClick={(e) => {
+                        if (e.target !== targetFileInputRef.current) {
+                          targetFileInputRef.current?.click();
+                        }
+                      }}
                     >
                       <input 
                         type="file" 
-                        id="target-avatar-file-input" 
+                        ref={targetFileInputRef} 
                         accept="image/*" 
+                        onClick={(e) => e.stopPropagation()}
                         onChange={handleTargetFileChange} 
                         className="hidden" 
                       />
