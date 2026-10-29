@@ -1,21 +1,128 @@
-import React, { useEffect } from "react";
-import { MovieNight, NightOverview, Review } from "../types.ts";
+import React, { useEffect, useState, useRef } from "react";
+import { MovieNight, NightOverview, Review, User, isAuthenticGatheringPhoto } from "../types.ts";
 import { motion } from "motion/react";
-import { BookOpen, Sparkles, X, Calendar, User as UserIcon, Film, Clock, Star, Camera, Quote, Award, Trophy } from "lucide-react";
+import { BookOpen, Sparkles, X, Calendar, User as UserIcon, Film, Clock, Star, Camera, Quote, Award, Trophy, Upload, Loader2, Trash2 } from "lucide-react";
 
 interface RecapAlertModalProps {
   overview: NightOverview;
   night: MovieNight;
   reviews?: Review[];
+  currentUser?: User | null;
   onClose: (overviewId: string) => void;
+  onUpdateOverviewImage?: (overviewId: string, imageUrl: string) => Promise<void>;
+  onDeleteOverviewImage?: (overviewId: string) => Promise<void>;
 }
 
 export default function RecapAlertModal({
   overview,
   night,
   reviews = [],
-  onClose
+  currentUser,
+  onClose,
+  onUpdateOverviewImage,
+  onDeleteOverviewImage
 }: RecapAlertModalProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [photoFeedback, setPhotoFeedback] = useState("");
+
+  const isAsh = currentUser?.username?.toLowerCase() === "ash" || currentUser?.isAsh === true;
+  const isAdmin = currentUser?.username?.toLowerCase() === "james" || currentUser?.isAdmin === true;
+  const canManagePhotos = isAsh || isAdmin;
+
+  const compressImage = (file: File, maxWidth = 1280, maxHeight = 1280, quality = 0.82): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rawDataUrl = e.target?.result as string;
+        if (!rawDataUrl) {
+          reject(new Error("Empty image file"));
+          return;
+        }
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let { width, height } = img;
+            if (width > maxWidth || height > maxHeight) {
+              if (width / maxWidth > height / maxHeight) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              } else {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+              }
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              resolve(rawDataUrl);
+              return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL("image/jpeg", quality);
+            resolve(dataUrl);
+          } catch (canvasErr) {
+            resolve(rawDataUrl);
+          }
+        };
+        img.onerror = () => {
+          if (file.size < 10 * 1024 * 1024 && rawDataUrl) {
+            resolve(rawDataUrl);
+          } else {
+            reject(new Error("Failed to load image"));
+          }
+        };
+        img.src = rawDataUrl;
+      };
+      reader.onerror = () => reject(new Error("Failed to read image file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onUpdateOverviewImage) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file.");
+      return;
+    }
+
+    setUploading(true);
+    setPhotoFeedback("Compressing & saving photo...");
+    try {
+      const dataUrl = await compressImage(file);
+      await onUpdateOverviewImage(overview.id, dataUrl);
+      setPhotoFeedback("Photo updated successfully!");
+      setTimeout(() => setPhotoFeedback(""), 3000);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to upload photo");
+      setPhotoFeedback("");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!confirm("Are you sure you want to remove this gathering photo?")) return;
+    if (!onDeleteOverviewImage) return;
+
+    setUploading(true);
+    try {
+      await onDeleteOverviewImage(overview.id);
+      setPhotoFeedback("Photo removed.");
+      setTimeout(() => setPhotoFeedback(""), 3000);
+    } catch (err: any) {
+      alert(err.message || "Failed to remove photo");
+    } finally {
+      setUploading(false);
+    }
+  };
   const movie = night.movie;
 
   // Calculate average review rating if any reviews exist for this night
@@ -146,23 +253,87 @@ export default function RecapAlertModal({
           </div>
 
           {/* Featured Friends Memory Photo */}
-          {overview.imageUrl && (
-            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-zinc-800/80 bg-zinc-950 shadow-2xl group">
-              <img
-                src={overview.imageUrl}
-                alt={overview.title}
-                className="w-full max-h-[420px] object-cover sm:object-contain bg-zinc-950 mx-auto"
-                referrerPolicy="no-referrer"
-              />
-              <div className="p-3 bg-zinc-950/90 border-t border-zinc-900/60 flex items-center justify-between text-xs text-zinc-400 font-mono">
-                <span className="flex items-center gap-1.5 text-zinc-300">
-                  <Camera className="w-3.5 h-3.5 text-amber-500" />
-                  Friends Gathering Photo
-                </span>
-                <span className="text-[11px] text-zinc-500">Documented by Ash</span>
+          {isAuthenticGatheringPhoto(overview.imageUrl) ? (
+            <div className="space-y-2">
+              <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-zinc-800/80 bg-zinc-950 shadow-2xl group">
+                <img
+                  src={overview.imageUrl}
+                  alt={overview.title}
+                  className="w-full max-h-[420px] object-cover sm:object-contain bg-zinc-950 mx-auto"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="p-3 bg-zinc-950/90 border-t border-zinc-900/60 flex items-center justify-between text-xs text-zinc-400 font-mono">
+                  <span className="flex items-center gap-1.5 text-zinc-300">
+                    <Camera className="w-3.5 h-3.5 text-amber-500" />
+                    Friends Gathering Photo
+                  </span>
+                  <span className="text-[11px] text-zinc-500">Documented by Ash</span>
+                </div>
               </div>
+
+              {canManagePhotos && (
+                <div className="flex items-center justify-between gap-3 px-1 pt-1 flex-wrap">
+                  <span className="text-[11px] text-zinc-400 font-mono">
+                    {photoFeedback || "Real group photo saved in database"}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="text-xs font-mono text-amber-400 hover:text-amber-300 font-semibold px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3 text-amber-400" />}
+                      <span>Change Photo</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRemovePhoto}
+                      disabled={uploading}
+                      className="text-xs font-mono text-zinc-400 hover:text-red-400 font-medium px-2 py-1 rounded-lg hover:bg-red-950/30 border border-transparent hover:border-red-900/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Remove</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-[#120e0c] border border-dashed border-amber-500/30 rounded-2xl sm:rounded-3xl p-6 text-center space-y-3">
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
+                <Camera className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h5 className="text-sm font-serif font-bold text-zinc-200">No Gathering Photo Attached Yet</h5>
+                <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+                  The original group photos documented by Ash Macintosh are displayed here alongside each recap chronicle.
+                </p>
+              </div>
+              {canManagePhotos && (
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-mono font-bold shadow-md shadow-amber-600/30 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    <span>+ Upload Gathering Photo</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
+
+          {/* Hidden File Input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
+          />
 
           {/* Full Narrative Recap Story (Light/White Card with Dark Text for Maximum Legibility) */}
           <div className="bg-white text-zinc-900 border-2 border-amber-300/80 rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl">

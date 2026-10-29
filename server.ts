@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { 
   readDb, 
@@ -110,7 +111,7 @@ async function startServer() {
     }
   });
 
-  // Database Backup: Direct download endpoint for admins
+  // Database Backup: Direct download endpoint for admins (supports main db, .bak, or specific snapshot)
   app.get("/api/admin/backup/download", (req, res) => {
     const requester = (req.query.requester as string)?.toLowerCase()?.trim();
     if (requester !== "james" && requester !== "ash") {
@@ -118,14 +119,59 @@ async function startServer() {
     }
     try {
       const dbPath = getDbFilePath();
-      const resolvedPath = path.resolve(dbPath);
-      const now = new Date();
-      const dateStr = now.toISOString().slice(0, 10);
-      res.setHeader("Content-Disposition", `attachment; filename="movie-club-backup-${dateStr}.json"`);
+      const target = (req.query.target as string)?.toLowerCase();
+      let filePath = path.resolve(dbPath);
+      let filename = `movie-club-backup-${new Date().toISOString().slice(0, 10)}.json`;
+
+      if (target === "bak") {
+        const bakPath = `${dbPath}.bak`;
+        if (fs.existsSync(bakPath)) {
+          filePath = path.resolve(bakPath);
+          filename = `movie-club-backup-auto.bak`;
+        }
+      } else if (target === "snapshot" && req.query.file) {
+        const snapName = path.basename(String(req.query.file));
+        const snapPath = path.join(path.dirname(dbPath), "backups", snapName);
+        if (fs.existsSync(snapPath)) {
+          filePath = snapPath;
+          filename = snapName;
+        }
+      }
+
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
       res.setHeader("Content-Type", "application/json");
-      res.sendFile(resolvedPath);
+      res.sendFile(filePath);
     } catch (error) {
       res.status(500).json({ error: "Failed to download backup file" });
+    }
+  });
+
+  // Database Backup: List historical snapshots for admins
+  app.get("/api/admin/backup/snapshots", (req, res) => {
+    const requester = (req.query.requester as string)?.toLowerCase()?.trim();
+    if (requester !== "james" && requester !== "ash") {
+      return res.status(403).json({ error: "Unauthorized. Only admins can view backup snapshots." });
+    }
+    try {
+      const dbPath = getDbFilePath();
+      const backupDir = path.join(path.dirname(dbPath), "backups");
+      if (!fs.existsSync(backupDir)) {
+        return res.json({ snapshots: [] });
+      }
+      const files = fs.readdirSync(backupDir)
+        .filter(f => f.endsWith(".json"))
+        .map(f => {
+          const stat = fs.statSync(path.join(backupDir, f));
+          return {
+            filename: f,
+            sizeBytes: stat.size,
+            mtime: stat.mtime.toISOString()
+          };
+        })
+        .sort((a, b) => new Date(b.mtime).getTime() - new Date(a.mtime).getTime());
+      res.json({ snapshots: files });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to list snapshots" });
     }
   });
 
@@ -745,13 +791,152 @@ async function startServer() {
     }
   });
 
+  // Update or upload gathering photo for an existing overview (Ash Macintosh or Admins)
+  app.put("/api/overviews/:id/image", async (req, res) => {
+    const { id } = req.params;
+    const { imageUrl, requester } = req.body;
+
+    const reqLower = requester?.toLowerCase()?.trim();
+    if (!reqLower) {
+      return res.status(400).json({ error: "Missing requester username" });
+    }
+
+    try {
+      const updated = await mutateDb((db) => {
+        const user = db.users.find(u => u.username.toLowerCase() === reqLower);
+        const isAuthorized = reqLower === "ash" || reqLower === "james" || user?.isAdmin;
+        if (!isAuthorized) {
+          throw new Error("UNAUTHORIZED");
+        }
+
+        const ov = (db.overviews || []).find((o) => o.id === id);
+        if (!ov) {
+          return null;
+        }
+
+        ov.imageUrl = imageUrl || "";
+        return ov;
+      });
+
+      if (!updated) {
+        return res.status(404).json({ error: "Overview not found" });
+      }
+
+      res.json({
+        message: "Gathering photo updated successfully",
+        overview: {
+          ...updated,
+          imageUrl: updated.imageUrl && updated.imageUrl.startsWith("data:image/")
+            ? `/api/overviews/${updated.id}/image`
+            : updated.imageUrl
+        }
+      });
+    } catch (error: any) {
+      if (error?.message === "UNAUTHORIZED") {
+        return res.status(403).json({ error: "Unauthorized. Only Ash Macintosh or Admins can update gathering photos." });
+      }
+      res.status(500).json({ error: "Failed to update gathering photo" });
+    }
+  });
+
+  // Remove photo from an existing overview (Ash Macintosh or Admins)
+  app.delete("/api/overviews/:id/image", async (req, res) => {
+    const { id } = req.params;
+    const { requester } = req.body;
+
+    const reqLower = requester?.toLowerCase()?.trim();
+    if (!reqLower) {
+      return res.status(400).json({ error: "Missing requester username" });
+    }
+
+    try {
+      const updated = await mutateDb((db) => {
+        const user = db.users.find(u => u.username.toLowerCase() === reqLower);
+        const isAuthorized = reqLower === "ash" || reqLower === "james" || user?.isAdmin;
+        if (!isAuthorized) {
+          throw new Error("UNAUTHORIZED");
+        }
+
+        const ov = (db.overviews || []).find((o) => o.id === id);
+        if (!ov) {
+          return null;
+        }
+
+        ov.imageUrl = "";
+        return ov;
+      });
+
+      if (!updated) {
+        return res.status(404).json({ error: "Overview not found" });
+      }
+
+      res.json({ message: "Photo removed successfully", overview: updated });
+    } catch (error: any) {
+      if (error?.message === "UNAUTHORIZED") {
+        return res.status(403).json({ error: "Unauthorized. Only Ash Macintosh or Admins can remove gathering photos." });
+      }
+      res.status(500).json({ error: "Failed to remove gathering photo" });
+    }
+  });
+
+  // Edit overview text and details without deleting
+  app.put("/api/overviews/:id", async (req, res) => {
+    const { id } = req.params;
+    const { title, content, imageUrl, requester } = req.body;
+
+    const reqLower = requester?.toLowerCase()?.trim();
+    if (!reqLower) {
+      return res.status(400).json({ error: "Missing requester username" });
+    }
+
+    try {
+      const updated = await mutateDb((db) => {
+        const user = db.users.find(u => u.username.toLowerCase() === reqLower);
+        const isAuthorized = reqLower === "ash" || reqLower === "james" || user?.isAdmin;
+        if (!isAuthorized) {
+          throw new Error("UNAUTHORIZED");
+        }
+
+        const ov = (db.overviews || []).find((o) => o.id === id);
+        if (!ov) {
+          return null;
+        }
+
+        if (title !== undefined) ov.title = title.trim();
+        if (content !== undefined) ov.content = content.trim();
+        if (imageUrl !== undefined) ov.imageUrl = imageUrl;
+
+        return ov;
+      });
+
+      if (!updated) {
+        return res.status(404).json({ error: "Overview not found" });
+      }
+
+      res.json({
+        message: "Overview updated successfully",
+        overview: {
+          ...updated,
+          imageUrl: updated.imageUrl && updated.imageUrl.startsWith("data:image/")
+            ? `/api/overviews/${updated.id}/image`
+            : updated.imageUrl
+        }
+      });
+    } catch (error: any) {
+      if (error?.message === "UNAUTHORIZED") {
+        return res.status(403).json({ error: "Unauthorized. Only Ash Macintosh or Admins can edit overviews." });
+      }
+      res.status(500).json({ error: "Failed to edit overview" });
+    }
+  });
+
   // 9.5. Get overview memory gathering photo directly as binary image stream
   app.get("/api/overviews/:id/image", (req, res) => {
     try {
       const { id } = req.params;
       const db = readDb();
       const ov = (db.overviews || []).find((o) => o.id === id);
-      if (!ov || !ov.imageUrl) {
+      if (!ov || !ov.imageUrl || ov.imageUrl.includes("unsplash.com")) {
         return res.status(404).send("Image not found");
       }
 
@@ -785,13 +970,17 @@ async function startServer() {
       // This reduces payload from 37.5MB down to ~1.5KB, eliminating Cloud Run 32MB errors,
       // Vercel 4.5MB proxy errors, and mobile browser crashes!
       const safeOverviews = (db.overviews || []).map((ov) => {
-        if (ov.imageUrl && ov.imageUrl.startsWith("data:image/")) {
+        const cleanImageUrl = (ov.imageUrl && ov.imageUrl.includes("unsplash.com")) ? "" : (ov.imageUrl || "");
+        if (cleanImageUrl && cleanImageUrl.startsWith("data:image/")) {
           return {
             ...ov,
             imageUrl: `/api/overviews/${ov.id}/image`
           };
         }
-        return ov;
+        return {
+          ...ov,
+          imageUrl: cleanImageUrl
+        };
       });
       res.setHeader("Cache-Control", "no-cache");
       res.json(safeOverviews);
@@ -812,7 +1001,7 @@ async function startServer() {
       return res.status(403).json({ error: "Unauthorized. Only Ash Macintosh or James can write night overviews." });
     }
 
-    if (!movieNightId || !title || !content || !imageUrl) {
+    if (!movieNightId || !title || !content) {
       return res.status(400).json({ error: "Missing required overview fields" });
     }
 

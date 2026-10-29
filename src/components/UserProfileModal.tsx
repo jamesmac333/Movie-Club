@@ -79,6 +79,10 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
     window.location.href = `/api/admin/backup/download?requester=${encodeURIComponent(currentUser.username)}`;
   };
 
+  const handleDownloadBak = () => {
+    window.location.href = `/api/admin/backup/download?requester=${encodeURIComponent(currentUser.username)}&target=bak`;
+  };
+
   const handleTargetFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -1045,19 +1049,29 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                   ) : null}
                 </div>
 
-                <div className="pt-1">
+                <div className="pt-1 flex flex-col sm:flex-row gap-2.5">
                   <button
                     type="button"
                     onClick={handleDownloadBackup}
                     className="w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-500/60 font-bold rounded-lg text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                   >
                     <Download className="w-4 h-4" />
-                    Download Full Database Backup (.json)
+                    Download Live Database (.json)
                   </button>
-                  <span className="block text-[10px] text-zinc-500 mt-1.5">
-                    Exports the full JSON file containing all movie nights, member avatars, reviews, and logs.
-                  </span>
+                  {backupStats?.hasBackup && (
+                    <button
+                      type="button"
+                      onClick={handleDownloadBak}
+                      className="w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 hover:border-zinc-500 font-bold rounded-lg text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      Download Auto-Backup (.bak)
+                    </button>
+                  )}
                 </div>
+                <span className="block text-[10px] text-zinc-500">
+                  Exports complete JSON copies of all movie nights, member avatars, reviews, recaps, and EDM logs.
+                </span>
               </div>
             </div>
           ) : (

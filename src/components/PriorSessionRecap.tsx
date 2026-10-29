@@ -1,16 +1,128 @@
-import React from "react";
-import { MovieNight, Review, NightOverview } from "../types.ts";
-import { Calendar, Star, MessageSquare, Image as ImageIcon, Film, Heart, BookOpen, Maximize2 } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { MovieNight, Review, NightOverview, User, isAuthenticGatheringPhoto } from "../types.ts";
+import { Calendar, Star, MessageSquare, Image as ImageIcon, Film, Heart, BookOpen, Maximize2, Camera, Upload, Trash2, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 
 interface PriorSessionRecapProps {
   nights: MovieNight[];
   reviews: Review[];
   overviews: NightOverview[];
+  currentUser?: User | null;
   onOpenRecapModal?: (overview: NightOverview, night: MovieNight) => void;
+  onUpdateOverviewImage?: (overviewId: string, imageUrl: string) => Promise<void>;
+  onDeleteOverviewImage?: (overviewId: string) => Promise<void>;
 }
 
-export default function PriorSessionRecap({ nights, reviews, overviews, onOpenRecapModal }: PriorSessionRecapProps) {
+export default function PriorSessionRecap({
+  nights,
+  reviews,
+  overviews,
+  currentUser,
+  onOpenRecapModal,
+  onUpdateOverviewImage,
+  onDeleteOverviewImage
+}: PriorSessionRecapProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [feedback, setFeedback] = useState<string>("");
+
+  const isAsh = currentUser?.username?.toLowerCase() === "ash" || currentUser?.isAsh === true;
+  const isAdmin = currentUser?.username?.toLowerCase() === "james" || currentUser?.isAdmin === true;
+  const canManagePhotos = isAsh || isAdmin;
+
+  const compressImage = (file: File, maxWidth = 1280, maxHeight = 1280, quality = 0.82): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rawDataUrl = e.target?.result as string;
+        if (!rawDataUrl) {
+          reject(new Error("Empty image file"));
+          return;
+        }
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let { width, height } = img;
+            if (width > maxWidth || height > maxHeight) {
+              if (width / maxWidth > height / maxHeight) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              } else {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+              }
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              resolve(rawDataUrl);
+              return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL("image/jpeg", quality);
+            resolve(dataUrl);
+          } catch (canvasErr) {
+            resolve(rawDataUrl);
+          }
+        };
+        img.onerror = () => {
+          if (file.size < 10 * 1024 * 1024 && rawDataUrl) {
+            resolve(rawDataUrl);
+          } else {
+            reject(new Error("Failed to load image"));
+          }
+        };
+        img.src = rawDataUrl;
+      };
+      reader.onerror = () => reject(new Error("Failed to read image file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, overviewId: string) => {
+    const file = e.target.files?.[0];
+    if (!file || !onUpdateOverviewImage) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file.");
+      return;
+    }
+
+    setUploading(true);
+    setFeedback("Compressing and uploading photo...");
+    try {
+      const dataUrl = await compressImage(file);
+      await onUpdateOverviewImage(overviewId, dataUrl);
+      setFeedback("Photo saved successfully!");
+      setTimeout(() => setFeedback(""), 3000);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to upload photo");
+      setFeedback("");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemovePhoto = async (overviewId: string) => {
+    if (!confirm("Are you sure you want to remove this gathering photo?")) return;
+    if (!onDeleteOverviewImage) return;
+
+    setUploading(true);
+    try {
+      await onDeleteOverviewImage(overviewId);
+      setFeedback("Photo removed.");
+      setTimeout(() => setFeedback(""), 3000);
+    } catch (err: any) {
+      alert(err.message || "Failed to remove photo");
+    } finally {
+      setUploading(false);
+    }
+  };
   // 1. Find the most recently watched movie night
   const watchedNights = nights
     .filter((n) => n.status === "watched" && n.movie)
@@ -162,28 +274,91 @@ export default function PriorSessionRecap({ nights, reviews, overviews, onOpenRe
             </div>
           )}
 
-          {/* Memory image if present */}
-          {overview?.imageUrl && (
-            <div 
-              onClick={() => onOpenRecapModal && onOpenRecapModal(overview, priorNight)}
-              className={`relative rounded-2xl overflow-hidden border border-zinc-900 max-h-72 bg-zinc-950 ${onOpenRecapModal ? 'cursor-pointer group hover:border-amber-500/50 transition-all' : ''}`}
-            >
-              <img
-                src={overview.imageUrl}
-                alt="Movie Night Gathering Memory"
-                className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-300"
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md text-zinc-400 border border-zinc-800 rounded px-2.5 py-1 text-[10px] font-mono flex items-center gap-1.5">
-                <ImageIcon className="w-3 h-3 text-amber-500" />
-                Snapshot of the Night
-              </div>
-              {onOpenRecapModal && (
-                <div className="absolute top-3 right-3 bg-black/75 backdrop-blur-md text-amber-400 border border-amber-500/30 rounded px-2 py-0.5 text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-lg">
-                  <Maximize2 className="w-3 h-3" />
-                  <span>Pop-up</span>
+          {/* Memory image or upload prompt */}
+          {overview && (
+            <div className="space-y-2">
+              {isAuthenticGatheringPhoto(overview.imageUrl) ? (
+                <div className="space-y-2">
+                  <div 
+                    onClick={() => onOpenRecapModal && onOpenRecapModal(overview, priorNight)}
+                    className={`relative rounded-2xl overflow-hidden border border-zinc-900 max-h-72 bg-zinc-950 ${onOpenRecapModal ? 'cursor-pointer group hover:border-amber-500/50 transition-all' : ''}`}
+                  >
+                    <img
+                      src={overview.imageUrl}
+                      alt="Movie Night Gathering Memory"
+                      className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-300"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md text-zinc-300 border border-zinc-800 rounded px-2.5 py-1 text-[10px] font-mono flex items-center gap-1.5">
+                      <Camera className="w-3 h-3 text-amber-500" />
+                      Gathering Memory • Documented by Ash
+                    </div>
+                    {onOpenRecapModal && (
+                      <div className="absolute top-3 right-3 bg-black/75 backdrop-blur-md text-amber-400 border border-amber-500/30 rounded px-2 py-0.5 text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-lg">
+                        <Maximize2 className="w-3 h-3" />
+                        <span>Pop-up</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {canManagePhotos && (
+                    <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
+                      <span className="text-[11px] text-zinc-500 font-mono">
+                        {feedback || "Original gathering photo attached"}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading}
+                          className="text-xs font-mono text-amber-800 hover:text-amber-950 font-semibold px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3 text-amber-700" />}
+                          <span>Change Photo</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePhoto(overview.id)}
+                          disabled={uploading}
+                          className="text-xs font-mono text-zinc-500 hover:text-red-700 px-2 py-1 rounded-lg hover:bg-red-50 border border-transparent hover:border-red-200 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Remove</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-[#080808] border border-dashed border-zinc-800/80 rounded-2xl p-5 text-center space-y-2">
+                  <div className="flex items-center justify-center gap-2 text-zinc-400 text-xs font-mono">
+                    <Camera className="w-4 h-4 text-amber-500" />
+                    <span>No friends gathering photo attached to this recap yet</span>
+                  </div>
+                  {canManagePhotos && (
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-mono font-bold shadow-md shadow-amber-600/20 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                        <span>+ Upload Gathering Photo</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
+
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) => handleFileChange(e, overview.id)}
+                accept="image/*"
+                className="hidden"
+              />
             </div>
           )}
         </div>

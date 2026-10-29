@@ -585,7 +585,46 @@ export default function App() {
     await fetchInitialData();
   };
 
+  // API Call: Update an overview recap gathering photo (Only Admins / Ash)
+  const handleUpdateOverviewImage = async (id: string, imageUrl: string) => {
+    const response = await fetch(`/api/overviews/${id}/image`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageUrl,
+        requester: currentUser?.username
+      })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || "Failed to update gathering photo");
+    }
+
+    await fetchInitialData();
+  };
+
+  // API Call: Remove an overview recap gathering photo (Only Admins / Ash)
+  const handleDeleteOverviewImage = async (id: string) => {
+    const response = await fetch(`/api/overviews/${id}/image`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        requester: currentUser?.username
+      })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || "Failed to remove gathering photo");
+    }
+
+    await fetchInitialData();
+  };
+
   const isAsh = currentUser?.username?.toLowerCase() === "ash" || currentUser?.isAsh === true;
+  const isAdmin = currentUser?.username?.toLowerCase() === "james" || currentUser?.isAdmin === true;
+  const canManageRecaps = isAsh || isAdmin;
 
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
@@ -638,7 +677,10 @@ export default function App() {
             overview={newRecapAlert.overview}
             night={newRecapAlert.night}
             reviews={reviews}
+            currentUser={currentUser}
             onClose={handleAcknowledgeRecap}
+            onUpdateOverviewImage={handleUpdateOverviewImage}
+            onDeleteOverviewImage={handleDeleteOverviewImage}
           />
         )}
       </AnimatePresence>
@@ -802,7 +844,7 @@ export default function App() {
             >
               Memories
             </button>
-            {isAsh && (
+            {canManageRecaps && (
               <button 
                 onClick={() => setActiveTab("writer")} 
                 className={`text-[11px] uppercase tracking-widest hover:text-white transition-all cursor-pointer ${
@@ -810,8 +852,9 @@ export default function App() {
                     ? "text-amber-500 font-bold underline underline-offset-8 decoration-amber-500" 
                     : "text-zinc-400"
                 }`}
+                title="Manage and publish session recaps & gathering photos"
               >
-                Night Writer
+                {isAsh ? "Night Writer" : "Recaps & Photos"}
               </button>
             )}
           </div>
@@ -890,7 +933,7 @@ export default function App() {
             <Heart className="w-4.5 h-4.5" />
             <span>Memories</span>
           </button>
-          {isAsh && (
+          {canManageRecaps && (
             <button
               onClick={() => setActiveTab("writer")}
               className={`flex flex-col items-center gap-1 transition-all text-[10px] font-medium cursor-pointer py-1 ${
@@ -898,7 +941,7 @@ export default function App() {
               }`}
             >
               <BookOpen className="w-4.5 h-4.5" />
-              <span>Recap</span>
+              <span>{isAsh ? "Recaps" : "Recaps/Photo"}</span>
             </button>
           )}
         </nav>
@@ -990,7 +1033,10 @@ export default function App() {
                       nights={nights} 
                       reviews={reviews} 
                       overviews={overviews} 
+                      currentUser={currentUser}
                       onOpenRecapModal={(overview, night) => setNewRecapAlert({ overview, night })}
+                      onUpdateOverviewImage={handleUpdateOverviewImage}
+                      onDeleteOverviewImage={handleDeleteOverviewImage}
                     />
 
                     {/* Group Statistics Dashboard */}
@@ -1025,14 +1071,18 @@ export default function App() {
                     onToggleStarReview={handleToggleStarReview}
                     onDeleteOverview={handleDeleteOverview}
                     onOpenRecapModal={(overview, night) => setNewRecapAlert({ overview, night })}
+                    onUpdateOverviewImage={handleUpdateOverviewImage}
+                    onDeleteOverviewImage={handleDeleteOverviewImage}
                   />
                 )}
 
-                {activeTab === "writer" && isAsh && (
+                {activeTab === "writer" && canManageRecaps && (
                   <OverviewForm 
                     nights={nights}
                     currentUser={currentUser}
                     onPostOverview={handlePostOverview}
+                    overviews={overviews}
+                    onUpdateOverviewImage={handleUpdateOverviewImage}
                   />
                 )}
               </motion.div>

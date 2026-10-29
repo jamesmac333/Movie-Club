@@ -10,7 +10,7 @@ const sessions = [
     overview: {
       title: "Lord of the Rings - more like “Samwise Gamgee not getting the recognition he deserves!!!!”",
       content: "Kicking off our inaugural Movie Club screening with the grand finale of Peter Jackson's legendary trilogy. Samwise Gamgee carried the entire fellowship on his shoulders, and honestly, the emotional resonance of this masterpiece only deepens with time. An unforgettable start to our club nights with the gang.",
-      imageUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80"
+      imageUrl: ""
     },
     reviews: [
       { user: "Max Smith", rating: 5, comment: "Peter Jackson's crowning achievement. 200 minutes flies by and the emotional punch never fades." },
@@ -27,7 +27,7 @@ const sessions = [
     overview: {
       title: "Is Denis Villeneuve Lost in the Sauce?",
       content: "Tense, gripping, and relentlessly dark from the first frame to the final whistle. Hugh Jackman delivers a career-defining descent into parental desperation while Jake Gyllenhaal's twitchy Detective Loki grounds the mystery with pure grit. The moral ambiguity kept us debating well past midnight.",
-      imageUrl: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=1200&q=80"
+      imageUrl: ""
     },
     reviews: [
       { user: "Ash Macintosh", rating: 5, comment: "Villeneuve crafts pure dread and moral ambiguity. Hugh Jackman and Jake Gyllenhaal at their absolute peaks." },
@@ -43,7 +43,7 @@ const sessions = [
     overview: {
       title: "The Christchurch Girls High Experience",
       content: "A haunting local treasure that hit close to home. The fantasy dream sequences and the incredible breakout performances from Kate Winslet and Melanie Lynskey made this one of our most stylistically unique evenings. Tragic, vivid, and deeply atmospheric New Zealand cinema.",
-      imageUrl: "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1200&q=80"
+      imageUrl: ""
     },
     reviews: [
       { user: "Madison Hill", rating: 5, comment: "Kate Winslet and Melanie Lynskey's chemistry is unforgettable. Such a poetic yet chilling slice of NZ history." },
@@ -59,7 +59,7 @@ const sessions = [
     overview: {
       title: "Promise you’ll only notice Bo Burnham’s Giant Dome",
       content: "Carey Mulligan commands every scene with razor-sharp precision. The candy-colored aesthetic clashing against the biting, uncompromising revenge narrative left all of us stunned. A pitch-perfect modern thriller with an explosive soundtrack to match.",
-      imageUrl: "https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=1200&q=80"
+      imageUrl: ""
     },
     reviews: [
       { user: "Amy Walsh", rating: 5, comment: "That Toxic strings sequence was iconic! Carey Mulligan delivers vengeance with terrifying elegance." },
@@ -75,7 +75,7 @@ const sessions = [
     overview: {
       title: "Fannies, Crips, and (9/)11 Chips",
       content: "Pure cinematic perfection. Bong Joon Ho orchestrates genre shifts with breathtaking elegance—hilarious satire in the first half leading into unbearable suspense in the basement. Every single member was on the edge of their seat. Unquestionably one of our highest-rated nights.",
-      imageUrl: "https://images.unsplash.com/photo-1527224857830-43a7acc85260?auto=format&fit=crop&w=1200&q=80"
+      imageUrl: ""
     },
     reviews: [
       { user: "Tom Sakai", rating: 5, comment: "Bong Joon Ho's pacing and tone control is masterclass. Every scene transition is pure cinematic gold." },
@@ -91,7 +91,7 @@ const sessions = [
     overview: {
       title: "An Ode to Steve Wiebe - Our Autistic King of Kong",
       content: "You couldn't script better characters than Steve Wiebe and Billy Mitchell if you tried. The quintessential David versus Goliath documentary that had the entire room cheering for every single hammer smash and barrel jump. An absolute crowd pleaser that exceeded all expectations.",
-      imageUrl: "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80"
+      imageUrl: ""
     },
     reviews: [
       { user: "James Macintosh", rating: 5, comment: "Billy Mitchell walking in with the USA tie while Steve Wiebe sweats at the arcade is peak comedy." },
@@ -107,7 +107,7 @@ const sessions = [
     overview: {
       title: "But, how do they shit?",
       content: "It’s tough to keep an audience engaged when a film is set in one location. Although this film does technically travel through fictional America, the road they walk is essentially one setting they never leave. To make it even harder for the director, we as the audience immediately know that all but one of the cast members will likely die. To overcome these there is a HEAVY reliance on the actors and the writing but its masterfully done in all aspects. The way they managed to get me to care so deeply about even the most despicable characters right before their demise by breaking them down, finally showing their true vulnerability was heartbreaking and so human. I will also say the plot twist at the end was a really left field hook I didn’t see coming so kudos to Stephen King on that one. 4.5/5 with the only draw back being the final scene felt like it had less weight than some of the previous deaths.",
-      imageUrl: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1200&q=80"
+      imageUrl: ""
     },
     reviews: [
       { user: "Ash Macintosh", rating: 4.5, comment: "It’s tough to keep an audience engaged when a film is set in one location. Stephen King's tension brought to life masterfully." },

@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS } from "../types.ts";
-import { Star, MessageSquare, Trash2, Edit3, Plus, Image as ImageIcon, Heart, Calendar, Sparkles, BookOpen, Maximize2, ChevronDown, ChevronUp } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS, isAuthenticGatheringPhoto } from "../types.ts";
+import { Star, MessageSquare, Trash2, Edit3, Plus, Image as ImageIcon, Heart, Calendar, Sparkles, BookOpen, Maximize2, ChevronDown, ChevronUp, Camera, Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface FeedViewProps {
@@ -14,6 +14,8 @@ interface FeedViewProps {
   onToggleStarReview?: (id: string) => Promise<void>;
   onDeleteOverview?: (id: string) => Promise<void>;
   onOpenRecapModal?: (overview: NightOverview, night: MovieNight) => void;
+  onUpdateOverviewImage?: (overviewId: string, imageUrl: string) => Promise<void>;
+  onDeleteOverviewImage?: (overviewId: string) => Promise<void>;
 }
 
 export default function FeedView({
@@ -26,13 +28,132 @@ export default function FeedView({
   onDeleteReview,
   onToggleStarReview,
   onDeleteOverview,
-  onOpenRecapModal
+  onOpenRecapModal,
+  onUpdateOverviewImage,
+  onDeleteOverviewImage
 }: FeedViewProps) {
   const [activeReviewFormId, setActiveReviewFormId] = useState<string | null>(null);
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState("");
+
+  // Photo management state for overviews
+  const overviewFileInputRef = useRef<HTMLInputElement>(null);
+  const [targetOverviewIdForPhoto, setTargetOverviewIdForPhoto] = useState<string | null>(null);
+  const [uploadingPhotoId, setUploadingPhotoId] = useState<string | null>(null);
+  const [photoFeedback, setPhotoFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const compressImage = (file: File, maxWidth = 1280, maxHeight = 1280, quality = 0.82): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rawDataUrl = e.target?.result as string;
+        if (!rawDataUrl) {
+          reject(new Error("Empty image file"));
+          return;
+        }
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let { width, height } = img;
+            if (width > maxWidth || height > maxHeight) {
+              if (width / maxWidth > height / maxHeight) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              } else {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+              }
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              resolve(rawDataUrl);
+              return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL("image/jpeg", quality);
+            resolve(dataUrl);
+          } catch (canvasErr) {
+            resolve(rawDataUrl);
+          }
+        };
+        img.onerror = () => {
+          if (file.size < 10 * 1024 * 1024 && rawDataUrl) {
+            resolve(rawDataUrl);
+          } else {
+            reject(new Error("Failed to load image"));
+          }
+        };
+        img.src = rawDataUrl;
+      };
+      reader.onerror = () => reject(new Error("Failed to read image file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handlePhotoUploadTrigger = (overviewId: string) => {
+    setTargetOverviewIdForPhoto(overviewId);
+    setPhotoFeedback(null);
+    if (overviewFileInputRef.current) {
+      overviewFileInputRef.current.value = "";
+      overviewFileInputRef.current.click();
+    }
+  };
+
+  const handleOverviewFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const ovId = targetOverviewIdForPhoto;
+    if (!file || !ovId || !onUpdateOverviewImage) return;
+
+    if (!file.type.startsWith("image/")) {
+      setPhotoFeedback({ type: "error", message: "Please select an image file (PNG, JPG, WebP)." });
+      return;
+    }
+
+    if (file.size > 25 * 1024 * 1024) {
+      setPhotoFeedback({ type: "error", message: "Image is too large. Please select a photo under 25MB." });
+      return;
+    }
+
+    setUploadingPhotoId(ovId);
+    setPhotoFeedback(null);
+    try {
+      const compressedDataUrl = await compressImage(file);
+      await onUpdateOverviewImage(ovId, compressedDataUrl);
+      setPhotoFeedback({ type: "success", message: "Original gathering photo uploaded and saved successfully!" });
+      setTimeout(() => setPhotoFeedback(null), 4000);
+    } catch (err: any) {
+      console.error("Photo upload error:", err);
+      setPhotoFeedback({ type: "error", message: err.message || "Failed to upload photo. Please try again." });
+    } finally {
+      setUploadingPhotoId(null);
+      setTargetOverviewIdForPhoto(null);
+      if (overviewFileInputRef.current) {
+        overviewFileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemovePhoto = async (overviewId: string) => {
+    if (!confirm("Are you sure you want to remove this gathering photo?")) return;
+    if (!onDeleteOverviewImage) return;
+    setUploadingPhotoId(overviewId);
+    try {
+      await onDeleteOverviewImage(overviewId);
+      setPhotoFeedback({ type: "success", message: "Photo removed from recap." });
+      setTimeout(() => setPhotoFeedback(null), 4000);
+    } catch (err: any) {
+      console.error("Remove photo error:", err);
+      setPhotoFeedback({ type: "error", message: err.message || "Failed to remove photo." });
+    } finally {
+      setUploadingPhotoId(null);
+    }
+  };
 
   // Collapsed state for Overviews and Reviews (both collapsed by default)
   const [expandedOverviewIds, setExpandedOverviewIds] = useState<Record<string, boolean>>({});
@@ -341,7 +462,7 @@ export default function FeedView({
                     <div className="space-y-1">
                       <div className="flex items-center justify-between gap-4 flex-wrap">
                         <span className="text-xs font-mono text-amber-800 font-bold tracking-widest uppercase">The Next Day Overview by Ash</span>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {onOpenRecapModal && (
                             <button
                               type="button"
@@ -351,6 +472,22 @@ export default function FeedView({
                             >
                               <BookOpen className="w-3.5 h-3.5 text-amber-700" />
                               <span>Pop-up Window</span>
+                            </button>
+                          )}
+                          {(isAdmin || isAsh) && (
+                            <button
+                              type="button"
+                              onClick={() => handlePhotoUploadTrigger(overview.id)}
+                              disabled={uploadingPhotoId === overview.id}
+                              className="p-1.5 text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
+                              title={isAuthenticGatheringPhoto(overview.imageUrl) ? "Upload / Replace Gathering Photo" : "+ Add Gathering Photo"}
+                            >
+                              {uploadingPhotoId === overview.id ? (
+                                <Loader2 className="w-3.5 h-3.5 text-amber-700 animate-spin" />
+                              ) : (
+                                <Camera className="w-3.5 h-3.5 text-amber-700" />
+                              )}
+                              <span>{isAuthenticGatheringPhoto(overview.imageUrl) ? "Replace Photo" : "+ Add Photo"}</span>
                             </button>
                           )}
                           {(isAdmin || isAsh) && (
@@ -424,54 +561,133 @@ export default function FeedView({
                           )}
                         </button>
 
-                        {!isOverviewExpanded && overview.imageUrl && (
+                        {!isOverviewExpanded && (
                           <span 
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleOverviewExpand(night.id);
                             }}
-                            className="text-[11px] font-mono text-zinc-500 group-hover/ov:text-zinc-300 flex items-center gap-1.5 cursor-pointer transition-colors"
+                            className="text-[11px] font-mono text-zinc-500 group-hover/ov:text-zinc-700 flex items-center gap-1.5 cursor-pointer transition-colors"
                           >
-                            <ImageIcon className="w-3.5 h-3.5 text-amber-500/80" />
-                            <span>Photo memory attached (click to expand)</span>
+                            {isAuthenticGatheringPhoto(overview.imageUrl) ? (
+                              <>
+                                <ImageIcon className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Photo memory attached (click to view)</span>
+                              </>
+                            ) : (
+                              <>
+                                <Camera className="w-3.5 h-3.5 text-zinc-400" />
+                                <span>No gathering photo attached</span>
+                              </>
+                            )}
                           </span>
                         )}
                       </div>
 
-                      {/* Ash's Memory Photo (the "friends" photo uploaded, revealed when overview is expanded) */}
+                      {/* Ash's Memory Photo Section */}
                       <AnimatePresence>
-                        {isOverviewExpanded && overview.imageUrl && (
+                        {isOverviewExpanded && (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
                             transition={{ duration: 0.3 }}
-                            className="overflow-hidden pt-2"
+                            className="overflow-hidden pt-2 space-y-2"
                           >
-                            <div 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onOpenRecapModal && onOpenRecapModal(overview, night);
-                              }}
-                              className={`relative bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 max-h-[400px] ${onOpenRecapModal ? 'cursor-pointer group hover:border-amber-500/50 transition-all' : ''}`}
-                            >
-                              <img
-                                src={overview.imageUrl}
-                                alt="Movie Club Friends Gathering"
-                                className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-300"
-                                referrerPolicy="no-referrer"
-                              />
-                              <div className="absolute bottom-4 left-4 bg-black/75 backdrop-blur-md text-zinc-300 border border-zinc-800 rounded px-3 py-1 text-xs font-mono flex items-center gap-1.5">
-                                <ImageIcon className="w-3.5 h-3.5 text-amber-500" />
-                                Memory Captured by Ash Macintosh
-                              </div>
-                              {onOpenRecapModal && (
-                                <div className="absolute top-4 right-4 bg-black/75 backdrop-blur-md text-amber-400 border border-amber-500/30 rounded px-2.5 py-1 text-[11px] font-mono opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-lg">
-                                  <Maximize2 className="w-3 h-3" />
-                                  <span>Expand Recap</span>
+                            {isAuthenticGatheringPhoto(overview.imageUrl) ? (
+                              <div className="space-y-2">
+                                <div 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onOpenRecapModal && onOpenRecapModal(overview, night);
+                                  }}
+                                  className={`relative bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 max-h-[460px] ${onOpenRecapModal ? 'cursor-pointer group hover:border-amber-500/50 transition-all' : ''}`}
+                                >
+                                  <img
+                                    src={overview.imageUrl}
+                                    alt="Movie Club Friends Gathering"
+                                    className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-300"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                  <div className="absolute bottom-4 left-4 bg-black/80 backdrop-blur-md text-zinc-200 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs font-mono flex items-center gap-2 shadow-lg">
+                                    <Camera className="w-4 h-4 text-amber-400" />
+                                    <span>Gathering Memory • Captured by Ash</span>
+                                  </div>
+                                  {onOpenRecapModal && (
+                                    <div className="absolute top-4 right-4 bg-black/75 backdrop-blur-md text-amber-400 border border-amber-500/30 rounded px-2.5 py-1 text-[11px] font-mono opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-lg">
+                                      <Maximize2 className="w-3 h-3" />
+                                      <span>Expand Recap</span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
+
+                                {(isAdmin || isAsh) && (
+                                  <div className="flex items-center justify-between gap-3 px-1 pt-1 flex-wrap">
+                                    <span className="text-[11px] text-zinc-500 font-mono">
+                                      Real photos are stored securely with all club records.
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handlePhotoUploadTrigger(overview.id);
+                                        }}
+                                        disabled={uploadingPhotoId === overview.id}
+                                        className="text-xs font-mono text-amber-800 hover:text-amber-950 font-semibold px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                                      >
+                                        <Camera className="w-3.5 h-3.5 text-amber-700" />
+                                        <span>Replace Photo</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRemovePhoto(overview.id);
+                                        }}
+                                        disabled={uploadingPhotoId === overview.id}
+                                        className="text-xs font-mono text-zinc-500 hover:text-red-700 font-medium px-2.5 py-1 rounded-lg hover:bg-red-50 border border-transparent hover:border-red-200 transition-all flex items-center gap-1 cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                        <span>Remove Photo</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="bg-amber-50/70 border-2 border-dashed border-amber-300/80 rounded-2xl p-5 text-center space-y-2.5">
+                                <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                                  <Camera className="w-5 h-5" />
+                                </div>
+                                <div>
+                                  <h6 className="text-sm font-serif font-bold text-zinc-900">No Gathering Photo Attached Yet</h6>
+                                  <p className="text-xs text-zinc-600 max-w-md mx-auto mt-0.5">
+                                    Ash documents our group memories and reactions the day after every session.
+                                  </p>
+                                </div>
+                                {(isAdmin || isAsh) && (
+                                  <div className="pt-1">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handlePhotoUploadTrigger(overview.id);
+                                      }}
+                                      disabled={uploadingPhotoId === overview.id}
+                                      className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-mono font-bold shadow-md shadow-amber-600/20 transition-all cursor-pointer"
+                                    >
+                                      {uploadingPhotoId === overview.id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <Upload className="w-4 h-4" />
+                                      )}
+                                      <span>+ Upload Gathering Photo</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -481,9 +697,9 @@ export default function FeedView({
                   <div className="bg-zinc-900/10 border border-dashed border-zinc-900 rounded-2xl p-6 text-center space-y-2">
                     <ImageIcon className="w-8 h-8 text-zinc-700 mx-auto" />
                     <p className="text-sm font-serif text-zinc-500 italic">Ash Macintosh is preparing the night overview and gather image for this event...</p>
-                    {(currentUser?.username?.toLowerCase() === "ash" || currentUser?.isAsh === true) && (
-                      <p className="text-xs text-amber-500">
-                        *Hint: Ash, use the Night Writer form below to post this night's overview!
+                    {(isAdmin || isAsh) && (
+                      <p className="text-xs text-amber-600 font-mono">
+                        *Hint: As an Admin / Recap Author, you can publish this night's overview and photo in the "Recaps & Photos" tab.
                       </p>
                     )}
                   </div>
@@ -825,6 +1041,45 @@ export default function FeedView({
           );
         })}
       </div>
+
+      {/* Hidden File Input for Gathering Photos */}
+      <input
+        type="file"
+        ref={overviewFileInputRef}
+        onChange={handleOverviewFileSelected}
+        accept="image/*"
+        className="hidden"
+      />
+
+      {/* Floating Photo Operation Feedback Toast */}
+      <AnimatePresence>
+        {photoFeedback && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl shadow-2xl border flex items-center gap-3 backdrop-blur-md text-xs font-mono font-semibold ${
+              photoFeedback.type === "success"
+                ? "bg-emerald-950/90 border-emerald-500/40 text-emerald-200 shadow-emerald-500/20"
+                : "bg-red-950/90 border-red-500/40 text-red-200 shadow-red-500/20"
+            }`}
+          >
+            {photoFeedback.type === "success" ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            )}
+            <span>{photoFeedback.message}</span>
+            <button
+              type="button"
+              onClick={() => setPhotoFeedback(null)}
+              className="ml-1 p-0.5 hover:bg-white/10 rounded cursor-pointer"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

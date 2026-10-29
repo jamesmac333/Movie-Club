@@ -46,6 +46,15 @@ export interface NightOverview {
   createdAt: string;
 }
 
+export function isAuthenticGatheringPhoto(url?: string | null): boolean {
+  if (!url || typeof url !== "string") return false;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === "none") return false;
+  // Ignore any legacy stock / AI placeholders from Unsplash
+  if (trimmed.includes("unsplash.com")) return false;
+  return true;
+}
+
 export interface User {
   username: string;
   name: string;

@@ -1,15 +1,17 @@
-import React, { useState, useRef } from "react";
-import { MovieNight, User } from "../types.ts";
-import { BookOpen, Camera, Upload, AlertCircle, CheckCircle, Image as ImageIcon, Sparkles, RefreshCw } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { MovieNight, User, NightOverview, isAuthenticGatheringPhoto } from "../types.ts";
+import { BookOpen, Camera, Upload, AlertCircle, CheckCircle, Image as ImageIcon, Sparkles, RefreshCw, Trash2, Edit } from "lucide-react";
 import { motion } from "motion/react";
 
 interface OverviewFormProps {
   nights: MovieNight[];
   currentUser: User | null;
   onPostOverview: (movieNightId: string, title: string, content: string, imageUrl: string) => Promise<void>;
+  overviews?: NightOverview[];
+  onUpdateOverviewImage?: (overviewId: string, imageUrl: string) => Promise<void>;
 }
 
-export default function OverviewForm({ nights, currentUser, onPostOverview }: OverviewFormProps) {
+export default function OverviewForm({ nights, currentUser, onPostOverview, overviews = [], onUpdateOverviewImage }: OverviewFormProps) {
   const [selectedNightId, setSelectedNightId] = useState("");
   const [headline, setHeadline] = useState("");
   const [content, setContent] = useState("");
@@ -29,6 +31,33 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
 
   // List of movie nights that have a movie selected, ready for an overview
   const reviewableNights = nights.filter(n => n.movie !== null);
+
+  // When selectedNightId changes, pre-load existing recap data if available
+  useEffect(() => {
+    if (!selectedNightId) {
+      setHeadline("");
+      setContent("");
+      setImageBlob("");
+      setError("");
+      setSuccess("");
+      return;
+    }
+    const existing = overviews.find(o => o.movieNightId === selectedNightId);
+    if (existing) {
+      setHeadline(existing.title || "");
+      setContent(existing.content || "");
+      const hasRealPhoto = isAuthenticGatheringPhoto(existing.imageUrl);
+      setImageBlob(hasRealPhoto ? existing.imageUrl : "");
+      setError("");
+      setSuccess("");
+    } else {
+      setHeadline("");
+      setContent("");
+      setImageBlob("");
+      setError("");
+      setSuccess("");
+    }
+  }, [selectedNightId, overviews]);
 
   const compressImage = (file: File, maxWidth = 1280, maxHeight = 1280, quality = 0.82): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -146,23 +175,14 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
       return;
     }
     if (!content.trim()) {
-      setError("Please write the recap recap details.");
-      return;
-    }
-    if (!imageBlob) {
-      setError("Please upload a photo of the friends gathering to complete the memories overview.");
+      setError("Please write the recap details.");
       return;
     }
 
     setLoading(true);
     try {
-      await onPostOverview(selectedNightId, headline.trim(), content.trim(), imageBlob);
-      setSuccess("Success! The Night Overview and friends photo has been published to the feed.");
-      // Reset form fields
-      setHeadline("");
-      setContent("");
-      setImageBlob("");
-      setSelectedNightId("");
+      await onPostOverview(selectedNightId, headline.trim(), content.trim(), imageBlob || "");
+      setSuccess("Success! The Night Overview and gathering photo have been saved.");
     } catch (e: any) {
       setError(e.message || "Failed to post the overview. Try again!");
     } finally {
@@ -170,13 +190,16 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
     }
   };
 
+  const existingOverview = overviews.find(o => o.movieNightId === selectedNightId);
+  const isEditingExisting = !!existingOverview;
+
   if (!isAuthorized) {
     return (
       <div className="bg-zinc-950/20 border border-zinc-900 rounded-3xl p-8 text-center max-w-xl mx-auto space-y-4">
         <AlertCircle className="w-10 h-10 text-zinc-600 mx-auto" />
         <h3 className="text-xl font-serif font-bold text-zinc-300">Administrative Dashboard</h3>
         <p className="text-sm text-zinc-500 leading-relaxed">
-          Only <strong className="text-zinc-400">Ash Macintosh</strong> and club administrators have access to draft and publish the fortnightly movie night overviews and friends photography. Please sign in as Ash or James to access this dashboard.
+          Only <strong className="text-zinc-400">Ash Macintosh</strong> and club administrators have access to draft, publish, and replace movie night overviews and friends photography. Please sign in as Ash or James to access this dashboard.
         </p>
       </div>
     );
@@ -195,8 +218,12 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
           <BookOpen className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-2xl font-serif text-zinc-100 font-bold">Night Writer Dashboard</h2>
-          <p className="text-xs text-zinc-400 mt-0.5">Logged in as {currentUser?.name || "Editor"} • Post Memory Overview & Friends Photo</p>
+          <h2 className="text-2xl font-serif text-zinc-100 font-bold">
+            {isAuthorized && currentUser?.username?.toLowerCase() !== "ash" ? "Admin Recap & Photo Manager" : "Night Writer Dashboard"}
+          </h2>
+          <p className="text-xs text-zinc-400 mt-0.5">
+            Logged in as {currentUser?.name || "Admin"} • Add, replace, or update session recaps & gathering photos
+          </p>
         </div>
       </div>
 
@@ -211,14 +238,35 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
             onChange={(e) => setSelectedNightId(e.target.value)}
             className="w-full bg-zinc-900 border border-zinc-850 text-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-amber-500 text-base md:text-sm font-sans"
           >
-            <option value="">-- Choose a movie night to recap --</option>
-            {reviewableNights.map((night, idx) => (
-              <option key={night.id} value={night.id}>
-                Night #{idx + 1} ({new Date(night.date).toLocaleDateString("en-NZ", { day: "numeric", month: "short" })}) - Selector: {night.selector} - Film: "{night.movie?.title}"
-              </option>
-            ))}
+            <option value="">-- Choose a movie night to add or replace photo/recap --</option>
+            {reviewableNights.map((night, idx) => {
+              const ov = overviews.find(o => o.movieNightId === night.id);
+              const hasPhoto = ov && isAuthenticGatheringPhoto(ov.imageUrl);
+              const tag = ov 
+                ? (hasPhoto ? "✓ Has Photo" : "⚠️ Needs Photo") 
+                : "📝 Unwritten";
+              return (
+                <option key={night.id} value={night.id}>
+                  Night #{idx + 1} ({new Date(night.date).toLocaleDateString("en-NZ", { day: "numeric", month: "short" })}) - {night.selector} - "{night.movie?.title}" [{tag}]
+                </option>
+              );
+            })}
           </select>
         </div>
+
+        {isEditingExisting && (
+          <div className="flex items-center justify-between p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300">
+            <div className="flex items-center gap-2">
+              <Edit className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                Editing existing recap for <strong>{reviewableNights.find(n => n.id === selectedNightId)?.movie?.title}</strong>
+              </span>
+            </div>
+            <span className="font-mono text-[10px] bg-amber-500/20 px-2.5 py-0.5 rounded text-amber-300 font-semibold shrink-0">
+              {imageBlob ? "Photo Attached" : "Needs Photo"}
+            </span>
+          </div>
+        )}
 
         {/* Recap Headline */}
         <div>
@@ -255,21 +303,40 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
           </label>
 
           {imageBlob ? (
-            // Uploaded preview
-            <div className="relative border border-zinc-850 rounded-2xl overflow-hidden bg-zinc-900">
-              <img src={imageBlob} alt="Preview" className="w-full max-h-64 object-cover" />
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                <button
-                  type="button"
-                  onClick={() => setImageBlob("")}
-                  className="bg-red-500 hover:bg-red-600 text-zinc-950 font-bold px-4 py-2 rounded-lg text-xs transition-all cursor-pointer"
-                >
-                  Remove & Re-upload
-                </button>
-              </div>
-              <div className="p-3 bg-zinc-950/80 text-[10px] text-zinc-400 font-mono flex items-center justify-between">
-                <span>Image loaded successfully</span>
-                <span className="text-emerald-400">Ready to publish</span>
+            // Uploaded preview with clear Replace Photo and Remove options
+            <div className="relative border border-zinc-800 rounded-2xl overflow-hidden bg-zinc-900 group">
+              <img src={imageBlob} alt="Preview" className="w-full max-h-72 object-cover" />
+              <div className="p-4 bg-zinc-950 border-t border-zinc-900 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-xs font-mono text-zinc-300">
+                  <Camera className="w-4 h-4 text-amber-400" />
+                  <span>Gathering photo selected</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Replace Photo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageBlob("")}
+                    className="px-3 py-1.5 bg-zinc-900 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-900/40 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Remove Photo</span>
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -305,8 +372,14 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
                 Drag and drop your friends photo here
               </p>
               <p className="text-xs text-zinc-500 mt-1">
-                Or click to browse files from your computer (under 8MB)
+                Or click to browse files from your computer (auto-compressed safely)
               </p>
+              <div className="mt-3">
+                <span className="inline-flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold">
+                  <Camera className="w-3.5 h-3.5" />
+                  + Select Gathering Photo
+                </span>
+              </div>
             </div>
           )}
         </div>
@@ -334,12 +407,12 @@ export default function OverviewForm({ nights, currentUser, onPostOverview }: Ov
             {loading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                Publishing Overview...
+                {isEditingExisting ? "Saving Changes & Photo..." : "Publishing Overview..."}
               </>
             ) : (
               <>
                 <Camera className="w-4 h-4" />
-                Publish Movie Night Recap
+                {isEditingExisting ? "Save & Update Recap / Photo" : "Publish Movie Night Recap"}
               </>
             )}
           </button>
