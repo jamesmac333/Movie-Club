@@ -6,3 +6,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .DS_Store
+server-db.json
+server-db.json.bak
+remote-db.json
+remote-db.bak
+backups

@@ -32,8 +32,7 @@ RUN npm ci --omit=dev || npm install --omit=dev
 
 # Copy compiled assets and server bundles from the builder
 COPY --from=builder /app/dist ./dist
-# Copy DB helper and types since they are required dynamically or for server
-COPY --from=builder /app/server-db.json ./server-db.json
+# The database is not bundled; it lives in the Cloud Storage bucket mounted at /app/db-volume
 
 # Expose port 3000
 EXPOSE 3000

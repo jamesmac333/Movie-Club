@@ -6,3 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Database files contain member emails and passwords; live data is in the Cloud Storage bucket
+server-db.json
+server-db.json.bak
+remote-db.json
+remote-db.bak
+backups/
