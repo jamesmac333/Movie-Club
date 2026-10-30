@@ -1,5 +1,4 @@
 import express from "express";
-import crypto from "crypto";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
@@ -17,8 +16,21 @@ import {
   getDbFilePath
 } from "./server/db.ts";
 import { fetchMovieMetadata } from "./server/gemini.ts";
-import { authenticate, createToken } from "./server/auth.ts";
+import { authenticate, createToken, clientAddress, loginRetryMinutes, recordLoginFailure, recordLoginSuccess } from "./server/auth.ts";
 import { hashPassword, verifyPassword } from "./server/passwords.ts";
+import { storeImage, sendImage, imageVersion, isStoredImage, isInlineImage } from "./server/images.ts";
+
+// Public address of the site, used for links and images in club emails
+const SITE_URL = process.env.APP_URL || "https://www.movieclub.co.nz";
+
+// Browser-facing URL for an overview's gathering photo (stored photos are served by the API)
+function overviewImagePath(ov: { id: string; imageUrl?: string }): string {
+  const value = ov.imageUrl || "";
+  if (isStoredImage(value) || isInlineImage(value)) {
+    return `/api/overviews/${ov.id}/image?v=${imageVersion(value)}`;
+  }
+  return value.includes("unsplash.com") ? "" : value;
+}
 import { MovieNight, Review, NightOverview, EdmRecipient, EdmLog } from "./src/types.ts";
 import {
   sendEdm,
@@ -30,7 +42,7 @@ import {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   // Browser security headers. Keep in sync with the "headers" section of vercel.json,
   // which applies the same rules to the pages Vercel serves.
@@ -74,12 +86,19 @@ async function startServer() {
     if (!username || !password) {
       return res.status(400).json({ error: "Missing username or password" });
     }
+    const address = clientAddress(req);
+    const waitMinutes = loginRetryMinutes(String(username), address);
+    if (waitMinutes > 0) {
+      return res.status(429).json({ error: `Too many incorrect attempts. Please try again in ${waitMinutes} minute${waitMinutes === 1 ? "" : "s"}.` });
+    }
     try {
       const db = readDb();
       const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
       if (!user || !verifyPassword(String(password), user.password)) {
+        recordLoginFailure(String(username), address);
         return res.status(401).json({ error: "Incorrect username or password" });
       }
+      recordLoginSuccess(user.username);
       const { password: _, ...safeUser } = user;
       res.json({ user: safeUser, token: createToken(user.username) });
     } catch (error) {
@@ -215,17 +234,10 @@ async function startServer() {
         return res.status(404).send("Avatar not found");
       }
 
-      if (user.avatarUrl.startsWith("data:image/")) {
-        const matches = user.avatarUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
-        if (matches) {
-          const mime = matches[1];
-          const imgBuffer = Buffer.from(matches[2], "base64");
-          res.setHeader("Content-Type", `image/${mime === "jpg" ? "jpeg" : mime}`);
-          // Versioned URLs (?v=<fingerprint> from /api/users) never change, so browsers can keep them;
-          // unversioned requests are revalidated each time
-          res.setHeader("Cache-Control", req.query.v ? "public, max-age=31536000, immutable" : "no-cache");
-          return res.send(imgBuffer);
-        }
+      // Versioned URLs (?v=<fingerprint> from /api/users) never change, so browsers can keep them;
+      // unversioned requests are revalidated each time
+      if (sendImage(res, user.avatarUrl, req.query.v ? "public, max-age=31536000, immutable" : "no-cache")) {
+        return;
       }
 
       if (user.avatarUrl.startsWith("http://") || user.avatarUrl.startsWith("https://") || (user.avatarUrl.startsWith("/") && !user.avatarUrl.startsWith("/api/users/"))) {
@@ -243,12 +255,11 @@ async function startServer() {
     try {
       const db = readDb();
       const safeUsers = db.users.map(({ password, ...u }) => {
-        if (u.avatarUrl && u.avatarUrl.startsWith("data:image/")) {
+        if (u.avatarUrl && (isStoredImage(u.avatarUrl) || isInlineImage(u.avatarUrl))) {
           // Fingerprint changes whenever the photo does, so the URL can be cached
-          const version = crypto.createHash("sha1").update(u.avatarUrl).digest("hex").slice(0, 12);
           return {
             ...u,
-            avatarUrl: `/api/users/${encodeURIComponent(u.username)}/avatar?v=${version}`
+            avatarUrl: `/api/users/${encodeURIComponent(u.username)}/avatar?v=${imageVersion(u.avatarUrl)}`
           };
         }
         return u;
@@ -279,6 +290,7 @@ async function startServer() {
     }
 
     try {
+      const storedAvatar = storeImage(avatarUrl);
       const updatedUser = await mutateDb((db) => {
         let user = db.users.find(u => u.username.toLowerCase() === targetLower);
         if (!user) {
@@ -287,16 +299,16 @@ async function startServer() {
             name: username,
             isAdmin: targetLower === "james" || targetLower === "ash",
             isAsh: targetLower === "ash",
-            avatarUrl: avatarUrl
+            avatarUrl: storedAvatar
           };
           db.users.push(user);
         } else {
-          user.avatarUrl = avatarUrl;
+          user.avatarUrl = storedAvatar;
         }
         return user;
       });
 
-      res.json({ message: "Avatar updated successfully", avatarUrl: updatedUser.avatarUrl });
+      res.json({ message: "Avatar updated successfully", avatarUrl: `/api/users/${encodeURIComponent(updatedUser.username)}/avatar?v=${imageVersion(updatedUser.avatarUrl || "")}` });
     } catch (error) {
       res.status(500).json({ error: "Failed to update avatar" });
     }
@@ -834,6 +846,7 @@ async function startServer() {
     }
 
     try {
+      const storedImage = storeImage(imageUrl || "");
       const updated = await mutateDb((db) => {
         const user = db.users.find(u => u.username.toLowerCase() === reqLower);
         const isAuthorized = reqLower === "ash" || reqLower === "james" || user?.isAdmin;
@@ -846,7 +859,7 @@ async function startServer() {
           return null;
         }
 
-        ov.imageUrl = imageUrl || "";
+        ov.imageUrl = storedImage;
         return ov;
       });
 
@@ -856,12 +869,7 @@ async function startServer() {
 
       res.json({
         message: "Gathering photo updated successfully",
-        overview: {
-          ...updated,
-          imageUrl: updated.imageUrl && updated.imageUrl.startsWith("data:image/")
-            ? `/api/overviews/${updated.id}/image`
-            : updated.imageUrl
-        }
+        overview: { ...updated, imageUrl: overviewImagePath(updated) }
       });
     } catch (error: any) {
       if (error?.message === "UNAUTHORIZED") {
@@ -922,6 +930,7 @@ async function startServer() {
     }
 
     try {
+      const storedImage = imageUrl !== undefined ? storeImage(imageUrl) : undefined;
       const updated = await mutateDb((db) => {
         const user = db.users.find(u => u.username.toLowerCase() === reqLower);
         const isAuthorized = reqLower === "ash" || reqLower === "james" || user?.isAdmin;
@@ -936,7 +945,7 @@ async function startServer() {
 
         if (title !== undefined) ov.title = title.trim();
         if (content !== undefined) ov.content = content.trim();
-        if (imageUrl !== undefined) ov.imageUrl = imageUrl;
+        if (storedImage !== undefined) ov.imageUrl = storedImage;
 
         return ov;
       });
@@ -947,12 +956,7 @@ async function startServer() {
 
       res.json({
         message: "Overview updated successfully",
-        overview: {
-          ...updated,
-          imageUrl: updated.imageUrl && updated.imageUrl.startsWith("data:image/")
-            ? `/api/overviews/${updated.id}/image`
-            : updated.imageUrl
-        }
+        overview: { ...updated, imageUrl: overviewImagePath(updated) }
       });
     } catch (error: any) {
       if (error?.message === "UNAUTHORIZED") {
@@ -972,15 +976,8 @@ async function startServer() {
         return res.status(404).send("Image not found");
       }
 
-      if (ov.imageUrl.startsWith("data:image/")) {
-        const matches = ov.imageUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
-        if (matches) {
-          const mime = matches[1];
-          const imgBuffer = Buffer.from(matches[2], "base64");
-          res.setHeader("Content-Type", `image/${mime === "jpg" ? "jpeg" : mime}`);
-          res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
-          return res.send(imgBuffer);
-        }
+      if (sendImage(res, ov.imageUrl, req.query.v ? "public, max-age=31536000, immutable" : "no-cache")) {
+        return;
       }
 
       if (ov.imageUrl.startsWith("http://") || ov.imageUrl.startsWith("https://")) {
@@ -1001,19 +998,7 @@ async function startServer() {
       // Transform raw inline data URIs into lightweight /api/overviews/:id/image URLs.
       // This reduces payload from 37.5MB down to ~1.5KB, eliminating Cloud Run 32MB errors,
       // Vercel 4.5MB proxy errors, and mobile browser crashes!
-      const safeOverviews = (db.overviews || []).map((ov) => {
-        const cleanImageUrl = (ov.imageUrl && ov.imageUrl.includes("unsplash.com")) ? "" : (ov.imageUrl || "");
-        if (cleanImageUrl && cleanImageUrl.startsWith("data:image/")) {
-          return {
-            ...ov,
-            imageUrl: `/api/overviews/${ov.id}/image`
-          };
-        }
-        return {
-          ...ov,
-          imageUrl: cleanImageUrl
-        };
-      });
+      const safeOverviews = (db.overviews || []).map((ov) => ({ ...ov, imageUrl: overviewImagePath(ov) }));
       res.setHeader("Cache-Control", "no-cache");
       res.json(safeOverviews);
     } catch (error) {
@@ -1038,6 +1023,7 @@ async function startServer() {
     }
 
     try {
+      const storedImage = storeImage(imageUrl || "");
       const newOverview = await mutateDb((db) => {
         // Check if night exists
         const nightIndex = db.nights.findIndex((n) => n.id === movieNightId);
@@ -1050,7 +1036,7 @@ async function startServer() {
           movieNightId,
           title,
           content,
-          imageUrl, // Stored as base64 or Unsplash url
+          imageUrl: storedImage, // "img:" file reference, web URL or ""
           author: reqLower === "james" ? "James Macintosh" : "Ash Macintosh",
           createdAt: new Date().toISOString()
         };
@@ -1082,7 +1068,12 @@ async function startServer() {
           sendEdm({
             type: "overview",
             subject: `Movie Club Recap: ${newOverview.title}`,
-            html: generateNightOverviewEmailHtml(newOverview, night, dbSnapshot.reviews || []),
+            // Emails link to the photo on the site rather than embedding it
+            html: generateNightOverviewEmailHtml(
+              { ...newOverview, imageUrl: overviewImagePath(newOverview) ? SITE_URL + overviewImagePath(newOverview) : "" },
+              night,
+              dbSnapshot.reviews || []
+            ),
             previewText: `${newOverview.author} has published the official session chronicle: ${newOverview.title}`
           }).catch((edmErr) => {
             console.error("Async EDM dispatch error on overview:", edmErr);
@@ -1094,12 +1085,7 @@ async function startServer() {
 
       res.json({
         message: "Night overview posted successfully",
-        overview: {
-          ...newOverview,
-          imageUrl: newOverview.imageUrl.startsWith("data:image/")
-            ? `/api/overviews/${newOverview.id}/image`
-            : newOverview.imageUrl
-        }
+        overview: { ...newOverview, imageUrl: overviewImagePath(newOverview) }
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to save night overview" });

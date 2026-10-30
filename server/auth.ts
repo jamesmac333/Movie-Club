@@ -2,6 +2,53 @@ import crypto from "crypto";
 import type { Request, Response, NextFunction } from "express";
 import { readDb } from "./db.ts";
 
+// --- Login attempt limits ---
+// After too many wrong passwords for one account (or from one address) within the window,
+// further attempts are refused until the window passes. Kept in memory: the site runs one server.
+
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const MAX_FAILURES_PER_ACCOUNT = 5;
+const MAX_FAILURES_PER_ADDRESS = 20;
+const loginFailures = new Map<string, number[]>();
+
+function recentFailures(key: string): number[] {
+  const cutoff = Date.now() - LOGIN_WINDOW_MS;
+  const times = (loginFailures.get(key) || []).filter((t) => t > cutoff);
+  if (times.length) loginFailures.set(key, times);
+  else loginFailures.delete(key);
+  return times;
+}
+
+function loginKeys(username: string, address: string): [string, string] {
+  return [`account:${username.toLowerCase().trim()}`, `address:${address}`];
+}
+
+// Minutes until another attempt is allowed, or 0 if the attempt may go ahead
+export function loginRetryMinutes(username: string, address: string): number {
+  const [account, addr] = loginKeys(username, address);
+  const a = recentFailures(account);
+  const b = recentFailures(addr);
+  const blocked = [a.length >= MAX_FAILURES_PER_ACCOUNT ? a : null, b.length >= MAX_FAILURES_PER_ADDRESS ? b : null].filter(Boolean) as number[][];
+  if (!blocked.length) return 0;
+  const until = Math.max(...blocked.map((times) => times[0] + LOGIN_WINDOW_MS));
+  return Math.max(1, Math.ceil((until - Date.now()) / 60000));
+}
+
+export function recordLoginFailure(username: string, address: string): void {
+  for (const key of loginKeys(username, address)) loginFailures.set(key, [...recentFailures(key), Date.now()]);
+}
+
+export function recordLoginSuccess(username: string): void {
+  loginFailures.delete(loginKeys(username, "")[0]);
+}
+
+// Caller's address: the first hop added by Vercel's proxy, else the direct connection
+export function clientAddress(req: Request): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  const first = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim();
+  return first || req.socket.remoteAddress || "unknown";
+}
+
 // --- Signed session tokens ---
 
 const TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days

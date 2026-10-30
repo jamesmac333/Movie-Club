@@ -3,6 +3,7 @@ import path from "path";
 import crypto from "crypto";
 import { MovieNight, Review, NightOverview, User, EdmRecipient, EdmLog } from "../src/types.ts";
 import { migratePlainPasswords } from "./passwords.ts";
+import { configureImageStore, moveInlineImagesToFiles } from "./images.ts";
 
 function getDbFile(): string {
   if (process.env.DB_PATH) {
@@ -20,6 +21,7 @@ function getDbFile(): string {
 }
 
 const DB_FILE = getDbFile();
+configureImageStore(DB_FILE);
 
 export function getDbFilePath(): string {
   return DB_FILE;
@@ -408,6 +410,11 @@ function loadDbFromDisk(): DatabaseSchema {
 
   // Replace any plain-text passwords with salted hashes
   if (migratePlainPasswords(parsed.users)) {
+    saveDbToDiskAtomic(parsed);
+  }
+
+  // Move any photos still stored inside the database out to separate files
+  if (moveInlineImagesToFiles(parsed)) {
     saveDbToDiskAtomic(parsed);
   }
 

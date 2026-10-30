@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { MovieNight, Review, NightOverview, User, isAuthenticGatheringPhoto } from "../types.ts";
+import { MovieNight, Review, NightOverview, User, isAuthenticGatheringPhoto, isBeforeDataLoss } from "../types.ts";
 import { Calendar, Star, MessageSquare, Image as ImageIcon, Film, Heart, BookOpen, Maximize2, Camera, Upload, Trash2, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -373,8 +373,17 @@ export default function PriorSessionRecap({
           {nightReviews.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#080808] border border-zinc-900 rounded-2xl text-center space-y-1.5 my-auto">
               <Heart className="w-5 h-5 text-zinc-800" />
-              <p className="text-xs text-zinc-500 font-sans italic">No member reviews submitted yet.</p>
-              <p className="text-[10px] text-zinc-600">Reviewers can submit their memories in the "Memories" tab!</p>
+              {isBeforeDataLoss(priorNight.date) ? (
+                <>
+                  <p className="text-xs text-zinc-500 font-sans italic">The original reviews for this night were lost.</p>
+                  <p className="text-[10px] text-zinc-600">Google AI Studio wiped the club database on 14 October 2026. If you remember yours, add it again in the "Memories" tab.</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-zinc-500 font-sans italic">No member reviews submitted yet.</p>
+                  <p className="text-[10px] text-zinc-600">Reviewers can submit their memories in the "Memories" tab!</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
