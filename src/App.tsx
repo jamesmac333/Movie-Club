@@ -59,7 +59,6 @@ export default function App() {
       const res = await fetch("/api/users");
       if (res.ok) {
         const dbUsers: User[] = await res.json();
-        const now = Date.now();
         const merged = MOVIE_CLUB_USERS.map(staticUser => {
           const dbUser = dbUsers.find(u => u.username.toLowerCase() === staticUser.username.toLowerCase());
           const dbAvatar = dbUser?.avatarUrl;
@@ -68,7 +67,8 @@ export default function App() {
             ...staticUser,
             isAdmin: dbUser?.isAdmin !== undefined ? dbUser.isAdmin : staticUser.isAdmin,
             isAsh: dbUser?.isAsh !== undefined ? dbUser.isAsh : staticUser.isAsh,
-            avatarUrl: hasValidCustomAvatar ? `${dbAvatar.split("?")[0]}?t=${now}` : staticUser.avatarUrl
+            // The server's ?v= fingerprint changes when the photo changes, so it is safe to cache
+            avatarUrl: hasValidCustomAvatar ? dbAvatar : staticUser.avatarUrl
           };
         });
         setClubUsers(merged);
