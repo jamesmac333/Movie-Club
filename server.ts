@@ -31,9 +31,9 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Support large base64 image payloads for the "Blob" image uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // Photos are compressed in the browser (~0.3 MB); 15 MB still allows the uncompressed fallback for files under 10 MB
+  app.use(express.json({ limit: "15mb" }));
+  app.use(express.urlencoded({ limit: "1mb", extended: true }));
 
   // Verify the caller's session token before any API route runs
   app.use(authenticate);

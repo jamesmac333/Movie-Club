@@ -207,6 +207,10 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
     if (e) e.preventDefault();
 
     let uploadData = targetAvatarPreview;
+    // Upload the compressed version even if Save is clicked before background compression finishes
+    if (targetSelectedFile) {
+      uploadData = await compressAvatar(targetSelectedFile).catch(() => uploadData);
+    }
     if (!uploadData && targetSelectedFile) {
       try {
         uploadData = await new Promise<string>((resolve, reject) => {
@@ -318,6 +322,10 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
     if (e) e.preventDefault();
 
     let uploadData = avatarPreview;
+    // Upload the compressed version even if Save is clicked before background compression finishes
+    if (selectedFile) {
+      uploadData = await compressAvatar(selectedFile).catch(() => uploadData);
+    }
     if (!uploadData && selectedFile) {
       try {
         uploadData = await new Promise<string>((resolve, reject) => {
