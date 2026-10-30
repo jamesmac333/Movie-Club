@@ -2,6 +2,39 @@ import nodemailer from "nodemailer";
 import { MovieNight, NightOverview, Review, EdmLog } from "../src/types.ts";
 import { readDb, mutateDb, generateUniqueId } from "./db.ts";
 
+// --- Making member-entered text safe to place inside email HTML ---
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Only web and inline image URLs may be used as image sources
+function safeImageUrl(value: string): string {
+  return /^(https?:\/\/|data:image\/)/i.test(value.trim()) ? escapeHtml(value.trim()) : "";
+}
+
+const URL_FIELDS = new Set(["posterUrl", "imageUrl", "trailerUrl"]);
+
+// Returns a shallow copy with every string field escaped for HTML
+function escapeRecord<T extends object>(record: T): T {
+  const copy = { ...record } as Record<string, unknown>;
+  for (const [key, value] of Object.entries(copy)) {
+    if (typeof value === "string") {
+      copy[key] = URL_FIELDS.has(key) ? safeImageUrl(value) : escapeHtml(value);
+    }
+  }
+  return copy as T;
+}
+
+function escapeNight(night: MovieNight): MovieNight {
+  return { ...escapeRecord(night), movie: night.movie ? escapeRecord(night.movie) : null };
+}
+
 /**
  * Creates nodemailer transport if SMTP credentials are provided,
  * otherwise provides an elegant local mock transporter that captures EDMs to database logs.
@@ -55,6 +88,9 @@ export function formatNZTDate(dateStr: string): string {
  * Generate luxury cinema styling HTML email for a completed Night Overview (Recap)
  */
 export function generateNightOverviewEmailHtml(overview: NightOverview, night: MovieNight, reviews: Review[]): string {
+  overview = escapeRecord(overview);
+  night = escapeNight(night);
+  reviews = reviews.map(escapeRecord);
   const movie = night.movie;
   const nightReviews = reviews.filter((r) => r.movieNightId === night.id);
   const avgRating =
@@ -222,6 +258,7 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
  * Generate cinema styling HTML email for newly selected movie
  */
 export function generateMovieSelectedEmailHtml(night: MovieNight): string {
+  night = escapeNight(night);
   const movie = night.movie!;
   const formattedDate = formatNZTDate(night.date);
 
@@ -347,6 +384,7 @@ export function generateMovieSelectedEmailHtml(night: MovieNight): string {
  * Generate cinema styling HTML email for an Admin EDM Test
  */
 export function generateTestEmailHtml(adminName: string, recipientCount: number): string {
+  adminName = escapeHtml(adminName);
   const timestamp = new Date().toLocaleString("en-NZ", { timeZone: "Pacific/Auckland" });
 
   return `
