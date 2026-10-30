@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import { MovieNight, NightOverview, Review, EdmLog } from "../src/types.ts";
-import { readDb, mutateDb, generateUniqueId } from "./db.ts";
+import { readDb, mutateDb, generateUniqueId, stripInlineImages } from "./db.ts";
 
 // --- Making member-entered text safe to place inside email HTML ---
 
@@ -543,7 +543,7 @@ export async function sendEdm({
 function sanitizeHtmlForLog(htmlStr?: string): string {
   if (!htmlStr) return "";
   // Replace large inline base64 image URIs in logs to prevent bloating server-db.json
-  return htmlStr.replace(/src="data:image\/[^;]+;base64,[^"]{1000,}"/g, 'src="[Attached high-res photo in email]"');
+  return stripInlineImages(htmlStr);
 }
 
 async function recordEdmLog(log: EdmLog) {
