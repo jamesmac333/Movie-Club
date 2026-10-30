@@ -473,10 +473,10 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
             </div>
             <div>
               <h3 className="font-serif font-bold text-lg text-zinc-100">
-                {activeTab === "edm" ? "EDM Dispatcher Controls" : "Credentials & Admin"}
+                {activeTab === "edm" ? "Club emails" : activeTab === "admin" ? "Members" : "Profile & settings"}
               </h3>
               <p className="text-[10px] uppercase tracking-wider text-zinc-500">
-                {activeTab === "edm" ? "Distribution Lists & Automated Alerts" : "Account Security & Resets"}
+                {activeTab === "edm" ? "Who gets club emails, and what was sent" : activeTab === "admin" ? "Photos and password resets" : "Your photo and password"}
               </p>
             </div>
           </div>
@@ -490,41 +490,23 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
           </button>
         </div>
 
-        {/* Tab switcher if admin */}
+        {/* Tab switcher if admin: three equal tabs that always fit the width */}
         {isAdmin && (
-          <div className="flex border-b border-zinc-900 bg-zinc-950/40">
-            <button
-              onClick={() => { setActiveTab("personal"); setSuccessMsg(""); setErrorMsg(""); }}
-              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                activeTab === "personal"
-                  ? "text-amber-500 border-b-2 border-amber-500 bg-amber-500/[0.02]"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              My Profile & Password
-            </button>
-            <button
-              onClick={() => { setActiveTab("admin"); setSuccessMsg(""); setErrorMsg(""); }}
-              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                activeTab === "admin"
-                  ? "text-amber-500 border-b-2 border-amber-500 bg-amber-500/[0.02]"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              <UserCog className="w-3.5 h-3.5" />
-              Member Overrides
-            </button>
-            <button
-              onClick={() => { setActiveTab("edm"); setSuccessMsg(""); setErrorMsg(""); }}
-              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                activeTab === "edm"
-                  ? "text-amber-500 border-b-2 border-amber-500 bg-amber-500/[0.02]"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              <Mail className="w-3.5 h-3.5" />
-              EDM Broadcast
-            </button>
+          <div role="tablist" className="grid grid-cols-3 border-b border-zinc-800 bg-zinc-950/40">
+            {([["personal", "You"], ["admin", "Members"], ["edm", "Club emails"]] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === key}
+                onClick={() => { setActiveTab(key); setSuccessMsg(""); setErrorMsg(""); }}
+                className={`min-h-12 px-2 text-sm font-semibold transition-all cursor-pointer ${
+                  activeTab === key ? "text-amber-500 border-b-2 border-amber-500" : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         )}
 
@@ -697,7 +679,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                           type="button"
                           onClick={handleAvatarUpload}
                           disabled={avatarLoading}
-                          className="flex-1 sm:flex-initial px-5 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 text-xs font-black uppercase tracking-wider rounded-lg shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+                          className="flex-1 sm:flex-initial px-5 py-2.5 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-ticket text-xs font-black uppercase tracking-wider rounded-lg shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
                         >
                           {avatarLoading ? (
                             <>
@@ -722,7 +704,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                       <button
                         type="button"
                         disabled
-                        className="px-4 py-2 bg-zinc-900 text-zinc-600 border border-zinc-800/60 rounded-lg text-xs font-bold uppercase tracking-wider cursor-not-allowed opacity-60 flex items-center gap-1.5"
+                        className="px-4 py-2 bg-zinc-900 text-zinc-500 border border-zinc-800/60 rounded-lg text-xs font-bold uppercase tracking-wider cursor-not-allowed opacity-60 flex items-center gap-1.5"
                       >
                         <Check className="w-3.5 h-3.5" />
                         Save Picture
@@ -779,7 +761,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-zinc-950 font-bold rounded-lg text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/10"
+                    className="w-full py-3 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-ticket font-bold rounded-lg text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/10"
                   >
                     <Lock className="w-4 h-4" />
                     {loading ? "Saving Password..." : "Update Password"}
@@ -959,7 +941,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                           type="button"
                           onClick={handleTargetAvatarUpload}
                           disabled={targetAvatarLoading}
-                          className="flex-1 sm:flex-initial px-5 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 text-xs font-black uppercase tracking-wider rounded-lg shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+                          className="flex-1 sm:flex-initial px-5 py-2.5 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-ticket text-xs font-black uppercase tracking-wider rounded-lg shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
                         >
                           {targetAvatarLoading ? (
                             <>
@@ -984,7 +966,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                       <button
                         type="button"
                         disabled
-                        className="px-4 py-2 bg-zinc-900 text-zinc-600 border border-zinc-800/60 rounded-lg text-xs font-bold uppercase tracking-wider cursor-not-allowed opacity-60 flex items-center gap-1.5"
+                        className="px-4 py-2 bg-zinc-900 text-zinc-500 border border-zinc-800/60 rounded-lg text-xs font-bold uppercase tracking-wider cursor-not-allowed opacity-60 flex items-center gap-1.5"
                       >
                         <Check className="w-3.5 h-3.5" />
                         Save Member Picture

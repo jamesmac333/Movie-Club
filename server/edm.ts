@@ -84,8 +84,75 @@ export function formatNZTDate(dateStr: string): string {
   }
 }
 
+// --- Email design: the club's "Her" palette, built with tables and inline styles for email apps ---
+
+const SITE = () => process.env.APP_URL || "https://www.movieclub.co.nz";
+const CLUB_STRIP = ["#121310", "#2e1b12", "#5a3a2b", "#8c6e5a", "#7d1712", "#e3be8a", "#afaf98", "#6f8c83", "#2f4a55", "#151d1d"];
+const SERIF = "Georgia, 'Times New Roman', serif";
+const MONO = "'Courier New', Courier, monospace";
+const SANS = "Helvetica, Arial, sans-serif";
+
+function slate(text: string, color = "#e3be8a"): string {
+  return `<p style="margin: 0; font-family: ${MONO}; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: ${color};">${text}</p>`;
+}
+
+function strip(colors: string[], width: number, height: number): string {
+  const cell = Math.floor(width / colors.length);
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse: collapse;"><tr>${colors
+    .map((c) => `<td width="${cell}" height="${height}" style="width: ${cell}px; height: ${height}px; background-color: ${c}; font-size: 0; line-height: 0;">&nbsp;</td>`)
+    .join("")}</tr></table>`;
+}
+
+function button(label: string): string {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td style="border-radius: 12px; background-color: #8e1c15;">
+    <a href="${SITE()}" style="display: inline-block; padding: 16px 30px; font-family: ${SANS}; font-size: 16px; font-weight: bold; color: #f4e6cc; text-decoration: none; border-radius: 12px;">${label}</a>
+  </td></tr></table>`;
+}
+
+// The shared frame: dark page, club title with its colour strip, content card and footer
+function emailShell(title: string, preheader: string, body: string): string {
+  return `<!DOCTYPE html>
+<html lang="en" xml:lang="en" class="notranslate" translate="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
+  <title>${title}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #151d1d;">
+  <div style="display: none; max-height: 0; overflow: hidden;">${preheader}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #151d1d;">
+    <tr><td align="center" style="padding: 24px 12px;">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width: 100%; max-width: 560px; background-color: #1c2626; border: 1px solid #34433f; border-radius: 16px;">
+        <tr><td align="center" style="padding: 28px 28px 0;">
+          <p style="margin: 0 0 10px; font-family: ${SERIF}; font-style: italic; font-size: 30px; color: #ede3d1;">Movie Club</p>
+          ${strip(CLUB_STRIP, 200, 5)}
+        </td></tr>
+        ${body}
+      </table>
+      <p style="margin: 16px 0 0; font-family: ${SANS}; font-size: 12px; line-height: 1.6; color: #9a9a84;">You're getting this because you're in Movie Club.<br><a href="${SITE()}" style="color: #9a9a84;">www.movieclub.co.nz</a></p>
+    </td></tr>
+  </table>
+</body>
+</html>`.trim();
+}
+
+function shortDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-NZ", { weekday: "long", day: "numeric", month: "long", timeZone: "Pacific/Auckland" });
+}
+
+function shortTime(dateStr: string): string {
+  return new Date(dateStr).toLocaleTimeString("en-NZ", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Pacific/Auckland" });
+}
+
+function movieMeta(movie: NonNullable<MovieNight["movie"]>): string {
+  const runtime = movie.runtime ? `${Math.floor(Number(movie.runtime) / 60)}h ${Number(movie.runtime) % 60}m` : "";
+  return [movie.year, movie.rating, runtime, movie.genre].filter(Boolean).join(" · ");
+}
+
 /**
- * Generate luxury cinema styling HTML email for a completed Night Overview (Recap)
+ * Recap email: the gathering photo, Ash's write-up and the pick of the reviews
  */
 export function generateNightOverviewEmailHtml(overview: NightOverview, night: MovieNight, reviews: Review[]): string {
   overview = escapeRecord(overview);
@@ -93,375 +160,108 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
   reviews = reviews.map(escapeRecord);
   const movie = night.movie;
   const nightReviews = reviews.filter((r) => r.movieNightId === night.id);
-  const avgRating =
-    nightReviews.length > 0
-      ? (nightReviews.reduce((sum, r) => sum + r.rating, 0) / nightReviews.length).toFixed(1)
-      : null;
-
-  const topReview = 
+  const avgRating = nightReviews.length > 0 ? (nightReviews.reduce((sum, r) => sum + r.rating, 0) / nightReviews.length).toFixed(1) : null;
+  const topReview =
     nightReviews.find((r) => r.isStarred) ||
-    (nightReviews.length > 0
-      ? [...nightReviews].sort((a, b) => b.rating - a.rating || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
-      : null);
+    (nightReviews.length > 0 ? [...nightReviews].sort((a, b) => b.rating - a.rating || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] : null);
+  const author = (overview.author || "Ash Macintosh").split(" ")[0];
+  const host = night.selector.split(" ")[0];
 
-  const formattedDate = formatNZTDate(night.date);
+  const photo = overview.imageUrl
+    ? `<tr><td style="padding: 22px 0 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #0f1414;"><tr><td style="padding: 16px 0;">
+        <img src="${overview.imageUrl}" alt="The gathering" width="560" style="display: block; width: 100%; max-width: 560px; height: auto; border: 0;">
+      </td></tr></table></td></tr>`
+    : "";
 
-  return `
-<!DOCTYPE html>
-<html lang="en" xml:lang="en" class="notranslate" translate="no">
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="Content-Language" content="en">
-  <meta name="google" content="notranslate">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light">
-  <meta name="supported-color-schemes" content="light">
-  <title>${overview.title}</title>
-</head>
-<body class="notranslate" translate="no" style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #18181b; -webkit-text-size-adjust: 100%;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f3f4f6; padding: 32px 16px;">
-    <tr>
-      <td align="center">
-        <!-- Main Container: Light White Editorial Card -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.06);">
-          
-          <!-- Golden Velvet Header Ribbon -->
-          <tr>
-            <td style="height: 6px; background: linear-gradient(90deg, #d97706, #fbbf24, #d97706);"></td>
-          </tr>
+  const film = movie
+    ? `<tr><td style="padding: 22px 32px 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        ${movie.posterUrl ? `<td valign="bottom" style="padding-right: 18px;"><img src="${movie.posterUrl}" alt="${movie.title} poster" width="110" style="display: block; width: 110px; height: auto; border-radius: 10px; border: 1px solid #4a5a55;"></td>` : ""}
+        <td valign="bottom" style="font-family: ${SANS};">
+          <p style="margin: 0; font-family: ${SERIF}; font-style: italic; font-size: 24px; color: #ede3d1;">${movie.title}</p>
+          <p style="margin: 6px 0 0; font-size: 14px; color: #afaf98;">${formatNZTDate(night.date)} · ${host}'s pick</p>
+          ${avgRating ? `<p style="margin: 8px 0 0; font-size: 15px; font-weight: bold; color: #e3be8a;">&#9733; ${avgRating} club score · ${nightReviews.length} review${nightReviews.length === 1 ? "" : "s"}</p>` : ""}
+        </td>
+      </tr></table></td></tr>`
+    : "";
 
-          <!-- Branding & Category Header -->
-          <tr>
-            <td style="padding: 28px 32px 18px; background-color: #fafaf9; border-bottom: 1px solid #e7e5e4;">
-              <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td>
-                    <span style="font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: bold; letter-spacing: 0.22em; color: #b45309; text-transform: uppercase;">
-                      ★ MOVIE CLUB ARCHIVES • OFFICIAL SESSION CHRONICLE
-                    </span>
-                    <h1 style="margin: 10px 0 6px; font-size: 26px; font-weight: 800; font-family: Georgia, serif; font-style: italic; color: #09090b; letter-spacing: -0.02em;">
-                      ${overview.title}
-                    </h1>
-                    <p style="margin: 0; font-size: 13px; color: #52525b;">
-                      Curated & Written by <strong style="color: #b45309;">${overview.author || 'Ash Macintosh'}</strong> • Session of ${formattedDate}
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+  const pick = topReview
+    ? `<tr><td style="padding: 26px 32px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #2e1b12; border: 1px solid #5a3a2b; border-radius: 12px;"><tr><td style="padding: 20px 22px;">
+        ${slate(topReview.isStarred ? "Ash's pick of the reviews" : "Top review")}
+        <p style="margin: 12px 0 0; font-family: ${SERIF}; font-style: italic; font-size: 17px; line-height: 1.6; color: #ede3d1;">&ldquo;${topReview.comment}&rdquo;</p>
+        <p style="margin: 12px 0 0; font-family: ${SANS}; font-size: 14px; color: #d8cdb8;">${topReview.user.split(" ")[0]} · &#9733; ${topReview.rating}</p>
+      </td></tr></table></td></tr>`
+    : "";
 
-          <!-- Hero Gathering Photo -->
-          ${overview.imageUrl ? `
-          <tr>
-            <td style="padding: 0; background-color: #f4f4f5; text-align: center;">
-              <img src="${overview.imageUrl}" alt="${overview.title}" style="width: 100%; max-height: 440px; object-fit: cover; display: block; border-bottom: 1px solid #e7e5e4;" />
-            </td>
-          </tr>
-          ` : ''}
+  const body = `
+    <tr><td align="center" style="padding: 22px 28px 0;">${slate(`New recap from ${author}`)}</td></tr>
+    ${photo}
+    ${film}
+    <tr><td style="padding: 26px 32px 0;">
+      <h1 style="margin: 0; font-family: ${SERIF}; font-style: italic; font-weight: normal; font-size: 32px; line-height: 1.2; color: #ede3d1;">${overview.title}</h1>
+      <p style="margin: 18px 0 0; font-family: ${SERIF}; font-size: 17px; line-height: 1.7; color: #d8cdb8; white-space: pre-wrap;">${overview.content}</p>
+    </td></tr>
+    ${pick}
+    <tr><td align="center" style="padding: 30px 28px 34px;">${button("Read the recap and add your review")}</td></tr>`;
 
-          <!-- Film Badge & Quick Facts -->
-          ${movie ? `
-          <tr>
-            <td style="padding: 22px 32px; background-color: #fdfbf7; border-bottom: 1px solid #f2ede4;">
-              <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                <tr>
-                  ${movie.posterUrl ? `
-                  <td width="80" valign="top" style="padding-right: 18px;">
-                    <img src="${movie.posterUrl}" alt="${movie.title}" width="80" style="border-radius: 12px; border: 1px solid #e5e7eb; display: block; box-shadow: 0 4px 14px rgba(0,0,0,0.08);" />
-                  </td>
-                  ` : ''}
-                  <td valign="middle">
-                    <span style="font-family: 'Courier New', Courier, monospace; font-size: 10px; color: #b45309; font-weight: bold; text-transform: uppercase; letter-spacing: 0.15em;">FEATURED FILM</span>
-                    <h2 style="margin: 4px 0; font-size: 20px; font-weight: bold; color: #09090b;">${movie.title} <span style="font-size: 14px; color: #71717a; font-weight: normal;">(${movie.year || ''})</span></h2>
-                    <p style="margin: 0; font-size: 13px; color: #52525b; line-height: 1.4;">
-                      Directed by <strong style="color: #18181b;">${movie.director || 'N/A'}</strong> • Host: <strong style="color: #b45309;">${night.selector}</strong>
-                      ${movie.runtime ? ` • ${movie.runtime} min` : ''}
-                      ${movie.genre ? ` • ${movie.genre}` : ''}
-                    </p>
-                    ${avgRating ? `
-                    <div style="margin-top: 8px;">
-                      <span style="display: inline-block; padding: 3px 10px; background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; font-size: 11px; font-weight: bold; color: #92400e; font-family: 'Courier New', Courier, monospace;">
-                        ★ CLUB SCORE: ${avgRating} / 5.0 (${nightReviews.length} reviews)
-                      </span>
-                    </div>
-                    ` : ''}
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          ` : ''}
-
-          <!-- Ash's Night Overview Narrative Body (Light White Background with Dark, Ultra-Legible Text) -->
-          <tr>
-            <td style="padding: 32px 32px; background-color: #ffffff;">
-              <h3 style="margin: 0 0 14px; font-size: 12px; font-family: 'Courier New', Courier, monospace; font-weight: bold; letter-spacing: 0.2em; text-transform: uppercase; color: #71717a;">
-                THE NIGHT'S CHRONICLE
-              </h3>
-              <div style="font-size: 16px; line-height: 1.85; color: #18181b; font-family: Georgia, 'Times New Roman', serif; white-space: pre-wrap;">${overview.content}</div>
-            </td>
-          </tr>
-
-          <!-- Ash's Top Review Highlight (if present) -->
-          ${topReview ? `
-          <tr>
-            <td style="padding: 0 32px 28px; background-color: #ffffff;">
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #fffbeb; border: 1px dashed #fcd34d; border-radius: 16px; padding: 18px 20px;">
-                <tr>
-                  <td>
-                    <span style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: bold; color: #b45309; text-transform: uppercase; letter-spacing: 0.2em;">
-                      ${topReview.isStarred ? "★ ASH'S CURATED BEST REVIEW PICK" : "★ TOP CLUB REVIEW"}
-                    </span>
-                    <p style="margin: 8px 0; font-size: 15px; font-style: italic; color: #78350f; line-height: 1.55; font-family: Georgia, serif;">
-                      "${topReview.comment}"
-                    </p>
-                    <div style="font-size: 13px; color: #92400e; font-weight: bold;">
-                      — ${topReview.user} <span style="color: #78716c; font-weight: normal;">(Score: ${topReview.rating}/5)</span>
-                    </div>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          ` : ''}
-
-          <!-- Call to action button -->
-          <tr>
-            <td align="center" style="padding: 8px 32px 36px; background-color: #ffffff;">
-              <a href="${process.env.APP_URL || 'https://www.movieclub.co.nz'}" style="display: inline-block; background-color: #d97706; color: #ffffff; font-weight: bold; font-size: 13px; text-decoration: none; padding: 13px 30px; border-radius: 12px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(217, 119, 6, 0.35);">
-                Enter Movie Club Platform →
-              </a>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 22px 32px; background-color: #fafaf9; border-top: 1px solid #e7e5e4; text-align: center;">
-              <p style="margin: 0; font-size: 11px; color: #78716c; font-family: 'Courier New', Courier, monospace;">
-                Movie Club Fortnightly NZT 19:00 • Sent in English to official club EDM distribution list
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-  `.trim();
+  return emailShell(`Movie Club Recap: ${overview.title}`, `${author}'s recap of ${movie?.title || "the night"}`, body);
 }
 
-
 /**
- * Generate cinema styling HTML email for newly selected movie
+ * Film chosen email: the poster as the hero, with a ticket for the night
  */
 export function generateMovieSelectedEmailHtml(night: MovieNight): string {
   night = escapeNight(night);
   const movie = night.movie!;
-  const formattedDate = formatNZTDate(night.date);
+  const host = night.selector.split(" ")[0];
+  const plot = movie.overview ? (movie.overview.length > 240 ? movie.overview.slice(0, 240) + "&hellip;" : movie.overview) : "";
 
-  return `
-<!DOCTYPE html>
-<html lang="en" xml:lang="en" class="notranslate" translate="no">
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="Content-Language" content="en">
-  <meta name="google" content="notranslate">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light dark">
-  <title>The Curtain Rises: ${movie.title}</title>
-</head>
-<body class="notranslate" translate="no" style="margin: 0; padding: 0; background-color: #080808; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f4f4f5;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #080808; padding: 32px 16px;">
-    <tr>
-      <td align="center">
-        <!-- Main Container -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #14100e; border: 2px solid #d97706; border-radius: 28px; overflow: hidden; box-shadow: 0 20px 60px rgba(217, 119, 6, 0.25);">
-          
-          <!-- Golden Light Ribbon -->
-          <tr>
-            <td style="height: 6px; background: repeating-linear-gradient(90deg, #d97706, #fbbf24 6px, transparent 6px, transparent 12px);"></td>
-          </tr>
+  const body = `
+    <tr><td align="center" style="padding: 24px 28px 0;">
+      ${slate("Now showing")}
+      <h1 style="margin: 8px 0 0; font-family: ${SERIF}; font-style: italic; font-weight: normal; font-size: 30px; color: #ede3d1;">${host} picked the next film</h1>
+    </td></tr>
+    ${movie.posterUrl ? `<tr><td align="center" style="padding: 22px 28px 0;"><img src="${movie.posterUrl}" alt="${movie.title} poster" width="300" style="display: block; width: 300px; max-width: 100%; height: auto; border-radius: 12px; border: 1px solid #4a5a55;"></td></tr>` : ""}
+    <tr><td align="center" style="padding: 22px 36px 0; font-family: ${SANS};">
+      <p style="margin: 0; font-family: ${SERIF}; font-style: italic; font-size: 38px; color: #ede3d1;">${movie.title}</p>
+      <p style="margin: 8px 0 0; font-size: 15px; color: #afaf98;">${movieMeta(movie)}</p>
+      ${movie.director ? `<p style="margin: 10px 0 0;">${slate(`A film by ${movie.director}`, "#cdc4b0")}</p>` : ""}
+      ${plot ? `<p style="margin: 18px 0 0; font-size: 15px; line-height: 1.6; color: #d8cdb8;">${plot}</p>` : ""}
+    </td></tr>
+    <tr><td style="padding: 26px 36px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 1px solid #5a3a2b; border-radius: 12px;"><tr>
+        <td style="padding: 16px 20px; font-family: ${SANS};">
+          ${slate("Admit one")}
+          <p style="margin: 6px 0 0; font-size: 17px; font-weight: bold; color: #ede3d1;">${shortDate(night.date)}</p>
+          <p style="margin: 2px 0 0; font-size: 15px; color: #afaf98;">${shortTime(night.date)}</p>
+        </td>
+        <td width="1" style="border-left: 2px dashed #4a5a55; font-size: 0;">&nbsp;</td>
+        <td style="padding: 16px 20px; font-family: ${SANS};">
+          ${slate("Host", "#afaf98")}
+          <p style="margin: 6px 0 0; font-size: 17px; font-weight: bold; color: #ede3d1;">${host}</p>
+        </td>
+      </tr></table>
+    </td></tr>
+    <tr><td align="center" style="padding: 30px 28px 34px;">${button("Open Movie Club")}</td></tr>`;
 
-          <!-- Golden Ticket Announcement Header -->
-          <tr>
-            <td style="padding: 32px 32px 20px; text-align: center; background-color: #191310; border-bottom: 1px dashed #3f2e21;">
-              <span style="font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: bold; letter-spacing: 0.25em; color: #fbbf24; text-transform: uppercase;">
-                ★ THE CURTAIN RISES • NEXT FILM SELECTED (ENGLISH EDITION) ★
-              </span>
-              <h1 style="margin: 12px 0 6px; font-size: 28px; font-weight: 900; font-family: Georgia, serif; font-style: italic; color: #fafafa; letter-spacing: -0.02em;">
-                A Selection is Made!
-              </h1>
-              <div style="font-size: 13px; color: #d4d4d8;">
-                Your host <strong style="color: #fbbf24; font-size: 15px;">${night.selector}</strong> has chosen the feature presentation for <strong style="color: #ffffff;">${formattedDate}</strong> at 19:00 NZT.
-              </div>
-            </td>
-          </tr>
-
-          <!-- Movie Poster & Metadata Card -->
-          <tr>
-            <td style="padding: 28px 32px; background-color: #14100e;">
-              <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                <tr>
-                  ${movie.posterUrl ? `
-                  <td width="130" valign="top" style="padding-right: 22px;">
-                    <img src="${movie.posterUrl}" alt="${movie.title}" width="130" style="border-radius: 14px; border: 2px solid #3f2e21; display: block; box-shadow: 0 8px 24px rgba(0,0,0,0.8);" />
-                  </td>
-                  ` : ''}
-                  <td valign="top">
-                    ${movie.rating ? `
-                    <span style="display: inline-block; padding: 2px 8px; background-color: #27272a; border: 1px solid #3f3f46; border-radius: 6px; font-size: 10px; font-weight: bold; color: #a1a1aa; font-family: 'Courier New', Courier, monospace; margin-bottom: 8px;">
-                      ${movie.rating}
-                    </span>
-                    ` : ''}
-                    <h2 style="margin: 0 0 6px; font-size: 22px; font-weight: 800; color: #ffffff;">
-                      ${movie.title} <span style="font-size: 16px; color: #71717a; font-weight: normal;">(${movie.year || ''})</span>
-                    </h2>
-                    
-                    <p style="margin: 0 0 12px; font-size: 13px; color: #fbbf24;">
-                      Director: <strong style="color: #ffffff;">${movie.director || 'N/A'}</strong>
-                      ${movie.runtime ? ` • ${movie.runtime} min` : ''}
-                      ${movie.genre ? ` • ${movie.genre}` : ''}
-                    </p>
-
-                    <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #a1a1aa;">
-                      ${movie.overview ? (movie.overview.length > 220 ? movie.overview.slice(0, 220) + '...' : movie.overview) : 'No overview available.'}
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Schedule Callout Box -->
-          <tr>
-            <td style="padding: 0 32px 24px;">
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #1c1511; border: 1px solid #38271a; border-radius: 16px; padding: 16px 20px;">
-                <tr>
-                  <td align="center">
-                    <span style="font-size: 11px; font-family: 'Courier New', Courier, monospace; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.1em;">
-                      Mark Your Calendar
-                    </span>
-                    <div style="font-size: 16px; font-weight: bold; color: #fbbf24; margin-top: 4px;">
-                      ${formattedDate} • 7:00 PM NZT
-                    </div>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Enter Site Button -->
-          <tr>
-            <td align="center" style="padding: 0 32px 32px;">
-              <a href="${process.env.APP_URL || 'https://www.movieclub.co.nz'}" style="display: inline-block; background-color: #f59e0b; color: #09090b; font-weight: bold; font-size: 13px; text-decoration: none; padding: 12px 28px; border-radius: 12px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);">
-                View Details & Trailer on Site →
-              </a>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 20px 32px; background-color: #0b0907; border-top: 1px solid #281f18; text-align: center;">
-              <p style="margin: 0; font-size: 11px; color: #71717a; font-family: 'Courier New', Courier, monospace;">
-                Movie Club Fortnightly NZT 19:00 • Sent to official club EDM distribution list
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-  `.trim();
+  return emailShell(`The Curtain Rises: ${movie.title}`, `${host} picked ${movie.title} for ${shortDate(night.date)}`, body);
 }
 
 /**
- * Generate cinema styling HTML email for an Admin EDM Test
+ * Test email sent from the admin panel to check delivery
  */
 export function generateTestEmailHtml(adminName: string, recipientCount: number): string {
   adminName = escapeHtml(adminName);
-  const timestamp = new Date().toLocaleString("en-NZ", { timeZone: "Pacific/Auckland" });
-
-  return `
-<!DOCTYPE html>
-<html lang="en" xml:lang="en" class="notranslate" translate="no">
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="Content-Language" content="en">
-  <meta name="google" content="notranslate">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light dark">
-  <title>Movie Club EDM Test Transmission</title>
-</head>
-<body class="notranslate" translate="no" style="margin: 0; padding: 0; background-color: #080808; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f4f4f5;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #080808; padding: 32px 16px;">
-    <tr>
-      <td align="center">
-        <!-- Main Container -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; background-color: #14100e; border: 2px solid #10b981; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 60px rgba(16, 185, 129, 0.2);">
-          
-          <!-- Green Header Ribbon -->
-          <tr>
-            <td style="height: 6px; background: linear-gradient(90deg, #059669, #34d399, #059669);"></td>
-          </tr>
-
-          <!-- Content -->
-          <tr>
-            <td style="padding: 32px; text-align: center;">
-              <div style="display: inline-block; padding: 8px 16px; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 30px; font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: bold; color: #34d399; letter-spacing: 0.2em; text-transform: uppercase;">
-                ✓ SYSTEM VERIFICATION TRANSMISSION
-              </div>
-
-              <h1 style="margin: 16px 0 8px; font-size: 26px; font-weight: 800; font-family: Georgia, serif; color: #ffffff;">
-                EDM Dispatcher is Live & Functional
-              </h1>
-
-              <p style="margin: 0 0 20px; font-size: 14px; color: #a1a1aa; line-height: 1.6;">
-                This test broadcast was requested by administrator <strong style="color: #fbbf24;">${adminName}</strong> to verify that automated email distributions are operational.
-              </p>
-
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #1c1511; border: 1px dashed #38271a; border-radius: 14px; padding: 16px 20px; margin-bottom: 24px; text-align: left;">
-                <tr>
-                  <td style="font-size: 12px; color: #d4d4d8; line-height: 1.8;">
-                    <div>• <strong>Transmission Time:</strong> ${timestamp} (NZT)</div>
-                    <div>• <strong>Target Recipients:</strong> ${recipientCount} registered email address(es)</div>
-                    <div>• <strong>Delivery Triggers Armed:</strong></div>
-                    <div style="padding-left: 16px; color: #a1a1aa;">
-                      1. Whenever Ash Macintosh publishes a Night Overview recap<br/>
-                      2. Whenever a host locks in the next cycle's movie selection
-                    </div>
-                  </td>
-                </tr>
-              </table>
-
-              <a href="${process.env.APP_URL || 'https://www.movieclub.co.nz'}" style="display: inline-block; background-color: #10b981; color: #022c22; font-weight: bold; font-size: 13px; text-decoration: none; padding: 12px 28px; border-radius: 12px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);">
-                Return to Movie Club →
-              </a>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 16px 32px; background-color: #0b0907; border-top: 1px solid #281f18; text-align: center;">
-              <p style="margin: 0; font-size: 11px; color: #71717a; font-family: 'Courier New', Courier, monospace;">
-                Movie Club Admin EDM Diagnostic Utility
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-  `.trim();
+  const timestamp = new Date().toLocaleString("en-NZ", { timeZone: "Pacific/Auckland", dateStyle: "medium", timeStyle: "short" });
+  const body = `
+    <tr><td align="center" style="padding: 24px 32px 0;">
+      ${slate("Test email")}
+      <h1 style="margin: 10px 0 0; font-family: ${SERIF}; font-style: italic; font-weight: normal; font-size: 28px; color: #ede3d1;">Club emails are working</h1>
+      <p style="margin: 14px 0 0; font-family: ${SANS}; font-size: 15px; line-height: 1.6; color: #d8cdb8;">${adminName} sent this test on ${timestamp}. It went to ${recipientCount} address${recipientCount === 1 ? "" : "es"} on the club list.</p>
+    </td></tr>
+    <tr><td align="center" style="padding: 28px 28px 34px;">${button("Open Movie Club")}</td></tr>`;
+  return emailShell("Movie Club test email", `Test email from ${adminName}`, body);
 }
+
 
 /**
  * Dispatch an EDM to all configured recipients

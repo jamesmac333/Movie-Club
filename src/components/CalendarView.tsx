@@ -174,6 +174,45 @@ export default function CalendarView({
 
   const displayNights = limit ? rawDisplayNights.slice(0, limit) : rawDisplayNights;
 
+  // Home page: a compact "Coming up" list; editing lives on the full Schedule tab
+  if (limit !== undefined) {
+    return (
+      <section aria-labelledby="coming-up" className="space-y-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 id="coming-up" className="font-serif text-3xl text-zinc-50">Coming up</h2>
+          {onViewFullSchedule && (
+            <button type="button" onClick={onViewFullSchedule} className="min-h-11 px-1 text-sm font-medium text-amber-500 hover:text-amber-300 cursor-pointer">
+              Full schedule
+            </button>
+          )}
+        </div>
+        <ul className="bg-zinc-900 border border-zinc-800 rounded-3xl divide-y divide-zinc-800 overflow-hidden">
+          {displayNights.map((night) => {
+            const d = new Date(night.date);
+            const host = users.find((u) => u.name.toLowerCase() === night.selector.toLowerCase() || u.username.toLowerCase() === night.selector.toLowerCase());
+            return (
+              <li key={night.id} className="flex items-center gap-4 px-4 py-3.5">
+                <div className="w-12 text-center shrink-0">
+                  <p className="slate text-amber-500">{d.toLocaleDateString("en-NZ", { month: "short" })}</p>
+                  <p className="font-serif text-2xl leading-none text-zinc-50">{d.getDate()}</p>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-medium text-zinc-100 truncate">{night.selector.split(" ")[0]} hosts</p>
+                  <p className="text-sm text-zinc-400 truncate">{night.movie?.title || "Not chosen yet"}</p>
+                </div>
+                {host?.avatarUrl ? (
+                  <img src={host.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
+                ) : (
+                  <span className="w-10 h-10 rounded-full bg-slate text-zinc-100 text-xs font-semibold flex items-center justify-center shrink-0">{night.selector.substring(0, 2).toUpperCase()}</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    );
+  }
+
   const renderNightCard = (night: MovieNight, index: number, isPreviousList: boolean = false) => {
     const isEditing = editingNightId === night.id;
     const isEditingSelector = editingSelectorNightId === night.id;
@@ -241,7 +280,7 @@ export default function CalendarView({
                   <button
                     onClick={() => handleSaveDate(night.id)}
                     disabled={loading}
-                    className="bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold px-3 py-1.5 rounded text-xs transition-all cursor-pointer"
+                    className="bg-red-700 hover:bg-red-600 text-ticket font-bold px-3 py-1.5 rounded text-xs transition-all cursor-pointer"
                   >
                     {loading ? "Saving..." : "Save Date"}
                   </button>
@@ -534,7 +573,7 @@ export default function CalendarView({
                 type="button"
                 onClick={() => handleSaveSelector(night.id)}
                 disabled={selectorLoading}
-                className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 font-bold px-4 py-2 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+                className="bg-red-700 hover:bg-red-600 disabled:opacity-50 text-ticket font-bold px-4 py-2 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
               >
                 {selectorLoading ? (
                   <>
@@ -572,16 +611,16 @@ export default function CalendarView({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
-      className="bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl p-6 sm:p-8 backdrop-blur-md shadow-xl shadow-[0_0_24px_rgba(245,158,11,0.01)]"
+      className="bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl p-6 sm:p-8 backdrop-blur-md shadow-xl shadow-[0_0_24px_rgba(227,190,138,0.01)]"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h2 className="text-3xl font-serif text-zinc-100 font-bold flex items-center gap-3">
             <Calendar className="w-8 h-8 text-amber-500" />
-            {title || "Fortnightly Schedule"}
+            {title || "Schedule"}
           </h2>
           <p className="text-sm text-zinc-400 mt-1">
-            {subtitle || "Starts 17th of July 2026 • Always 7:00 PM NZST / NZDT"}
+            {subtitle || "Every second Friday · 7:00 pm"}
           </p>
         </div>
 
@@ -601,7 +640,7 @@ export default function CalendarView({
           <button
             type="button"
             onClick={() => setShowPreviousSessions((prev) => !prev)}
-            className="w-full flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-[#090909] hover:bg-[#111111] border border-zinc-800/80 hover:border-amber-500/40 text-zinc-300 transition-all cursor-pointer group shadow-lg"
+            className="w-full flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-[#1c2626] hover:bg-[#233130] border border-zinc-800/80 hover:border-amber-500/40 text-zinc-300 transition-all cursor-pointer group shadow-lg"
           >
             <div className="flex items-center gap-3.5">
               <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 group-hover:scale-105 transition-transform">

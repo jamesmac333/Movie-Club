@@ -260,7 +260,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-full py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-zinc-950 text-xs font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-amber-500/10"
+              className="w-full h-full py-2.5 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-ticket text-xs font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-amber-500/10"
             >
               <Plus className="w-4 h-4" />
               Add
@@ -288,7 +288,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
                       <span className="font-mono text-zinc-400 font-normal">({rec.email})</span>
                     </span>
                     {rec.addedAt && (
-                      <span className="text-[10px] text-zinc-600 font-mono block">
+                      <span className="text-[10px] text-zinc-500 font-mono block">
                         Added {formatDate(rec.addedAt)}
                       </span>
                     )}
@@ -438,7 +438,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
           onClick={() => setPreviewHtml(null)}
         >
           <div 
-            className="bg-[#120e0c] border border-amber-500/40 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl cursor-default"
+            className="bg-[#182221] border border-amber-500/40 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl cursor-default"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between">

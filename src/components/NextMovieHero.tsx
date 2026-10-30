@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { MovieNight, User, MOVIE_CLUB_USERS } from "../types.ts";
 import { Film, Clock, Search, Calendar, Sparkles, AlertCircle, RefreshCw, RotateCcw, Play, ExternalLink, Share2, Copy, Check } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import PaletteStrip from "./PaletteStrip.tsx";
 
 interface NextMovieHeroProps {
   nights: MovieNight[];
@@ -32,9 +33,13 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
   }, [confirmReset]);
 
   // Find the next upcoming scheduled night (chronologically, date is in the future)
+  // A night stays "next" until four hours after it starts; then the following one takes over
   const nextNight = nights
+    .filter(n => n.status === "scheduled" && new Date(n.date).getTime() > Date.now() - 4 * 3600000)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0] ||
+    nights
     .filter(n => n.status === "scheduled")
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0] || 
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0] ||
     nights.filter(n => n.movie === null)[0] || 
     nights[nights.length - 1]; // fallback
 
@@ -118,7 +123,7 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
   if (!nextNight) {
     return (
       <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-10 text-center">
-        <Film className="w-12 h-12 text-zinc-600 mx-auto mb-4 animate-pulse" />
+        <Film className="w-12 h-12 text-zinc-500 mx-auto mb-4 animate-pulse" />
         <p className="text-zinc-400">All nights completed or no nights configured.</p>
       </div>
     );
@@ -202,360 +207,175 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
     }
   };
 
+  const eventDate = new Date(nextNight.date);
+  const shortDate = eventDate.toLocaleDateString("en-NZ", { weekday: "short", day: "numeric", month: "short" });
+  const shortTime = eventDate.toLocaleTimeString("en-NZ", { hour: "numeric", minute: "2-digit", hour12: true });
+  const hostFirstName = nextNight.selector.split(" ")[0];
+  const countdownLabel = timeLeft.days > 1 ? `in ${timeLeft.days} days` : timeLeft.days === 1 ? "tomorrow" : (timeLeft.hours || timeLeft.minutes) ? "tonight" : "now";
+
   return (
-    <motion.div 
+    <motion.section
+      aria-label="Next movie night"
       initial={{ opacity: 0, y: 25 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
-      className="relative bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl overflow-hidden shadow-2xl mb-12 shadow-[0_0_24px_rgba(245,158,11,0.03)]"
+      className="relative bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden mb-12 [--ticket-notch:var(--color-zinc-950)]"
     >
-      {/* Cinematic Poster background overlay */}
-      {hasMovie && nextNight.movie!.posterUrl && (
-        <div 
-          className="absolute inset-0 bg-cover bg-center opacity-20 blur-sm scale-105 pointer-events-none"
-          style={{ backgroundImage: `url(${nextNight.movie!.posterUrl})` }}
-        />
-      )}
-      
-      {/* Decorative Film roll strip borders on top and bottom */}
-      <div className="absolute top-0 inset-x-0 h-3 bg-zinc-950 flex justify-around overflow-hidden select-none pointer-events-none opacity-20">
-        {Array.from({ length: 40 }).map((_, i) => (
-          <div key={i} className="w-2.5 h-1.5 bg-zinc-100 rounded-sm" />
-        ))}
+      <div className="flex items-baseline justify-between gap-3 px-5 sm:px-8 pt-5 sm:pt-7">
+        <p className="slate text-amber-500">Now showing · {countdownLabel}</p>
+        <p className="text-sm text-zinc-400">{shortDate} · {shortTime}</p>
       </div>
 
-      <div className="p-8 sm:p-10 md:p-12 relative z-10">
-        
-        {/* Next Night Header Badging */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <span className="bg-amber-500 text-zinc-950 text-xs font-mono font-bold tracking-widest px-3 py-1 rounded-full uppercase">
-            Next Event
-          </span>
-          <span className="text-xs font-mono text-zinc-400 flex items-center gap-1.5 bg-zinc-900/80 border border-zinc-800/80 px-3 py-1 rounded-full">
-            <Calendar className="w-3.5 h-3.5 text-amber-500/80" />
-            {formatNZTDate(nextNight.date)}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 items-center">
-          
-          {/* LEFT: Countdown timer or Movie Selection Prompt */}
-          <div className="lg:col-span-7 space-y-6">
-            
-            {hasMovie ? (
-              // Case A: Movie selected, show metadata
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  {selectorUser?.avatarUrl && (
-                    <img 
-                      src={selectorUser.avatarUrl} 
-                      alt={nextNight.selector}
-                      className="w-6 h-6 rounded-full object-cover border border-amber-500/50"
-                      referrerPolicy="no-referrer"
-                    />
-                  )}
-                  <p className="text-sm font-mono text-amber-500/80 tracking-widest uppercase">
-                    Selected by {nextNight.selector}
+      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,340px)_minmax(0,1fr)] gap-6 md:gap-10 p-4 sm:p-8 md:items-center">
+        {/* Poster: the feature of the card */}
+        <div className="flex flex-col gap-3">
+          {hasMovie && nextNight.movie!.posterUrl ? (
+            <img
+              src={nextNight.movie!.posterUrl}
+              alt={`${nextNight.movie!.title} poster`}
+              className="w-full aspect-[2/3] object-cover rounded-2xl border border-zinc-700 shadow-[0_24px_50px_rgba(0,0,0,0.5)]"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="w-full aspect-[2/3] rounded-2xl border border-zinc-700 bg-slate shadow-[0_24px_50px_rgba(0,0,0,0.5)] flex flex-col justify-between p-6">
+              <span className="slate text-amber-500">{hasMovie ? "No poster" : `${hostFirstName}'s pick`}</span>
+              <div className="space-y-3">
+                {!hasMovie && selectorUser?.avatarUrl && (
+                  <img src={selectorUser.avatarUrl} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-amber-500" referrerPolicy="no-referrer" />
+                )}
+                <p className="font-serif text-5xl leading-[0.95] text-ticket">{hasMovie ? nextNight.movie!.title : "Still choosing…"}</p>
+                {!hasMovie && (
+                  <p className="slate text-zinc-300">
+                    {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m to go
                   </p>
-                </div>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif text-white font-extrabold tracking-tight leading-none italic drop-shadow-2xl">
-                  {nextNight.movie!.title}
-                </h1>
-                
-                {/* Meta details */}
-                <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-zinc-400 pt-1">
-                  <span className="bg-zinc-900 px-2.5 py-1 rounded border border-zinc-800 font-semibold text-zinc-300">
-                    {nextNight.movie!.year}
-                  </span>
-                  <span className="bg-zinc-900 px-2.5 py-1 rounded border border-zinc-800 font-semibold text-zinc-300">
-                    {nextNight.movie!.rating || "PG-13"}
-                  </span>
-                  <span className="bg-zinc-900 px-2.5 py-1 rounded border border-zinc-800 font-semibold text-zinc-300">
-                    {nextNight.movie!.runtime} mins
-                  </span>
-                  <span className="text-amber-500/80 bg-amber-500/5 border border-amber-500/10 px-2.5 py-1 rounded">
-                    {nextNight.movie!.genre}
-                  </span>
-                </div>
-
-                <div className="pt-2">
-                  <p className="text-sm font-mono text-zinc-500 uppercase tracking-wider mb-1">Director</p>
-                  <p className="text-base text-zinc-300 font-medium font-serif italic">{nextNight.movie!.director}</p>
-                </div>
-
-                <div className="pt-2">
-                  <p className="text-sm font-mono text-zinc-500 uppercase tracking-wider mb-1">Plot Summary</p>
-                  <p className="text-zinc-300 text-sm leading-relaxed max-w-xl">
-                    {nextNight.movie!.overview}
-                  </p>
-                </div>
-
-                {/* Action Buttons: Trailer, Share to Group Chat, and Reset */}
-                <div className="pt-4 flex flex-wrap items-center gap-3">
-                  {nextNight.movie!.trailerUrl && (
-                    <a
-                      href={nextNight.movie!.trailerUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-mono text-xs font-bold uppercase tracking-wider px-4 sm:px-5 py-3 rounded-xl transition-all shadow-lg shadow-red-600/20 active:scale-[0.98]"
-                    >
-                      <Play className="w-4 h-4 fill-current" />
-                      Watch Trailer
-                      <ExternalLink className="w-3.5 h-3.5 opacity-60 ml-0.5" />
-                    </a>
-                  )}
-
-                  {/* 1-Tap "Copy for Group Chat" & Web Share */}
-                  <button
-                    type="button"
-                    onClick={handleShareOrCopy}
-                    className={`inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider px-4 sm:px-5 py-3 rounded-xl transition-all shadow-lg cursor-pointer active:scale-[0.98] ${
-                      copiedShare
-                        ? "bg-emerald-500 text-zinc-950 shadow-emerald-500/20 border border-emerald-400"
-                        : "bg-zinc-800 hover:bg-zinc-750 text-amber-400 hover:text-amber-300 border border-zinc-700 hover:border-amber-500/50 shadow-black/40"
-                    }`}
-                    title="Share or copy movie details formatted for WhatsApp or iMessage group chat"
-                  >
-                    {copiedShare ? (
-                      <>
-                        <Check className="w-4 h-4 text-zinc-950 stroke-[3]" />
-                        <span>Copied to Clipboard!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Share2 className="w-4 h-4" />
-                        <span>Copy for Group Chat</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {canReset && (
-                  <div className="pt-4 flex flex-col gap-2 items-start">
-                    <button
-                      onClick={handleResetMovieSelection}
-                      disabled={loadingReset}
-                      className={`text-xs font-mono font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
-                        confirmReset
-                          ? "bg-red-500 text-zinc-950 border-red-500 hover:bg-red-600 shadow-md shadow-red-500/20"
-                          : "bg-zinc-950/60 text-zinc-400 border-zinc-800 hover:border-red-500/50 hover:text-red-400 hover:bg-red-500/[0.02]"
-                      }`}
-                    >
-                      <RotateCcw className={`w-3.5 h-3.5 ${loadingReset ? "animate-spin" : ""}`} />
-                      {loadingReset
-                        ? "Resetting Selection..."
-                        : confirmReset
-                        ? "Are you sure? Click to Confirm"
-                        : "Reset Movie Choice / Change Mind"}
-                    </button>
-                    {confirmReset && (
-                      <p className="text-[10px] text-zinc-500 font-mono italic">
-                        * Click again to confirm. This will clear the current selection and metadata.
-                      </p>
-                    )}
-                  </div>
                 )}
               </div>
+            </div>
+          )}
+          <PaletteStrip posterUrl={hasMovie ? nextNight.movie!.posterUrl : null} className="h-2 rounded" />
+        </div>
+
+        <div className="flex flex-col gap-4 min-w-0">
+          {hasMovie ? (
+            <>
+              <h1 className="font-serif text-4xl sm:text-5xl lg:text-7xl leading-[0.95] text-zinc-50 break-words">
+                {nextNight.movie!.title}
+              </h1>
+              <p className="text-sm sm:text-base text-zinc-400">
+                {[nextNight.movie!.year, nextNight.movie!.rating, nextNight.movie!.runtime ? `${Math.floor(nextNight.movie!.runtime / 60)}h ${nextNight.movie!.runtime % 60}m` : null, nextNight.movie!.genre].filter(Boolean).join(" · ")}
+              </p>
+              {nextNight.movie!.director && <p className="slate text-zinc-300">A film by {nextNight.movie!.director}</p>}
+              {nextNight.movie!.overview && (
+                <>
+                  <p className="hidden md:block text-base leading-relaxed text-zinc-300 max-w-xl">{nextNight.movie!.overview}</p>
+                  <details className="md:hidden">
+                    <summary className="cursor-pointer text-sm font-medium text-zinc-200 py-2">Plot summary</summary>
+                    <p className="text-sm leading-relaxed text-zinc-300">{nextNight.movie!.overview}</p>
+                  </details>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <h1 className="font-serif text-4xl sm:text-5xl leading-tight text-zinc-50">It's {hostFirstName}'s turn to pick</h1>
+              <p className="text-sm sm:text-base leading-relaxed text-zinc-400 max-w-lg">
+                Hosting rotates every fortnight. Once {hostFirstName} chooses, the poster, plot and running time appear here.
+              </p>
+            </>
+          )}
+
+          <div className="flex items-center gap-3">
+            {selectorUser?.avatarUrl ? (
+              <img src={selectorUser.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover border border-amber-500/60" referrerPolicy="no-referrer" />
             ) : (
-              // Case B: No movie selected yet
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  {selectorUser?.avatarUrl && (
-                    <img 
-                      src={selectorUser.avatarUrl} 
-                      alt={nextNight.selector}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.3)]"
-                      referrerPolicy="no-referrer"
-                    />
-                  )}
-                  <p className="text-sm font-mono text-amber-500 tracking-widest uppercase">
-                    Host Selector: {nextNight.selector}
-                  </p>
-                </div>
-                <h1 className="text-3xl sm:text-4xl font-serif text-zinc-50 font-bold leading-tight">
-                  Await Selection...
-                </h1>
-                <p className="text-zinc-400 text-sm leading-relaxed max-w-lg">
-                  Every fortnight we rotate selections. It's <span className="font-semibold text-zinc-200">{nextNight.selector}</span>'s turn to pick the movie. Once selected, our online engine will pull rich information, runtime, synopsis, and genres instantly!
+              <span className="w-9 h-9 rounded-full bg-red-800 text-ticket text-xs font-semibold flex items-center justify-center">{hostFirstName.slice(0, 2).toUpperCase()}</span>
+            )}
+            <span className="text-sm text-zinc-200">{hasMovie ? `${hostFirstName}'s pick` : `${hostFirstName} is hosting`}</span>
+          </div>
+
+          {/* Host or admin: choose the film */}
+          {!hasMovie && canSelect && (
+            <form onSubmit={handleSelectMovie} className="bg-zinc-950/60 border border-zinc-800 rounded-2xl p-4 space-y-3 max-w-xl">
+              <label htmlFor="movie-search" className="slate text-amber-500 block">
+                {isNextSelector ? "Your turn: pick the film" : "Admin: pick the film"}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="movie-search"
+                  type="text"
+                  placeholder="Film title, e.g. Gladiator"
+                  value={movieInput}
+                  onChange={(e) => setMovieInput(e.target.value)}
+                  disabled={loading}
+                  className="flex-1 min-w-0 h-12 bg-zinc-950 border border-zinc-700 rounded-xl px-4 text-base text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="h-12 px-5 rounded-xl bg-red-700 hover:bg-red-600 disabled:opacity-60 text-ticket font-semibold text-sm flex items-center gap-2 cursor-pointer"
+                >
+                  {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  {loading ? "Searching…" : "Choose"}
+                </button>
+              </div>
+              {error && (
+                <p className="flex items-center gap-1.5 text-sm text-red-400">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {error}
                 </p>
-
-                {/* 1-Tap Share / Copy Event Details to Group Chat */}
-                <div className="pt-1 flex flex-wrap gap-2.5">
-                  <button
-                    type="button"
-                    onClick={handleShareOrCopy}
-                    className={`inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all border cursor-pointer active:scale-[0.98] ${
-                      copiedShare
-                        ? "bg-emerald-500 text-zinc-950 border-emerald-400 shadow-md shadow-emerald-500/20"
-                        : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-amber-400 border-zinc-800 hover:border-amber-500/40"
-                    }`}
-                    title="Share upcoming event date and host to group chat"
-                  >
-                    {copiedShare ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[3]" />
-                        <span>Copied to Clipboard!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Share2 className="w-3.5 h-3.5 text-amber-500" />
-                        <span>Copy for Group Chat</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Selection input for the designated selector or admins */}
-                {canSelect ? (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-5 mt-6 max-w-xl"
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="w-4 h-4 text-amber-500" />
-                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-200">
-                        {isNextSelector ? "Your Turn to Select!" : "Admin Override: Pick Movie"}
-                      </h4>
-                    </div>
-
-                    <form onSubmit={handleSelectMovie} className="flex gap-2">
-                      <div className="relative flex-1">
-                        <input
-                          type="text"
-                          placeholder="Search movie title (e.g., Gladiator, Dune)..."
-                          value={movieInput}
-                          onChange={(e) => setMovieInput(e.target.value)}
-                          disabled={loading}
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-4 pr-10 py-2.5 text-base text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
-                        />
-                        <Film className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
-                      </div>
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="bg-amber-500 hover:bg-amber-600 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 font-bold px-4 py-2.5 rounded-lg text-sm transition-all flex items-center gap-1.5 shadow-md shadow-amber-500/5 cursor-pointer"
-                      >
-                        {loading ? (
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Search className="w-4 h-4" />
-                        )}
-                        {loading ? "Searching..." : "Select"}
-                      </button>
-                    </form>
-                    
-                    {error && (
-                      <div className="flex items-center gap-1.5 text-xs text-red-400 mt-2.5 font-medium">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                        {error}
-                      </div>
-                    )}
-                    {success && (
-                      <p className="text-xs text-emerald-400 mt-2.5 font-medium">
-                        {success}
-                      </p>
-                    )}
-                  </motion.div>
-                ) : (
-                  <div className="bg-zinc-900/30 border border-zinc-900/60 rounded-xl p-4 mt-6 flex items-start gap-3 max-w-md">
-                    <AlertCircle className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
-                    <p className="text-xs text-zinc-500">
-                      Sign in as <span className="text-zinc-400 font-semibold">{nextNight.selector}</span> to submit your choice for this fortnight.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT: Countdown Box or Graphic & Poster */}
-          <div className="lg:col-span-5 flex flex-col items-center justify-center">
-            {hasMovie ? (
-              // If movie has been selected, show beautiful cinematic poster representation
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="relative bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 shadow-xl w-64 aspect-[2/3] max-w-full flex flex-col justify-end group cursor-pointer"
-              >
-                {nextNight.movie!.posterUrl ? (
-                  <img 
-                    src={nextNight.movie!.posterUrl} 
-                    alt={nextNight.movie!.title}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-zinc-900 flex flex-col items-center justify-center p-4">
-                    <Film className="w-12 h-12 text-zinc-700 mb-2" />
-                  </div>
-                )}
-                {/* Visual overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent opacity-80" />
-                <div className="relative p-4 z-10">
-                  <p className="text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1">Coming Up</p>
-                  <h4 className="text-sm font-serif font-bold text-zinc-100 italic leading-tight">
-                    "{nextNight.movie!.title}"
-                  </h4>
-                </div>
-              </motion.div>
-            ) : (
-              // Countdown Clock Container for empty movie choice
-              <div className="bg-zinc-900/80 border border-zinc-800 p-6 rounded-2xl w-full max-w-xs text-center space-y-4 shadow-xl">
-                <div className="flex items-center justify-center gap-2 text-amber-500 font-mono text-xs uppercase tracking-widest font-semibold">
-                  <Clock className="w-4 h-4 animate-pulse" />
-                  Countdown to Event
-                </div>
-
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="bg-zinc-950 rounded-lg p-2 border border-zinc-800/80">
-                    <span className="block font-mono text-2xl font-bold text-zinc-100">{timeLeft.days}</span>
-                    <span className="text-[10px] text-zinc-500 uppercase font-sans">Days</span>
-                  </div>
-                  <div className="bg-zinc-950 rounded-lg p-2 border border-zinc-800/80">
-                    <span className="block font-mono text-2xl font-bold text-zinc-100">{timeLeft.hours}</span>
-                    <span className="text-[10px] text-zinc-500 uppercase font-sans">Hrs</span>
-                  </div>
-                  <div className="bg-zinc-950 rounded-lg p-2 border border-zinc-800/80">
-                    <span className="block font-mono text-2xl font-bold text-zinc-100">{timeLeft.minutes}</span>
-                    <span className="text-[10px] text-zinc-500 uppercase font-sans">Mins</span>
-                  </div>
-                  <div className="bg-zinc-950 rounded-lg p-2 border border-zinc-800/80">
-                    <span className="block font-mono text-2xl font-bold text-zinc-100">{timeLeft.seconds}</span>
-                    <span className="text-[10px] text-zinc-500 uppercase font-sans">Secs</span>
-                  </div>
-                </div>
-
-                {selectorUser?.avatarUrl && (
-                  <div className="flex flex-col items-center py-2">
-                    <div className="bg-[#fdfbf7] p-2 pb-5 border border-zinc-300 shadow-md rotate-[-2deg] transition-transform hover:rotate-0 duration-300 w-28">
-                      <div className="bg-zinc-200 aspect-square overflow-hidden border border-zinc-300 relative">
-                        <img 
-                          src={selectorUser.avatarUrl} 
-                          alt={selectorUser.name}
-                          className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
-                        />
-                      </div>
-                      <span className="text-[9px] font-serif text-zinc-800 tracking-wide mt-2 block font-bold italic leading-none">
-                        {selectorUser.username} 🎟️
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="text-[11px] text-zinc-400 font-medium">
-                  {nextNight.selector} is in charge of selection!
-                </div>
-              </div>
-            )}
-          </div>
-
+              )}
+              {success && <p className="text-sm text-emerald-400">{success}</p>}
+            </form>
+          )}
         </div>
-
       </div>
 
-      {/* Floating Share / Copy Toast Notification */}
+      {/* Ticket stub */}
+      <div className="ticket-tear" aria-hidden="true"><span /></div>
+      <div className="px-5 sm:px-8 pb-5 sm:pb-7 pt-2 flex flex-col gap-4">
+        <p className="slate text-zinc-400">Admit one · {shortDate} · {shortTime} · {hostFirstName} hosts</p>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={handleShareOrCopy}
+            className={`flex-1 sm:flex-none min-h-12 px-6 rounded-2xl font-semibold text-base flex items-center justify-center gap-2 cursor-pointer transition-colors ${
+              copiedShare ? "bg-emerald-500 text-zinc-950" : "bg-red-700 hover:bg-red-600 text-ticket"
+            }`}
+          >
+            {copiedShare ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+            {copiedShare ? "Copied" : "Copy for group chat"}
+          </button>
+          {hasMovie && nextNight.movie!.trailerUrl && (
+            <a
+              href={nextNight.movie!.trailerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="min-h-12 px-5 rounded-2xl border border-zinc-700 hover:border-amber-500 text-zinc-100 font-medium flex items-center justify-center gap-2"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              Trailer
+            </a>
+          )}
+          {hasMovie && canReset && (
+            <button
+              type="button"
+              onClick={handleResetMovieSelection}
+              disabled={loadingReset}
+              className={`min-h-12 px-4 rounded-2xl text-sm font-medium flex items-center gap-2 cursor-pointer disabled:opacity-50 ${
+                confirmReset ? "bg-red-700 text-ticket" : "text-zinc-400 hover:text-amber-500"
+              }`}
+            >
+              <RotateCcw className={`w-4 h-4 ${loadingReset ? "animate-spin" : ""}`} />
+              {loadingReset ? "Clearing…" : confirmReset ? "Tap again to clear the pick" : "Change the pick"}
+            </button>
+          )}
+        </div>
+        {hasMovie && (error || success) && (
+          <p className={`text-sm ${error ? "text-red-400" : "text-emerald-400"}`}>{error || success}</p>
+        )}
+      </div>
+
+      {/* Share / copy confirmation */}
       <AnimatePresence>
         {shareToast && (
           <motion.div
@@ -563,20 +383,14 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 15, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-24 sm:bottom-12 left-1/2 -translate-x-1/2 z-50 bg-[#1c1613] border border-amber-500/80 text-amber-200 px-5 py-3 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.8)] text-xs font-mono font-medium flex items-center gap-2.5 pointer-events-none"
+            role="status"
+            className="fixed bottom-28 md:bottom-12 left-1/2 -translate-x-1/2 z-50 bg-ink-deep border border-amber-500/70 text-amber-200 px-5 py-3 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.6)] text-sm flex items-center gap-2.5 pointer-events-none"
           >
-            <Check className="w-4 h-4 text-emerald-400 shrink-0 stroke-[3]" />
+            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{shareToast}</span>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Decorative film rolls on the bottom */}
-      <div className="absolute bottom-0 inset-x-0 h-3 bg-zinc-950 flex justify-around overflow-hidden select-none pointer-events-none opacity-20">
-        {Array.from({ length: 40 }).map((_, i) => (
-          <div key={i} className="w-2.5 h-1.5 bg-zinc-100 rounded-sm" />
-        ))}
-      </div>
-    </motion.div>
+    </motion.section>
   );
 }
