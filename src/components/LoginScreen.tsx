@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { User, MOVIE_CLUB_USERS } from "../types.ts";
 import { Ticket, LogIn, Film, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
+import { setToken } from "../auth.ts";
 
 interface LoginScreenProps {
   onLoginSuccess: (user: User) => void;
@@ -36,6 +37,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       }
 
       const data = await response.json();
+      if (data.token) setToken(data.token);
       onLoginSuccess(data.user);
     } catch (err: any) {
       setError(err.message || "Invalid password or connection error.");
