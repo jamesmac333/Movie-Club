@@ -12,6 +12,7 @@ import SelectionAlertModal from "./components/SelectionAlertModal.tsx";
 import RecapAlertModal from "./components/RecapAlertModal.tsx";
 import { Film, Calendar, Compass, BookOpen, Sparkles, Clapperboard, Heart, KeyRound, LogOut, ShieldCheck, User as UserIcon, Home, Mail } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useSpring } from "motion/react";
+import { getToken, clearSession } from "./auth.ts";
 
 export default function App() {
   const [nights, setNights] = useState<MovieNight[]>([]);
@@ -31,7 +32,10 @@ export default function App() {
   // Load user session from sessionStorage on startup
   useEffect(() => {
     const saved = sessionStorage.getItem("movie_club_user");
-    if (saved) {
+    if (saved && !getToken()) {
+      // Signed in before session tokens existed: ask them to sign in again
+      clearSession();
+    } else if (saved) {
       try {
         const parsed = JSON.parse(saved);
         const staticMatch = MOVIE_CLUB_USERS.find(
@@ -303,7 +307,7 @@ export default function App() {
 
   const handleLogout = () => {
     setCurrentUser(null);
-    sessionStorage.removeItem("movie_club_user");
+    clearSession();
   };
 
   // API Call: Select movie for a night (called from NextMovieHero)

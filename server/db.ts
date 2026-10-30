@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { MovieNight, Review, NightOverview, User, EdmRecipient, EdmLog } from "../src/types.ts";
+import { migratePlainPasswords } from "./passwords.ts";
 
 function getDbFile(): string {
   if (process.env.DB_PATH) {
@@ -327,6 +328,7 @@ function loadDbFromDisk(): DatabaseSchema {
         fs.copyFileSync(localFile, DB_FILE);
       } else {
         const data = getInitialData();
+        migratePlainPasswords(data.users);
         saveDbToDiskAtomic(data);
         return data;
       }
@@ -377,6 +379,11 @@ function loadDbFromDisk(): DatabaseSchema {
       }
     }
     if (edmLogsCleaned) {
+      saveDbToDiskAtomic(parsed);
+    }
+
+    // Replace any plain-text passwords with salted hashes
+    if (migratePlainPasswords(parsed.users)) {
       saveDbToDiskAtomic(parsed);
     }
 

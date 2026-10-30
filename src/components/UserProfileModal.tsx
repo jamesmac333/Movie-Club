@@ -75,12 +75,29 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
     }
   }, [isAdmin, activeTab]);
 
+  // Downloads go through fetch so the session token is sent with the request
+  const downloadBackupFile = async (query: string) => {
+    try {
+      const res = await fetch(`/api/admin/backup/download${query}`);
+      if (!res.ok) throw new Error("Download failed");
+      const filename = res.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1] || "movie-club-backup.json";
+      const url = URL.createObjectURL(await res.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setErrorMsg("Could not download the backup file.");
+    }
+  };
+
   const handleDownloadBackup = () => {
-    window.location.href = `/api/admin/backup/download?requester=${encodeURIComponent(currentUser.username)}`;
+    downloadBackupFile("");
   };
 
   const handleDownloadBak = () => {
-    window.location.href = `/api/admin/backup/download?requester=${encodeURIComponent(currentUser.username)}&target=bak`;
+    downloadBackupFile("?target=bak");
   };
 
   const handleTargetFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

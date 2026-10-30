@@ -16,6 +16,8 @@ import {
   getDbFilePath
 } from "./server/db.ts";
 import { fetchMovieMetadata } from "./server/gemini.ts";
+import { authenticate, createToken } from "./server/auth.ts";
+import { hashPassword, verifyPassword } from "./server/passwords.ts";
 import { MovieNight, Review, NightOverview, EdmRecipient, EdmLog } from "./src/types.ts";
 import {
   sendEdm,
@@ -33,6 +35,9 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+  // Verify the caller's session token before any API route runs
+  app.use(authenticate);
+
   // --- API ROUTES ---
 
   // Auth: Login
@@ -44,14 +49,11 @@ async function startServer() {
     try {
       const db = readDb();
       const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
-      if (!user) {
-        return res.status(401).json({ error: "User not found" });
-      }
-      if (user.password !== password) {
-        return res.status(401).json({ error: "Incorrect password" });
+      if (!user || !verifyPassword(String(password), user.password)) {
+        return res.status(401).json({ error: "Incorrect username or password" });
       }
       const { password: _, ...safeUser } = user;
-      res.json({ user: safeUser });
+      res.json({ user: safeUser, token: createToken(user.username) });
     } catch (error) {
       res.status(500).json({ error: "Authentication failed" });
     }
@@ -69,7 +71,7 @@ async function startServer() {
       if (userIndex === -1) {
         return res.status(404).json({ error: "User not found" });
       }
-      db.users[userIndex].password = newPassword;
+      db.users[userIndex].password = hashPassword(String(newPassword));
       writeDb(db);
       res.json({ message: "Password updated successfully" });
     } catch (error) {
@@ -93,7 +95,7 @@ async function startServer() {
       if (userIndex === -1) {
         return res.status(404).json({ error: "Target user not found" });
       }
-      db.users[userIndex].password = newPassword;
+      db.users[userIndex].password = hashPassword(String(newPassword));
       writeDb(db);
       res.json({ message: `Password for ${db.users[userIndex].name} reset successfully` });
     } catch (error) {
