@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS, isAuthenticGatheringPhoto } from "../types.ts";
+import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS, isAuthenticGatheringPhoto, isBeforeDataLoss, DATA_LOSS_NOTE } from "../types.ts";
 import { Star, MessageSquare, Trash2, Edit3, Plus, Image as ImageIcon, Heart, Calendar, Sparkles, BookOpen, Maximize2, ChevronDown, ChevronUp, Camera, Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -361,6 +361,12 @@ export default function FeedView({
           <p className="text-sm text-zinc-400 mt-1">
             Relive our club nights: Read Ash's overviews, see the photos, and check out everyone's reviews!
           </p>
+          {watchedNights.some((n) => isBeforeDataLoss(n.date)) && (
+            <div className="mt-4 flex items-start gap-2.5 p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/20 text-amber-200/90 text-xs leading-relaxed max-w-3xl">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <span>{DATA_LOSS_NOTE}</span>
+            </div>
+          )}
         </div>
 
         {/* Global Expand / Collapse Quick Controls */}
@@ -904,7 +910,11 @@ export default function FeedView({
 
                         {/* Existing Reviews List */}
                         {nightReviews.length === 0 ? (
-                          <p className="text-xs text-zinc-600 italic py-2">No reviews written for this movie yet. Click Add Review to start!</p>
+                          <p className="text-xs text-zinc-600 italic py-2">
+                            {isBeforeDataLoss(night.date)
+                              ? "The original reviews for this night were lost when Google AI Studio wiped the club database on 14 October 2026. If you remember yours, click Add Review to post it again."
+                              : "No reviews written for this movie yet. Click Add Review to start!"}
+                          </p>
                         ) : (
                           <div className="space-y-4">
                             {nightReviews.map((review, rIdx) => {

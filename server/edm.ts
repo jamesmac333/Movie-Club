@@ -229,7 +229,7 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
           <!-- Call to action button -->
           <tr>
             <td align="center" style="padding: 8px 32px 36px; background-color: #ffffff;">
-              <a href="${process.env.APP_URL || 'https://movieclub.local'}" style="display: inline-block; background-color: #d97706; color: #ffffff; font-weight: bold; font-size: 13px; text-decoration: none; padding: 13px 30px; border-radius: 12px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(217, 119, 6, 0.35);">
+              <a href="${process.env.APP_URL || 'https://www.movieclub.co.nz'}" style="display: inline-block; background-color: #d97706; color: #ffffff; font-weight: bold; font-size: 13px; text-decoration: none; padding: 13px 30px; border-radius: 12px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(217, 119, 6, 0.35);">
                 Enter Movie Club Platform →
               </a>
             </td>
@@ -356,7 +356,7 @@ export function generateMovieSelectedEmailHtml(night: MovieNight): string {
           <!-- Enter Site Button -->
           <tr>
             <td align="center" style="padding: 0 32px 32px;">
-              <a href="${process.env.APP_URL || 'https://movieclub.local'}" style="display: inline-block; background-color: #f59e0b; color: #09090b; font-weight: bold; font-size: 13px; text-decoration: none; padding: 12px 28px; border-radius: 12px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);">
+              <a href="${process.env.APP_URL || 'https://www.movieclub.co.nz'}" style="display: inline-block; background-color: #f59e0b; color: #09090b; font-weight: bold; font-size: 13px; text-decoration: none; padding: 12px 28px; border-radius: 12px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);">
                 View Details & Trailer on Site →
               </a>
             </td>
@@ -439,7 +439,7 @@ export function generateTestEmailHtml(adminName: string, recipientCount: number)
                 </tr>
               </table>
 
-              <a href="${process.env.APP_URL || 'https://movieclub.local'}" style="display: inline-block; background-color: #10b981; color: #022c22; font-weight: bold; font-size: 13px; text-decoration: none; padding: 12px 28px; border-radius: 12px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);">
+              <a href="${process.env.APP_URL || 'https://www.movieclub.co.nz'}" style="display: inline-block; background-color: #10b981; color: #022c22; font-weight: bold; font-size: 13px; text-decoration: none; padding: 12px 28px; border-radius: 12px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);">
                 Return to Movie Club →
               </a>
             </td>

@@ -37,5 +37,5 @@ COPY --from=builder /app/dist ./dist
 # Expose port 3000
 EXPOSE 3000
 
-# Start the application
-CMD ["npm", "start"]
+# Start the server directly so it receives shutdown signals (npm would log them as errors)
+CMD ["node", "dist/server.cjs"]
