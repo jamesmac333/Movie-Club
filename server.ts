@@ -1,4 +1,5 @@
 import express from "express";
+import crypto from "crypto";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
@@ -30,6 +31,33 @@ import {
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Browser security headers. Keep in sync with the "headers" section of vercel.json,
+  // which applies the same rules to the pages Vercel serves.
+  const CONTENT_SECURITY_POLICY = [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https:",
+    "connect-src 'self'",
+    "frame-src 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'"
+  ].join("; ");
+  app.use((req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    // The Vite dev server needs inline scripts and websockets, so only enforce CSP in production
+    if (process.env.NODE_ENV === "production") {
+      res.setHeader("Content-Security-Policy", CONTENT_SECURITY_POLICY);
+    }
+    next();
+  });
 
   // Photos are compressed in the browser (~0.3 MB); 15 MB still allows the uncompressed fallback for files under 10 MB
   app.use(express.json({ limit: "15mb" }));
@@ -193,9 +221,9 @@ async function startServer() {
           const mime = matches[1];
           const imgBuffer = Buffer.from(matches[2], "base64");
           res.setHeader("Content-Type", `image/${mime === "jpg" ? "jpeg" : mime}`);
-          res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-          res.setHeader("Pragma", "no-cache");
-          res.setHeader("Expires", "0");
+          // Versioned URLs (?v=<fingerprint> from /api/users) never change, so browsers can keep them;
+          // unversioned requests are revalidated each time
+          res.setHeader("Cache-Control", req.query.v ? "public, max-age=31536000, immutable" : "no-cache");
           return res.send(imgBuffer);
         }
       }
@@ -216,9 +244,11 @@ async function startServer() {
       const db = readDb();
       const safeUsers = db.users.map(({ password, ...u }) => {
         if (u.avatarUrl && u.avatarUrl.startsWith("data:image/")) {
+          // Fingerprint changes whenever the photo does, so the URL can be cached
+          const version = crypto.createHash("sha1").update(u.avatarUrl).digest("hex").slice(0, 12);
           return {
             ...u,
-            avatarUrl: `/api/users/${encodeURIComponent(u.username)}/avatar`
+            avatarUrl: `/api/users/${encodeURIComponent(u.username)}/avatar?v=${version}`
           };
         }
         return u;
