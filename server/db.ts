@@ -318,90 +318,107 @@ function saveDbToDiskAtomic(data: DatabaseSchema): void {
   }
 }
 
-// Internal loader from disk
-function loadDbFromDisk(): DatabaseSchema {
-  try {
-    if (!fs.existsSync(DB_FILE)) {
-      const localFile = path.join(process.cwd(), "server-db.json");
-      if (fs.existsSync(localFile) && localFile !== DB_FILE) {
-        console.log(`DB_FILE not found at ${DB_FILE}. Copying initial state from bundled ${localFile}...`);
-        fs.copyFileSync(localFile, DB_FILE);
-      } else {
-        const data = getInitialData();
-        migratePlainPasswords(data.users);
-        saveDbToDiskAtomic(data);
-        return data;
-      }
-    }
-
-    const raw = fs.readFileSync(DB_FILE, "utf8");
-    let parsed: DatabaseSchema;
-    try {
-      parsed = JSON.parse(raw) as DatabaseSchema;
-    } catch (parseErr) {
-      console.warn("Failed to parse DB_FILE, checking for backup file...", parseErr);
-      const bakFile = `${DB_FILE}.bak`;
-      if (fs.existsSync(bakFile)) {
-        const bakRaw = fs.readFileSync(bakFile, "utf8");
-        parsed = JSON.parse(bakRaw) as DatabaseSchema;
-        console.log("Successfully recovered database from .bak backup file!");
-      } else {
-        throw parseErr;
-      }
-    }
-    
-    // Auto-migration if users are missing in the saved JSON file
-    if (!parsed.users || parsed.users.length === 0) {
-      const initial = getInitialData();
-      parsed.users = initial.users;
-      parsed.nights = initial.nights;
-      parsed.reviews = parsed.reviews || [];
-      parsed.overviews = parsed.overviews || [];
-      saveDbToDiskAtomic(parsed);
-    }
-
-    if (!Array.isArray(parsed.reviews)) parsed.reviews = [];
-    if (!Array.isArray(parsed.overviews)) parsed.overviews = [];
-    if (!Array.isArray(parsed.nights)) parsed.nights = [];
-    if (!Array.isArray(parsed.edmRecipients)) {
-      parsed.edmRecipients = [
-        { email: "james.mac333@gmail.com", name: "James Macintosh", addedAt: new Date().toISOString() }
-      ];
-    }
-    if (!Array.isArray(parsed.edmLogs)) parsed.edmLogs = [];
-
-    // Clean up any historical logs where full uncompressed base64 photos were saved
-    let edmLogsCleaned = false;
-    for (const log of parsed.edmLogs) {
-      if (log.htmlContent && log.htmlContent.includes("data:image/") && log.htmlContent.length > 50000) {
-        log.htmlContent = log.htmlContent.replace(/src="data:image\/[^;]+;base64,[^"]{1000,}"/g, 'src="[Attached high-res photo in email]"');
-        edmLogsCleaned = true;
-      }
-    }
-    if (edmLogsCleaned) {
-      saveDbToDiskAtomic(parsed);
-    }
-
-    // Replace any plain-text passwords with salted hashes
-    if (migratePlainPasswords(parsed.users)) {
-      saveDbToDiskAtomic(parsed);
-    }
-
-    // Auto-schedule future nights to ensure at least 8 are always in the pipeline
-    const originalLength = parsed.nights.length;
-    ensureFutureNights(parsed);
-    if (parsed.nights.length !== originalLength) {
-      saveDbToDiskAtomic(parsed);
-    }
-
-    return parsed;
-  } catch (error) {
-    console.error("Error reading database file, returning defaults:", error);
-    if (cachedDb) {
-      return cachedDb;
-    }
-    return getInitialData();
+// Replaces large inline base64 images (src="data:image/...") with a placeholder.
+// Uses plain string scanning: the previous regex overflowed the stack on multi-MB
+// photos, which on 14 Oct 2026 made the server fall back to defaults and overwrite the database.
+export function stripInlineImages(html: string): string {
+  const marker = 'src="data:image/';
+  let out = "";
+  let pos = 0;
+  for (;;) {
+    const start = html.indexOf(marker, pos);
+    if (start === -1) return out + html.slice(pos);
+    const end = html.indexOf('"', start + marker.length);
+    if (end === -1) return out + html.slice(pos);
+    out += end - start > 1000
+      ? html.slice(pos, start) + 'src="[Attached high-res photo in email]"'
+      : html.slice(pos, end + 1);
+    pos = end + 1;
   }
+}
+
+// Parses a database file and checks it looks like a real club database
+function parseDbFile(file: string): DatabaseSchema {
+  const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+  if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.users) || parsed.users.length === 0) {
+    throw new Error(`${file} does not contain any members`);
+  }
+  return parsed as DatabaseSchema;
+}
+
+// Internal loader from disk. Never substitutes default data for a file it cannot read:
+// if loading fails it throws, so the request fails and nothing is written over the real file.
+function loadDbFromDisk(): DatabaseSchema {
+  if (!fs.existsSync(DB_FILE)) {
+    // A missing file on the live site usually means the storage volume is not mounted
+    if (process.env.NODE_ENV === "production" && process.env.ALLOW_DB_INIT !== "true") {
+      throw new Error(`Database file not found at ${DB_FILE}. Refusing to create a new one in production (set ALLOW_DB_INIT=true to allow).`);
+    }
+    const localFile = path.join(process.cwd(), "server-db.json");
+    if (fs.existsSync(localFile) && localFile !== DB_FILE) {
+      console.log(`DB_FILE not found at ${DB_FILE}. Copying initial state from bundled ${localFile}...`);
+      fs.copyFileSync(localFile, DB_FILE);
+    } else {
+      const data = getInitialData();
+      migratePlainPasswords(data.users);
+      saveDbToDiskAtomic(data);
+      return data;
+    }
+  }
+
+  let parsed: DatabaseSchema;
+  try {
+    parsed = parseDbFile(DB_FILE);
+  } catch (mainErr) {
+    console.error(`Could not read ${DB_FILE}, trying the .bak copy:`, mainErr);
+    const bakFile = `${DB_FILE}.bak`;
+    try {
+      parsed = parseDbFile(bakFile);
+    } catch (bakErr) {
+      throw new Error(`Database could not be read from ${DB_FILE} or its .bak copy; refusing to continue so it is not overwritten. ${String(bakErr)}`);
+    }
+    // Keep the unreadable file for inspection before the next save replaces it
+    try {
+      fs.copyFileSync(DB_FILE, `${DB_FILE}.unreadable-${Date.now()}`);
+    } catch {}
+    console.log("Recovered database from the .bak copy.");
+  }
+
+  if (!Array.isArray(parsed.reviews)) parsed.reviews = [];
+  if (!Array.isArray(parsed.overviews)) parsed.overviews = [];
+  if (!Array.isArray(parsed.nights)) parsed.nights = [];
+  if (!Array.isArray(parsed.edmRecipients)) {
+    parsed.edmRecipients = [
+      { email: "james.mac333@gmail.com", name: "James Macintosh", addedAt: new Date().toISOString() }
+    ];
+  }
+  if (!Array.isArray(parsed.edmLogs)) parsed.edmLogs = [];
+
+  // Clean up any historical logs where full uncompressed base64 photos were saved
+  let edmLogsCleaned = false;
+  for (const log of parsed.edmLogs) {
+    if (log.htmlContent && log.htmlContent.includes("data:image/") && log.htmlContent.length > 50000) {
+      log.htmlContent = stripInlineImages(log.htmlContent);
+      edmLogsCleaned = true;
+    }
+  }
+  if (edmLogsCleaned) {
+    saveDbToDiskAtomic(parsed);
+  }
+
+  // Replace any plain-text passwords with salted hashes
+  if (migratePlainPasswords(parsed.users)) {
+    saveDbToDiskAtomic(parsed);
+  }
+
+  // Auto-schedule future nights to ensure at least 8 are always in the pipeline
+  const originalLength = parsed.nights.length;
+  ensureFutureNights(parsed);
+  if (parsed.nights.length !== originalLength) {
+    saveDbToDiskAtomic(parsed);
+  }
+
+  return parsed;
 }
 
 // Helper to load database (reads memory cache first, or loads once from disk)
