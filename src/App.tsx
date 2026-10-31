@@ -21,6 +21,7 @@ import JustWatchedCard from "./components/JustWatchedCard.tsx";
 import PaletteStrip from "./components/PaletteStrip.tsx";
 import HomeScreenHint from "./components/HomeScreenHint.tsx";
 import GapFillCard from "./components/GapFillCard.tsx";
+import GapTracker from "./components/GapTracker.tsx";
 import FilmPage from "./components/FilmPage.tsx";
 import MemberPage from "./components/MemberPage.tsx";
 import OfflineNotice from "./components/OfflineNotice.tsx";
@@ -846,6 +847,7 @@ export default function App() {
                       onAddReview={handleAddReview}
                       onOpenFilm={openFilm}
                     />
+                    {isAdmin && <GapTracker nights={nights} reviews={reviews} members={members} onOpenMember={openMember} />}
                     <NextMovieHero 
                       nights={nights} 
                       currentUser={currentUser} 
