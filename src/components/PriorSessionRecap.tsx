@@ -7,6 +7,7 @@ import PaletteStrip from "./PaletteStrip.tsx";
 interface PriorSessionRecapProps {
   nights: MovieNight[];
   reviews: Review[];
+  sealedNightIds?: Set<string>;
   overviews: NightOverview[];
   currentUser?: User | null;
   onOpenRecapModal?: (overview: NightOverview, night: MovieNight) => void;
@@ -17,6 +18,7 @@ interface PriorSessionRecapProps {
 export default function PriorSessionRecap({
   nights,
   reviews,
+  sealedNightIds,
   overviews,
   currentUser,
   onOpenRecapModal,
@@ -145,7 +147,10 @@ export default function PriorSessionRecap({
 
   // Find associated overview and reviews
   const overview = overviews.find((ov) => ov.movieNightId === priorNight.id);
-  const nightReviews = reviews.filter((rev) => rev.movieNightId === priorNight.id);
+  // Hidden until this member has posted their own review
+  const sealed = !!sealedNightIds?.has(priorNight.id);
+  const sealedCount = sealed ? reviews.filter((rev) => rev.movieNightId === priorNight.id).length : 0;
+  const nightReviews = sealed ? [] : reviews.filter((rev) => rev.movieNightId === priorNight.id);
 
   // Compute average rating
   const avgRating =
@@ -360,13 +365,20 @@ export default function PriorSessionRecap({
         <div className="lg:col-span-5 flex flex-col h-full border-t lg:border-t-0 lg:border-l border-zinc-900 pt-6 lg:pt-0 lg:pl-8">
           <h5 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 mb-4">
             <MessageSquare className="w-4 h-4 text-zinc-500" />
-            Member Reviews ({nightReviews.length})
+            Member Reviews ({sealed ? sealedCount : nightReviews.length})
           </h5>
 
           {nightReviews.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#080808] border border-zinc-900 rounded-2xl text-center space-y-1.5 my-auto">
               <Heart className="w-5 h-5 text-zinc-200" />
-              {isBeforeDataLoss(priorNight.date) ? (
+              {sealed ? (
+                <>
+                  <p className="text-xs text-zinc-500 font-sans italic">
+                    {sealedCount === 0 ? "No reviews yet." : `${sealedCount} review${sealedCount === 1 ? " is" : "s are"} in.`}
+                  </p>
+                  <p className="text-[10px] text-zinc-400">Post yours to see what everyone else thought.</p>
+                </>
+              ) : isBeforeDataLoss(priorNight.date) ? (
                 <>
                   <p className="text-xs text-zinc-500 font-sans italic">The original reviews for this night were lost.</p>
                   <p className="text-[10px] text-zinc-400">Google AI Studio wiped the club database on 14 October 2026. If you remember yours, add it again in the "Memories" tab.</p>

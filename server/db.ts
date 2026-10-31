@@ -67,6 +67,8 @@ export function getBackupStats() {
 
 export interface UserWithPassword extends User {
   password?: string;
+  // Film picks this member has seen the pop-up for: night id → film title
+  seenPicks?: Record<string, string>;
 }
 
 export interface DatabaseSchema {

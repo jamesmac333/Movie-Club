@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS } from "./types.ts";
+import { getSealedNightIds } from "./reviewSeal.ts";
 import LoginScreen from "./components/LoginScreen.tsx";
 import UserProfileModal from "./components/UserProfileModal.tsx";
 import NextMovieHero from "./components/NextMovieHero.tsx";
@@ -12,9 +13,10 @@ import SelectionAlertModal from "./components/SelectionAlertModal.tsx";
 import RecapAlertModal from "./components/RecapAlertModal.tsx";
 import { Film, Calendar, Compass, BookOpen, Sparkles, Clapperboard, Heart, KeyRound, LogOut, ShieldCheck, User as UserIcon, Home, Mail, PenLine } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useSpring } from "motion/react";
-import { getToken, clearSession } from "./auth.ts";
+import { getToken, clearSession, getSavedUser, saveUser } from "./auth.ts";
 import JustWatchedCard from "./components/JustWatchedCard.tsx";
 import PaletteStrip from "./components/PaletteStrip.tsx";
+import HomeScreenHint from "./components/HomeScreenHint.tsx";
 import { CLUB_PALETTE } from "./palette.ts";
 
 export default function App() {
@@ -26,15 +28,22 @@ export default function App() {
   const [showProfileSettings, setShowProfileSettings] = useState<boolean>(false);
   const [newSelectionAlert, setNewSelectionAlert] = useState<MovieNight | null>(null);
   const [newRecapAlert, setNewRecapAlert] = useState<{ overview: NightOverview; night: MovieNight } | null>(null);
-  
+
+  // Recent nights whose reviews stay hidden until the current member has posted theirs
+  const sealedNightIds = useMemo(() => getSealedNightIds(nights, reviews, currentUser?.name), [nights, reviews, currentUser]);
+  const openReviews = useMemo(
+    () => reviews.filter((r) => r.user === currentUser?.name || !sealedNightIds.has(r.movieNightId)),
+    [reviews, currentUser, sealedNightIds]
+  );
+
   // App navigation state: 'landing' | 'calendar' | 'feed' | 'writer'
   const [activeTab, setActiveTab] = useState<string>("landing");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
 
-  // Load user session from sessionStorage on startup
+  // Restore the saved sign-in on startup
   useEffect(() => {
-    const saved = sessionStorage.getItem("movie_club_user");
+    const saved = getSavedUser();
     if (saved && !getToken()) {
       // Signed in before session tokens existed: ask them to sign in again
       clearSession();
@@ -46,7 +55,7 @@ export default function App() {
         );
         if (staticMatch && (!parsed.avatarUrl || parsed.avatarUrl.startsWith("/src/"))) {
           parsed.avatarUrl = staticMatch.avatarUrl;
-          sessionStorage.setItem("movie_club_user", JSON.stringify(parsed));
+          saveUser(parsed);
         }
         setCurrentUser(parsed);
       } catch (e) {
@@ -77,14 +86,14 @@ export default function App() {
         setClubUsers(merged);
 
         // Update session storage and current user in state if avatar changed
-        const saved = sessionStorage.getItem("movie_club_user");
+        const saved = getSavedUser();
         if (saved) {
           const currentLocal = JSON.parse(saved) as User;
           const updatedSelf = merged.find(u => u.username.toLowerCase() === currentLocal.username.toLowerCase());
           if (updatedSelf) {
             const newSelf = { ...currentLocal, ...updatedSelf };
             setCurrentUser(newSelf);
-            sessionStorage.setItem("movie_club_user", JSON.stringify(newSelf));
+            saveUser(newSelf);
           }
         }
       }
@@ -173,138 +182,49 @@ export default function App() {
     return () => clearInterval(interval);
   }, [currentUser]);
 
-  // Detect newly selected movie nights for alerts (ONLY for the immediate next scheduled night)
+  // Film picks this member has already seen announced (kept on the server, so it holds across devices)
+  const [seenPicks, setSeenPicks] = useState<Record<string, string> | null>(null);
   useEffect(() => {
-    if (!currentUser || nights.length === 0) return;
+    setSeenPicks(null);
+    if (!currentUser) return;
+    fetch("/api/me/seen-picks")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((seen) => setSeenPicks(seen))
+      .catch(() => {});
+  }, [currentUser?.username]);
 
-    let seen: Record<string, string> = {};
-    try {
-      const saved = localStorage.getItem("movie_club_seen_selections");
-      if (saved) {
-        seen = JSON.parse(saved);
-      }
-    } catch (e) {
-      console.error("Failed to parse seen selections", e);
-    }
-
-    // Find ONLY the next upcoming scheduled movie night in date order
-    const sortedScheduledNights = [...nights]
-      .filter((n) => n.status === "scheduled")
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    const nextNight = sortedScheduledNights[0];
-
-    if (!nextNight || !nextNight.movie) {
-      if (newSelectionAlert) setNewSelectionAlert(null);
-      return;
-    }
-
-    // Check if current user is the selector or if their names match
-    const isCurrentUserSelector =
-      nextNight.selector.toLowerCase() === currentUser.name.toLowerCase() ||
-      nextNight.selector.toLowerCase() === currentUser.username.toLowerCase() ||
-      nextNight.movie.selectedBy?.toLowerCase() === currentUser.name.toLowerCase() ||
-      nextNight.movie.selectedBy?.toLowerCase() === currentUser.username.toLowerCase();
-
-    if (isCurrentUserSelector) {
-      if (newSelectionAlert) setNewSelectionAlert(null);
-      return;
-    }
-
-    const alreadySeen = seen[nextNight.id] === nextNight.movie.title;
-    if (!alreadySeen) {
-      if (
-        !newSelectionAlert ||
-        newSelectionAlert.id !== nextNight.id ||
-        newSelectionAlert.movie?.title !== nextNight.movie?.title
-      ) {
-        setNewSelectionAlert(nextNight);
-      }
-    } else {
-      if (newSelectionAlert) {
-        setNewSelectionAlert(null);
-      }
-    }
-  }, [nights, currentUser, newSelectionAlert]);
+  // Announce the next night's film once, the first time a member visits after it's picked.
+  // Nights that have already started never pop up, and neither does a member's own pick.
+  useEffect(() => {
+    if (!currentUser || !seenPicks) return;
+    const nextNight = nights
+      .filter((n) => n.status === "scheduled" && new Date(n.date).getTime() > Date.now())
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+    const me = [currentUser.name.toLowerCase(), currentUser.username.toLowerCase()];
+    const isOwnPick = !!nextNight && (me.includes(nextNight.selector.toLowerCase()) || me.includes(nextNight.movie?.selectedBy?.toLowerCase() || ""));
+    const show = nextNight?.movie && !isOwnPick && seenPicks[nextNight.id] !== nextNight.movie.title ? nextNight : null;
+    setNewSelectionAlert((prev) => (prev?.id === show?.id && prev?.movie?.title === show?.movie?.title ? prev : show));
+  }, [nights, currentUser, seenPicks]);
 
   const handleAcknowledgeSelection = (nightId: string, movieTitle: string) => {
-    let seen: Record<string, string> = {};
-    try {
-      const saved = localStorage.getItem("movie_club_seen_selections");
-      if (saved) {
-        seen = JSON.parse(saved);
-      }
-    } catch (e) {}
-
-    // Mark current night and all past nights as seen to prevent any historical queue
-    seen[nightId] = movieTitle;
-    nights.forEach((n) => {
-      if (n.status === "watched" && n.movie) {
-        seen[n.id] = n.movie.title;
-      }
-    });
-
-    localStorage.setItem("movie_club_seen_selections", JSON.stringify(seen));
+    setSeenPicks((prev) => ({ ...prev, [nightId]: movieTitle }));
     setNewSelectionAlert(null);
+    fetch("/api/me/seen-picks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nightId, title: movieTitle })
+    }).catch(() => {});
   };
 
-  // Detect newly published night recaps for popup alerts
-  useEffect(() => {
-    if (!currentUser || overviews.length === 0 || nights.length === 0) return;
-
-    let seen: Record<string, boolean> = {};
-    try {
-      const saved = localStorage.getItem("movie_club_seen_recaps");
-      if (saved) {
-        seen = JSON.parse(saved);
-      }
-    } catch (e) {
-      console.error("Failed to parse seen recaps", e);
-    }
-
-    // Sort overviews by creation timestamp descending to find latest
-    const sortedOverviews = [...overviews].sort(
-      (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-    );
-
-    const latestOverview = sortedOverviews[0];
-    if (!latestOverview) return;
-
-    if (!seen[latestOverview.id]) {
-      const matchingNight = nights.find((n) => n.id === latestOverview.movieNightId);
-      if (matchingNight) {
-        if (!newRecapAlert || newRecapAlert.overview.id !== latestOverview.id) {
-          setNewRecapAlert({ overview: latestOverview, night: matchingNight });
-        }
-      }
-    }
-  }, [overviews, nights, currentUser, newRecapAlert]);
-
-  const handleAcknowledgeRecap = (overviewId: string) => {
-    let seen: Record<string, boolean> = {};
-    try {
-      const saved = localStorage.getItem("movie_club_seen_recaps");
-      if (saved) {
-        seen = JSON.parse(saved);
-      }
-    } catch (e) {}
-
-    seen[overviewId] = true;
-    // Mark all current overviews as seen to prevent historical queue buildup
-    overviews.forEach((ov) => {
-      seen[ov.id] = true;
-    });
-
-    localStorage.setItem("movie_club_seen_recaps", JSON.stringify(seen));
-    setNewRecapAlert(null);
-  };
+  // Recaps arrive by email and sit on Home, so they only open in a pop-up when a member asks
+  const handleCloseRecap = () => setNewRecapAlert(null);
 
   const handleLogin = (user: User) => {
     // Resolve dynamic details from the merged list if already fetched
     const dbUser = clubUsers.find(u => u.username.toLowerCase() === user.username.toLowerCase());
     const finalUser = dbUser ? { ...user, ...dbUser } : user;
     setCurrentUser(finalUser);
-    sessionStorage.setItem("movie_club_user", JSON.stringify(finalUser));
+    saveUser(finalUser);
     fetchUsers();
   };
 
@@ -698,9 +618,9 @@ export default function App() {
           <RecapAlertModal
             overview={newRecapAlert.overview}
             night={newRecapAlert.night}
-            reviews={reviews}
+            reviews={openReviews}
             currentUser={currentUser}
-            onClose={handleAcknowledgeRecap}
+            onClose={handleCloseRecap}
             onUpdateOverviewImage={handleUpdateOverviewImage}
             onDeleteOverviewImage={handleDeleteOverviewImage}
           />
@@ -846,6 +766,7 @@ export default function App() {
               >
                 {activeTab === "landing" && (
                   <div className="space-y-12">
+                    <HomeScreenHint />
                     <JustWatchedCard
                       nights={nights}
                       reviews={reviews}
@@ -881,6 +802,7 @@ export default function App() {
                     <PriorSessionRecap 
                       nights={nights} 
                       reviews={reviews} 
+                      sealedNightIds={sealedNightIds}
                       overviews={overviews} 
                       currentUser={currentUser}
                       onOpenRecapModal={(overview, night) => setNewRecapAlert({ overview, night })}
@@ -890,7 +812,7 @@ export default function App() {
                     </div>
 
                     {/* Group Statistics Dashboard */}
-                    <GroupStatistics nights={nights} reviews={reviews} users={clubUsers} />
+                    <GroupStatistics nights={nights} reviews={openReviews} users={clubUsers} />
 
                     <p className="text-sm leading-relaxed text-zinc-500 max-w-2xl">
                       Every second Friday at 7 pm. Hosting rotates through all six of us, the host picks the film, and Ash writes the recap the next day.
@@ -917,6 +839,7 @@ export default function App() {
                   <FeedView 
                     nights={nights}
                     reviews={reviews}
+                    sealedNightIds={sealedNightIds}
                     overviews={overviews}
                     currentUser={currentUser}
                     onAddReview={handleAddReview}

@@ -1,18 +1,35 @@
-// Session token issued by /api/auth/login, kept alongside the saved user
+// Session token issued by /api/auth/login, kept alongside the saved user. Both are kept in
+// localStorage so members stay signed in after closing the browser or the Home Screen app
+// (the token itself expires after 90 days).
 const TOKEN_KEY = "movie_club_token";
 const USER_KEY = "movie_club_user";
 
+// Sign-ins from before this change were kept only for the browser tab: carry them over
+for (const key of [TOKEN_KEY, USER_KEY]) {
+  const old = sessionStorage.getItem(key);
+  if (old && !localStorage.getItem(key)) localStorage.setItem(key, old);
+  sessionStorage.removeItem(key);
+}
+
 export function getToken(): string | null {
-  return sessionStorage.getItem(TOKEN_KEY);
+  return localStorage.getItem(TOKEN_KEY);
 }
 
 export function setToken(token: string): void {
-  sessionStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function getSavedUser(): string | null {
+  return localStorage.getItem(USER_KEY);
+}
+
+export function saveUser(user: object): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
 export function clearSession(): void {
-  sessionStorage.removeItem(TOKEN_KEY);
-  sessionStorage.removeItem(USER_KEY);
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
 }
 
 // Adds the session token to every /api request, and sends the user back to the

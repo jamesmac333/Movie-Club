@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { MovieNight, User, MOVIE_CLUB_USERS } from "../types.ts";
-import { Film, Clock, Search, Calendar, Sparkles, AlertCircle, RefreshCw, RotateCcw, Play, ExternalLink, Share2, Copy, Check } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { Film, Clock, Search, Calendar, Sparkles, AlertCircle, RefreshCw, RotateCcw, Play, ExternalLink, Share2 } from "lucide-react";
+import { motion } from "motion/react";
 import PaletteStrip from "./PaletteStrip.tsx";
+import AddToCalendarButton from "./AddToCalendarButton.tsx";
 
 interface NextMovieHeroProps {
   nights: MovieNight[];
@@ -20,8 +21,6 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  const [copiedShare, setCopiedShare] = useState(false);
-  const [shareToast, setShareToast] = useState<string | null>(null);
 
   // Auto-clear confirmation state after 4 seconds
   useEffect(() => {
@@ -129,83 +128,7 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
     );
   }
 
-  const formatNZTDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-NZ", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true
-    });
-  };
-
   const hasMovie = nextNight.movie !== null;
-
-  const handleShareOrCopy = async () => {
-    const dateFormatted = formatNZTDate(nextNight.date);
-    let shareTitle = "";
-    let shareText = "";
-
-    if (hasMovie) {
-      shareTitle = `🎬 Movie Club: ${nextNight.movie!.title}`;
-      shareText = `🎬 Movie Club Night: ${nextNight.movie!.title} (${nextNight.movie!.year})
-📅 ${dateFormatted}
-👤 Host Selector: ${nextNight.selector}
-⭐ Genre: ${nextNight.movie!.genre || "Film"} • ${nextNight.movie!.runtime} mins
-📝 Plot: ${nextNight.movie!.overview ? nextNight.movie!.overview.slice(0, 160) + "..." : "No synopsis"}
-🍿 Club Portal: ${window.location.origin}`;
-    } else {
-      shareTitle = "🎬 Next Movie Club Night";
-      shareText = `🎬 Next Movie Club Night
-📅 ${dateFormatted}
-👤 Host Selector: ${nextNight.selector}'s turn to pick the film!
-🍿 Club Portal: ${window.location.origin}`;
-    }
-
-    // Try Web Share API first (supported by iOS Safari & Chrome on user interaction)
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: shareTitle,
-          text: shareText,
-          url: window.location.origin,
-        });
-        setShareToast("Shared to group chat! 🍿");
-        setTimeout(() => setShareToast(null), 3500);
-        return;
-      } catch (err: any) {
-        if (err.name === "AbortError") {
-          return; // User canceled the native sheet
-        }
-      }
-    }
-
-    // Fallback: Copy to clipboard
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(shareText);
-      } else {
-        const textarea = document.createElement("textarea");
-        textarea.value = shareText;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-      }
-      setCopiedShare(true);
-      setShareToast("Copied details to clipboard for group chat! 📋");
-      setTimeout(() => {
-        setCopiedShare(false);
-        setShareToast(null);
-      }, 3500);
-    } catch {
-      setShareToast("Could not copy automatically. Please copy manually.");
-      setTimeout(() => setShareToast(null), 3000);
-    }
-  };
 
   const eventDate = new Date(nextNight.date);
   const shortDate = eventDate.toLocaleDateString("en-NZ", { weekday: "short", day: "numeric", month: "short" });
@@ -335,16 +258,7 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
       <div className="px-5 sm:px-8 pb-5 sm:pb-7 pt-2 flex flex-col gap-4">
         <p className="slate text-zinc-400">Admit one · {shortDate} · {shortTime} · {hostFirstName} hosts</p>
         <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={handleShareOrCopy}
-            className={`flex-1 sm:flex-none min-h-12 px-6 rounded-2xl font-semibold text-base flex items-center justify-center gap-2 cursor-pointer transition-colors ${
-              copiedShare ? "bg-emerald-500 text-zinc-950" : "bg-red-700 hover:bg-red-600 text-ticket"
-            }`}
-          >
-            {copiedShare ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-            {copiedShare ? "Copied" : "Copy for group chat"}
-          </button>
+          <AddToCalendarButton className="flex-1 sm:flex-none" />
           {hasMovie && nextNight.movie!.trailerUrl && (
             <a
               href={nextNight.movie!.trailerUrl}
@@ -375,22 +289,6 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
         )}
       </div>
 
-      {/* Share / copy confirmation */}
-      <AnimatePresence>
-        {shareToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 15, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 15, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            role="status"
-            className="fixed bottom-28 md:bottom-12 left-1/2 -translate-x-1/2 z-50 bg-ink-deep border border-amber-500/70 text-amber-200 px-5 py-3 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.6)] text-sm flex items-center gap-2.5 pointer-events-none"
-          >
-            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{shareToast}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.section>
   );
 }

@@ -48,12 +48,12 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
     if (!res.ok) {
       if (rawText.includes("Cannot POST") || rawText.includes("Cannot GET") || res.status === 404) {
         throw new Error(
-          "Cloud Run backend does not have the EDM endpoints yet (HTTP 404). Please redeploy your backend to Google Cloud Run by running ./deploy.sh from your terminal."
+          "The server doesn't have the club email features yet (HTTP 404). It needs redeploying."
         );
       }
       throw new Error(`Server returned HTTP ${res.status}`);
     }
-    throw new Error("Received non-JSON response from server.");
+    throw new Error("The server sent back something unexpected.");
   };
 
   const fetchEdmData = async () => {
@@ -65,7 +65,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
         setLogs(data.logs || []);
       }
     } catch (err) {
-      console.error("Failed to load EDM data", err);
+      console.error("Failed to load club email data", err);
     }
   };
 
@@ -93,15 +93,15 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
 
       const data = await parseResponse(res);
       if (!res.ok) {
-        throw new Error(data.error || "Failed to add email address.");
+        throw new Error(data.error || "Couldn't add that address.");
       }
 
       setRecipients(data.recipients || []);
       setNewEmail("");
       setNewName("");
-      setSuccessMsg("Recipient added to EDM distribution list!");
+      setSuccessMsg("Added to the mailing list.");
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to add email address.");
+      setErrorMsg(err.message || "Couldn't add that address.");
     } finally {
       setLoading(false);
     }
@@ -123,13 +123,13 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
 
       const data = await parseResponse(res);
       if (!res.ok) {
-        throw new Error(data.error || "Failed to remove recipient.");
+        throw new Error(data.error || "Couldn't remove that address.");
       }
 
       setRecipients(data.recipients || []);
-      setSuccessMsg("Recipient removed from distribution list.");
+      setSuccessMsg("Removed from the mailing list.");
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to remove recipient.");
+      setErrorMsg(err.message || "Couldn't remove that address.");
     }
   };
 
@@ -149,17 +149,17 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
 
       const data = await parseResponse(res);
       if (!res.ok) {
-        throw new Error(data.error || "Failed to send test EDM.");
+        throw new Error(data.error || "Couldn't send the test email.");
       }
 
-      setSuccessMsg(data.message || "Test EDM broadcast sent successfully!");
+      setSuccessMsg(data.message || "Test email sent.");
       if (data.logs) {
         setLogs(data.logs);
       } else {
         await fetchEdmData();
       }
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to dispatch test EDM.");
+      setErrorMsg(err.message || "Couldn't send the test email.");
     } finally {
       setTestSending(false);
     }
@@ -188,20 +188,20 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
         </div>
         <div className="space-y-1">
           <h4 className="font-serif font-bold text-zinc-100 text-sm flex items-center gap-2">
-            Automated EDM System Dispatches
+            Automatic club emails
             <span className="text-[10px] font-mono bg-amber-500 text-zinc-950 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
               Live
             </span>
           </h4>
           <p className="text-xs text-zinc-400 leading-relaxed">
-            EDMs are automatically generated and broadcast directly to club members whenever:
+            Everyone on the mailing list gets an email automatically when:
           </p>
           <ul className="text-xs text-zinc-300 space-y-1 list-disc list-inside pt-1">
             <li>
-              <strong className="text-amber-400">Night Overview is published:</strong> sends the full session chronicle with gathering photo, featured movie details, and top review pick.
+              <strong className="text-amber-400">A recap is posted:</strong> the full recap with the photo from the night, the film and Ash's pick of the reviews.
             </li>
             <li>
-              <strong className="text-amber-400">Next movie is selected:</strong> sends the "Curtain Rises" announcement with poster, director, runtime, and date reminder so people don't have to be on site.
+              <strong className="text-amber-400">The next film is picked:</strong> the poster, director, running time and date, so nobody needs to check the site.
             </li>
           </ul>
         </div>
@@ -228,7 +228,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-amber-500" />
             <h4 className="text-xs uppercase tracking-widest font-bold text-zinc-300">
-              Distribution List ({recipients.length})
+              Mailing list ({recipients.length})
             </h4>
           </div>
           <span className="text-[10px] font-mono text-zinc-500">
@@ -272,7 +272,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
         <div className="space-y-2 pt-1 max-h-48 overflow-y-auto pr-1">
           {recipients.length === 0 ? (
             <p className="text-xs text-zinc-500 italic py-2 text-center">
-              No recipients added yet. Add an email above to start receiving EDM blasts!
+              Nobody's on the list yet. Add an email address above.
             </p>
           ) : (
             recipients.map((rec) => (
@@ -298,7 +298,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
                   type="button"
                   onClick={() => handleRemoveRecipient(rec.email)}
                   className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition-colors cursor-pointer shrink-0 ml-2"
-                  title="Remove from distribution list"
+                  title="Remove from the mailing list"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -313,10 +313,10 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
         <div className="space-y-1 text-center sm:text-left">
           <h4 className="text-xs uppercase tracking-widest font-bold text-zinc-200 flex items-center justify-center sm:justify-start gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            EDM Dispatch Test Transmission
+            Send a test email
           </h4>
           <p className="text-xs text-zinc-400">
-            Sends a formatted diagnostic EDM to all {recipients.length} registered recipient(s) to confirm pipeline health.
+            Sends a test email to everyone on the mailing list ({recipients.length}) to check emails are getting through.
           </p>
         </div>
         <button
@@ -328,12 +328,12 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
           {testSending ? (
             <>
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              Dispatching Test...
+              Sending…
             </>
           ) : (
             <>
               <Send className="w-3.5 h-3.5 text-zinc-950" />
-              Send EDM Test
+              Send test email
             </>
           )}
         </button>
@@ -345,7 +345,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-amber-500" />
             <h4 className="text-xs uppercase tracking-widest font-bold text-zinc-300">
-              Transmission History ({logs.length})
+              Email history ({logs.length})
             </h4>
           </div>
           <button
@@ -361,7 +361,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
         <div className="space-y-2 max-h-56 overflow-y-auto overflow-x-hidden pr-1">
           {logs.length === 0 ? (
             <p className="text-xs text-zinc-500 italic py-3 text-center">
-              No EDMs dispatched yet. Trigger one with the test button or by choosing a movie!
+              No emails sent yet. They go out when a film is picked or a recap is posted.
             </p>
           ) : (
             logs.map((log) => {
@@ -402,7 +402,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
                             ? "bg-blue-950/60 text-blue-400 border border-blue-800/40"
                             : "bg-red-950/60 text-red-400 border border-red-800/40"
                         }`}>
-                          {log.status === "simulated" ? "Dispatched (Sim)" : log.status}
+                          {log.status === "simulated" ? "Not sent (test mode)" : log.status}
                         </span>
                       </div>
                       <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
@@ -421,7 +421,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
                       className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-[10px] font-mono uppercase rounded-lg border border-zinc-800 flex items-center gap-1 cursor-pointer transition-colors shrink-0"
                     >
                       <Eye className="w-3 h-3" />
-                      Inspect HTML
+                      View email
                     </button>
                   )}
                 </div>
@@ -444,7 +444,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
             <div className="p-4 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-mono text-amber-500 uppercase tracking-widest font-bold">
-                  EDM HTML Preview
+                  Email preview
                 </span>
                 <h4 className="font-bold text-zinc-100 text-sm truncate max-w-md">
                   {previewTitle}
@@ -460,7 +460,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
             </div>
             <div className="flex-1 overflow-y-auto bg-[#080808] p-2">
               <iframe
-                title="EDM Preview"
+                title="Email preview"
                 srcDoc={previewHtml}
                 className="w-full h-[600px] border-0 rounded-xl"
                 sandbox="allow-same-origin"
