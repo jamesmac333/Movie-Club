@@ -2,6 +2,7 @@ import React from "react";
 import { MovieNight, Review, User } from "../types.ts";
 import { Film, Clock, Star, Trophy, Flame, Heart } from "lucide-react";
 import { motion } from "motion/react";
+import { WithGapBadge } from "./GapBadge.tsx";
 
 interface GroupStatisticsProps {
   nights: MovieNight[];
@@ -120,11 +121,13 @@ export default function GroupStatistics({ nights, reviews, users = [], onOpenMem
             {users.map((u) => (
               <li key={u.username}>
                 <button type="button" onClick={() => onOpenMember(u.name)} className="w-full min-h-11 py-2 rounded-xl hover:bg-zinc-800 flex flex-col items-center gap-1.5 cursor-pointer">
-                  {u.avatarUrl ? (
-                    <img src={u.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover" referrerPolicy="no-referrer" />
-                  ) : (
-                    <span className="w-12 h-12 rounded-full bg-slate text-zinc-100 text-xs font-semibold flex items-center justify-center">{u.name.substring(0, 2).toUpperCase()}</span>
-                  )}
+                  <WithGapBadge show={!!u.hasGapBadge}>
+                    {u.avatarUrl ? (
+                      <img src={u.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      <span className="w-12 h-12 rounded-full bg-slate text-zinc-100 text-xs font-semibold flex items-center justify-center">{u.name.substring(0, 2).toUpperCase()}</span>
+                    )}
+                  </WithGapBadge>
                   <span className="text-sm text-zinc-200">{u.name.split(" ")[0]}</span>
                 </button>
               </li>

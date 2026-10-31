@@ -9,10 +9,15 @@ interface OverviewFormProps {
   onPostOverview: (movieNightId: string, title: string, content: string, imageUrl: string) => Promise<void>;
   overviews?: NightOverview[];
   onUpdateOverviewImage?: (overviewId: string, imageUrl: string) => Promise<void>;
+  initialNightId?: string;
 }
 
-export default function OverviewForm({ nights, currentUser, onPostOverview, overviews = [], onUpdateOverviewImage }: OverviewFormProps) {
-  const [selectedNightId, setSelectedNightId] = useState("");
+export default function OverviewForm({ nights, currentUser, onPostOverview, overviews = [], onUpdateOverviewImage, initialNightId = "" }: OverviewFormProps) {
+  const [selectedNightId, setSelectedNightId] = useState(initialNightId);
+  // Coming from the recap prompt on Home opens the form on that night
+  useEffect(() => {
+    if (initialNightId) setSelectedNightId(initialNightId);
+  }, [initialNightId]);
   const [headline, setHeadline] = useState("");
   const [content, setContent] = useState("");
   const [imageBlob, setImageBlob] = useState<string>("");
@@ -222,7 +227,7 @@ export default function OverviewForm({ nights, currentUser, onPostOverview, over
             Write a recap
           </h2>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Recaps and gathering photos for each night · only Ash and James see this tab
+            Recaps and gathering photos for each night
           </p>
         </div>
       </div>

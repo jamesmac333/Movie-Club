@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { filmRatings, memberSummary } from "../src/clubStats.ts";
+import { filmRatings, memberSummary, gapFillProgress, recapDueNight } from "../src/clubStats.ts";
 import { isBeforeDataLoss } from "../src/dataLoss.ts";
 
 const film = (title: string) => ({ title });
@@ -52,4 +52,38 @@ test("a member's summary covers their picks, their ratings and how they compare"
 test("nights before 14 October 2026 count as lost in the data loss", () => {
   assert.equal(isBeforeDataLoss("2026-10-09T06:00:00.000Z"), true);
   assert.equal(isBeforeDataLoss("2026-10-14T06:00:00.000Z"), false);
+});
+
+test("Fill in the gaps counts a lost night as done once it has stars and words", () => {
+  const lostNights = [...nights, { id: "e", date: "2026-10-20T07:00:00Z", selector: "Max Smith", status: "watched", movie: film("After the loss") }];
+  const withWords = [
+    { movieNightId: "a", user: "Amy Walsh", rating: 3, comment: "Tense." },
+    { movieNightId: "b", user: "Amy Walsh", rating: 4, comment: "  " },
+  ];
+  const p = gapFillProgress(lostNights, withWords, "Amy Walsh", "2026-10-14");
+  assert.equal(p.total, 3); // the scheduled night and the night after the loss don't count
+  assert.equal(p.done, 1); // stars without words isn't finished yet
+  assert.deepEqual(p.remaining.map((n) => n.id), ["b", "c"]);
+  assert.equal(p.complete, false);
+
+  const finished = gapFillProgress(
+    lostNights,
+    [...withWords, { movieNightId: "b", user: "Amy Walsh", rating: 4, comment: "Lovely." }, { movieNightId: "c", user: "Amy Walsh", rating: 5, comment: "Best yet." }],
+    "Amy Walsh",
+    "2026-10-14"
+  );
+  assert.equal(finished.done, 3);
+  assert.equal(finished.complete, true);
+});
+
+test("Ash is asked for a recap from 7 pm on the night until it's written", () => {
+  const at = (iso: string) => new Date(iso).getTime();
+  // 6 Nov, 7 pm NZDT is 06:00 UTC
+  const night = [{ id: "n", date: "2026-11-06T06:00:00.000Z", selector: "Ash Macintosh", status: "scheduled", movie: film("Wildwood") }];
+  assert.equal(recapDueNight(night, [], at("2026-11-06T05:59:00Z")), undefined, "not before 7 pm");
+  assert.equal(recapDueNight(night, [], at("2026-11-06T06:00:00Z"))?.id, "n", "from 7 pm");
+  assert.equal(recapDueNight(night, [], at("2026-11-10T09:00:00Z"))?.id, "n", "still there days later");
+  assert.equal(recapDueNight(night, ["n"], at("2026-11-07T09:00:00Z")), undefined, "gone once written");
+  assert.equal(recapDueNight(night, [], at("2026-11-14T06:00:00Z")), undefined, "gone after a week");
+  assert.equal(recapDueNight([{ ...night[0], status: "skipped" }], [], at("2026-11-06T08:00:00Z")), undefined, "not for a skipped night");
 });

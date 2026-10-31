@@ -108,7 +108,7 @@ export default function FilmPage({ night, reviews, sealed, overviews, users, cur
                 {ratings.map((r) => (
                   <li key={r.id}>
                     <button type="button" onClick={() => onOpenMember(r.user)} className="w-full min-h-12 flex items-center gap-3 text-left cursor-pointer group">
-                      <Avatar user={userFor(r.user)} name={r.user} className="w-9 h-9" />
+                      <Avatar user={userFor(r.user)} name={r.user} className="w-9 h-9" badgeSize="sm" />
                       <span className="w-16 shrink-0 text-zinc-200 group-hover:text-amber-500 truncate">{first(r.user)}</span>
                       <span className="flex-1 h-3 rounded-full bg-zinc-800 overflow-hidden">
                         <span className="block h-full rounded-full bg-amber-500" style={{ width: `${(r.rating / 5) * 100}%` }} />
@@ -145,7 +145,7 @@ export default function FilmPage({ night, reviews, sealed, overviews, users, cur
               <li key={r.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
                 <div className="flex items-center justify-between gap-3">
                   <span className="flex items-center gap-2 min-w-0">
-                    <Avatar user={userFor(r.user)} name={r.user} className="w-7 h-7" />
+                    <Avatar user={userFor(r.user)} name={r.user} className="w-7 h-7" badgeSize="sm" />
                     <span className="font-semibold text-zinc-100 truncate">{first(r.user)}</span>
                     {r.isStarred && <span className="text-xs text-amber-500">Ash's pick</span>}
                   </span>

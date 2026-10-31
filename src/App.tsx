@@ -1,23 +1,27 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS } from "./types.ts";
 import { getSealedNightIds } from "./reviewSeal.ts";
+import { gapFillProgress } from "./clubStats.ts";
+import { DATA_LOSS_DATE } from "./dataLoss.ts";
+import { WithGapBadge } from "./components/GapBadge.tsx";
 import LoginScreen from "./components/LoginScreen.tsx";
 import UserProfileModal from "./components/UserProfileModal.tsx";
 import NextMovieHero from "./components/NextMovieHero.tsx";
 import CalendarView from "./components/CalendarView.tsx";
 import FeedView from "./components/FeedView.tsx";
-import OverviewForm from "./components/OverviewForm.tsx";
 import PriorSessionRecap from "./components/PriorSessionRecap.tsx";
 import GroupStatistics from "./components/GroupStatistics.tsx";
 import SelectionAlertModal from "./components/SelectionAlertModal.tsx";
 import RecapAlertModal from "./components/RecapAlertModal.tsx";
-import { Film, Calendar, Compass, BookOpen, Sparkles, Clapperboard, Heart, KeyRound, LogOut, ShieldCheck, User as UserIcon, Home, Mail, PenLine } from "lucide-react";
+import { Film, Calendar, Compass, BookOpen, Sparkles, Clapperboard, Heart, KeyRound, LogOut, ShieldCheck, User as UserIcon, Home, Mail } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useSpring } from "motion/react";
 import { getToken, clearSession, getSavedUser, saveUser } from "./auth.ts";
 import JustWatchedCard from "./components/JustWatchedCard.tsx";
 import PaletteStrip from "./components/PaletteStrip.tsx";
 import HomeScreenHint from "./components/HomeScreenHint.tsx";
 import GapFillCard from "./components/GapFillCard.tsx";
+import AdminView from "./components/AdminView.tsx";
+import RecapPromptCard from "./components/RecapPromptCard.tsx";
 import FilmPage from "./components/FilmPage.tsx";
 import MemberPage from "./components/MemberPage.tsx";
 import OfflineNotice from "./components/OfflineNotice.tsx";
@@ -40,6 +44,12 @@ export default function App() {
     [reviews, currentUser, sealedNightIds]
   );
 
+  // Members who've filled in every lost night get a badge on their photo
+  const members = useMemo(
+    () => clubUsers.map((u) => ({ ...u, hasGapBadge: gapFillProgress(nights, reviews, u.name, DATA_LOSS_DATE).complete })),
+    [clubUsers, nights, reviews]
+  );
+
   // Film and member pages open over the current tab; opening one from another stacks them
   type Page = { type: "film"; id: string } | { type: "member"; name: string };
   const [pages, setPages] = useState<Page[]>([]);
@@ -47,8 +57,10 @@ export default function App() {
   const openMember = (name: string) => setPages((prev) => [...prev, { type: "member", name }]);
   const closePage = useCallback(() => setPages((prev) => prev.slice(0, -1)), []);
 
-  // App navigation state: 'landing' | 'calendar' | 'feed' | 'writer'
+  // App navigation state: 'landing' | 'calendar' | 'feed' | 'admin'
   const [activeTab, setActiveTab] = useState<string>("landing");
+  // The night Ash tapped "Write the recap" for on Home, so the Admin tab opens on it
+  const [recapNightId, setRecapNightId] = useState("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
 
@@ -594,20 +606,23 @@ export default function App() {
     { id: "landing", label: "Home", icon: Home },
     { id: "calendar", label: "Schedule", icon: Calendar },
     { id: "feed", label: "Memories", icon: Heart },
-    ...(canManageRecaps ? [{ id: "writer", label: "Write", icon: PenLine }] : [])
+    ...(canManageRecaps ? [{ id: "admin", label: "Admin", icon: ShieldCheck }] : [])
   ];
 
   if (!currentUser) {
     return <LoginScreen onLoginSuccess={handleLogin} />;
   }
 
-  const meUser = clubUsers.find((u) => u.username.toLowerCase() === currentUser.username.toLowerCase());
-  const myAvatar = (size: string) =>
-    meUser?.avatarUrl ? (
-      <img src={meUser.avatarUrl} alt="" className={`${size} rounded-full object-cover border border-amber-500/50`} referrerPolicy="no-referrer" />
-    ) : (
-      <span className={`${size} rounded-full bg-slate text-zinc-100 text-xs font-semibold flex items-center justify-center`}>{currentUser.name.substring(0, 2).toUpperCase()}</span>
-    );
+  const meUser = members.find((u) => u.username.toLowerCase() === currentUser.username.toLowerCase());
+  const myAvatar = (size: string) => (
+    <WithGapBadge show={!!meUser?.hasGapBadge} size="sm">
+      {meUser?.avatarUrl ? (
+        <img src={meUser.avatarUrl} alt="" className={`${size} rounded-full object-cover border border-amber-500/50`} referrerPolicy="no-referrer" />
+      ) : (
+        <span className={`${size} rounded-full bg-slate text-zinc-100 text-xs font-semibold flex items-center justify-center`}>{currentUser.name.substring(0, 2).toUpperCase()}</span>
+      )}
+    </WithGapBadge>
+  );
 
   return (
     <div className="min-h-screen min-h-[100dvh] bg-zinc-950 text-zinc-100 font-sans selection:bg-amber-500 selection:text-zinc-950 flex flex-col">
@@ -652,7 +667,7 @@ export default function App() {
                 reviews={reviews}
                 sealed={sealedNightIds.has(night.id)}
                 overviews={overviews}
-                users={clubUsers}
+                users={members}
                 currentUser={currentUser}
                 canGoBack={pages.length > 1}
                 onClose={closePage}
@@ -661,7 +676,7 @@ export default function App() {
               />
             );
           }
-          const member = clubUsers.find((u) => u.name.toLowerCase() === page.name.toLowerCase());
+          const member = members.find((u) => u.name.toLowerCase() === page.name.toLowerCase());
           if (!member) return null;
           return (
             <MemberPage
@@ -820,6 +835,17 @@ export default function App() {
                 {activeTab === "landing" && (
                   <div className="space-y-12">
                     <HomeScreenHint />
+                    {isAsh && (
+                      <RecapPromptCard
+                        nights={nights}
+                        overviews={overviews}
+                        onWrite={(nightId) => {
+                          setRecapNightId(nightId);
+                          setActiveTab("admin");
+                          window.scrollTo({ top: 0 });
+                        }}
+                      />
+                    )}
                     <JustWatchedCard
                       nights={nights}
                       reviews={reviews}
@@ -873,7 +899,7 @@ export default function App() {
                     </div>
 
                     {/* Group Statistics Dashboard */}
-                    <GroupStatistics nights={nights} reviews={openReviews} users={clubUsers} onOpenMember={openMember} />
+                    <GroupStatistics nights={nights} reviews={openReviews} users={members} onOpenMember={openMember} />
 
                     <p className="text-sm leading-relaxed text-zinc-500 max-w-2xl">
                       Every second Friday at 7 pm. Hosting rotates through all six of us, the host picks the film, and Ash writes the recap the next day.
@@ -915,13 +941,19 @@ export default function App() {
                   />
                 )}
 
-                {activeTab === "writer" && canManageRecaps && (
-                  <OverviewForm 
-                    nights={nights}
+                {activeTab === "admin" && canManageRecaps && (
+                  <AdminView
                     currentUser={currentUser}
-                    onPostOverview={handlePostOverview}
+                    nights={nights}
+                    reviews={reviews}
                     overviews={overviews}
+                    members={members}
+                    onPostOverview={handlePostOverview}
                     onUpdateOverviewImage={handleUpdateOverviewImage}
+                    onRealignRotation={handleRealignRotation}
+                    onUserUpdate={fetchUsers}
+                    onOpenMember={openMember}
+                    recapNightId={recapNightId}
                   />
                 )}
               </motion.div>

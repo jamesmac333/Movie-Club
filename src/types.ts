@@ -63,6 +63,8 @@ export interface User {
   isAdmin: boolean;
   isAsh: boolean;
   avatarUrl?: string;
+  // Worked out in the app: has filled in every night lost in the data loss
+  hasGapBadge?: boolean;
 }
 
 export interface EdmRecipient {

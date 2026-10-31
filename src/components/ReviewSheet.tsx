@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion } from "motion/react";
 import { X, Loader2 } from "lucide-react";
 import { MovieNight } from "../types.ts";
+import StarInput from "./StarInput.tsx";
 
 interface ReviewSheetProps {
   night: MovieNight;
@@ -22,8 +23,6 @@ export default function ReviewSheet({ night, initialRating = 0, initialComment =
   const title = night.movie?.title || "this film";
   const hostFirstName = night.selector.split(" ")[0];
   const date = new Date(night.date).toLocaleDateString("en-NZ", { weekday: "short", day: "numeric", month: "short" });
-  const whole = Math.floor(rating);
-  const hasHalf = rating % 1 !== 0;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,28 +72,8 @@ export default function ReviewSheet({ night, initialRating = 0, initialComment =
 
         <fieldset className="flex flex-col gap-2">
           <legend className="slate text-zinc-400 mb-2">Your rating · {rating ? `${rating} out of 5` : "tap a star"}</legend>
-          <div className="flex justify-between max-w-xs">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                aria-label={`${n} star${n > 1 ? "s" : ""}`}
-                aria-pressed={whole >= n}
-                onClick={() => setRating(n)}
-                className={`w-14 h-14 text-5xl leading-none cursor-pointer ${n <= whole ? "text-amber-500" : n === whole + 1 && hasHalf ? "text-amber-700" : "text-zinc-700"}`}
-              >
-                ★
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            disabled={!rating}
-            onClick={() => setRating(hasHalf ? whole : Math.min(5, whole + 0.5))}
-            className="self-start min-h-11 px-4 rounded-xl border border-zinc-700 text-sm text-zinc-200 disabled:opacity-40 cursor-pointer"
-          >
-            {hasHalf ? "Remove the half star" : "Add a half star"}
-          </button>
+          <StarInput value={rating} onChange={setRating} label="Your rating" size="lg" />
+          <p className="text-xs text-zinc-500">Tap the left side of a star for a half, or slide along the stars.</p>
         </fieldset>
 
         <div className="flex flex-col gap-2">

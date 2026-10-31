@@ -7,7 +7,6 @@ import {
   CheckCircle, 
   Clock, 
   UserCheck, 
-  Shield, 
   BookOpen, 
   Play, 
   ExternalLink, 
@@ -325,17 +324,6 @@ export default function CalendarView({
                 );
               })()}
 
-              {isAdmin && !isWatched && !isEditingSelector && (
-                <button
-                  type="button"
-                  onClick={() => handleOpenEditSelector(night)}
-                  className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/50 px-2 py-0.5 rounded transition-all cursor-pointer ml-1"
-                  title="Change assigned host account for this movie night"
-                >
-                  <UserCheck className="w-3 h-3" />
-                  <span>Change Host</span>
-                </button>
-              )}
             </div>
           </div>
 
@@ -411,20 +399,18 @@ export default function CalendarView({
                     <>
                       <button
                         onClick={() => handleOpenEditSelector(night)}
-                        className={`text-xs border transition-all rounded px-3 py-1.5 flex items-center gap-1 cursor-pointer font-medium ${
-                          isEditingSelector
-                            ? "bg-amber-500 text-zinc-950 border-amber-400 font-bold"
-                            : "bg-zinc-800 hover:bg-zinc-700 text-amber-400 border-zinc-700 hover:border-amber-500/40"
+                        className={`min-h-11 px-3 rounded-xl border text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                          isEditingSelector ? "bg-amber-500 text-zinc-950 border-amber-400" : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700"
                         }`}
                         title="Manually assign which user account hosts this session"
                       >
                         <UserCheck className="w-3.5 h-3.5" />
-                        {isEditingSelector ? "Editing Host..." : "Change Host"}
+                        {isEditingSelector ? "Changing host…" : "Change host"}
                       </button>
 
                       <button
                         onClick={() => handleEditClick(night)}
-                        className="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 hover:border-zinc-600 transition-all rounded px-3 py-1.5 flex items-center gap-1 cursor-pointer"
+                        className="min-h-11 px-3 rounded-xl border text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700"
                       >
                         <Edit className="w-3.5 h-3.5" />
                         Reschedule
@@ -437,7 +423,7 @@ export default function CalendarView({
                       {night.status === "skipped" ? (
                         <button
                           onClick={() => onForceStatus(night.id, "scheduled")}
-                          className="text-[10px] uppercase font-mono px-2.5 py-1.5 rounded border transition-all cursor-pointer bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border-amber-500/30"
+                          className="min-h-11 px-3 rounded-xl border text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700"
                         >
                           Unskip
                         </button>
@@ -446,7 +432,7 @@ export default function CalendarView({
                           {!isWatched && (
                             <button
                               onClick={() => onForceStatus(night.id, "skipped")}
-                              className="text-[10px] uppercase font-mono px-2.5 py-1.5 rounded border transition-all cursor-pointer bg-red-950/40 hover:bg-red-950/80 text-red-400 border-red-900/40"
+                              className="min-h-11 px-3 rounded-xl border text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer bg-zinc-900 hover:bg-red-950/60 text-red-400 border-zinc-700"
                               title="Skip this night (e.g. for Christmas, events, cancellation)"
                             >
                               Skip
@@ -454,9 +440,9 @@ export default function CalendarView({
                           )}
                           <button
                             onClick={() => onForceStatus(night.id, isWatched ? "scheduled" : "watched")}
-                            className="text-[10px] uppercase font-mono px-2.5 py-1.5 rounded border transition-all cursor-pointer bg-zinc-950 hover:bg-zinc-800 text-zinc-400 border-zinc-800"
+                            className="min-h-11 px-3 rounded-xl border text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700"
                           >
-                            Mark {isWatched ? "Scheduled" : "Watched"}
+                            Mark {isWatched ? "scheduled" : "watched"}
                           </button>
                         </>
                       )}
@@ -627,12 +613,6 @@ export default function CalendarView({
 
         <AddToCalendarButton className="sm:self-center" />
 
-        {isAdmin && (
-          <div className="flex items-center gap-1.5 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full font-mono">
-            <Shield className="w-3.5 h-3.5" />
-            ADMIN MODE ENABLED
-          </div>
-        )}
       </div>
 
 

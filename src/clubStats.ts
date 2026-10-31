@@ -81,3 +81,30 @@ export function memberSummary<N extends NightLike, R extends ReviewLike>(nights:
     versusClub: average(compared),
   };
 }
+
+// Fill in the gaps: a lost night is done once the member has rated it and written a few words
+export function gapFillProgress<N extends NightLike, R extends ReviewLike & { comment?: string }>(
+  nights: N[],
+  reviews: R[],
+  memberName: string,
+  lossDate: string
+) {
+  const lost = watchedFilms(nights).filter((n) => n.date.slice(0, 10) < lossDate);
+  const isDone = (n: N) =>
+    reviews.some((r) => r.movieNightId === n.id && sameName(r.user, memberName) && !!r.comment?.trim());
+  const remaining = lost.filter((n) => !isDone(n));
+  return { total: lost.length, done: lost.length - remaining.length, remaining, complete: lost.length > 0 && remaining.length === 0 };
+}
+
+const RECAP_WINDOW_DAYS = 7;
+
+// The night Ash still owes a recap for: from 7 pm on the night itself until it's written, for up to a week
+export function recapDueNight<N extends NightLike>(nights: N[], recappedNightIds: string[], now = Date.now()): N | undefined {
+  return nights
+    .filter((n) => {
+      const start = new Date(n.date).getTime();
+      return n.movie && n.status !== "skipped" && start <= now && now - start < RECAP_WINDOW_DAYS * 86400000;
+    })
+    .sort((a, b) => byDate(b, a))
+    .find((n) => !recappedNightIds.includes(n.id));
+}
