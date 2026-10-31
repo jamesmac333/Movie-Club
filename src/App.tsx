@@ -835,6 +835,12 @@ export default function App() {
                 {activeTab === "landing" && (
                   <div className="space-y-12">
                     <HomeScreenHint />
+                    <GapFillCard
+                      nights={nights}
+                      reviews={reviews}
+                      currentUser={currentUser}
+                      onAddReview={handleAddReview}
+                    />
                     {isAsh && (
                       <RecapPromptCard
                         nights={nights}
@@ -852,13 +858,6 @@ export default function App() {
                       users={clubUsers}
                       currentUser={currentUser}
                       onAddReview={handleAddReview}
-                    />
-                    <GapFillCard
-                      nights={nights}
-                      reviews={reviews}
-                      currentUser={currentUser}
-                      onAddReview={handleAddReview}
-                      onOpenFilm={openFilm}
                     />
                     <NextMovieHero 
                       nights={nights} 
