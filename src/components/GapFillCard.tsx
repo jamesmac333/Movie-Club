@@ -118,8 +118,17 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview,
                 {saving?.id === night.id ? (
                   <Loader2 className="w-5 h-5 text-zinc-400 animate-spin" aria-label="Saving" />
                 ) : mine ? (
-                  <span className="flex items-center gap-2 text-sm">
+                  <span className="flex items-center gap-2 text-sm flex-wrap">
                     <span className="flex items-center gap-1 text-emerald-400"><Check className="w-4 h-4" />Saved</span>
+                    <button
+                      type="button"
+                      disabled={!!saving || mine.rating >= 5}
+                      aria-label={mine.rating % 1 ? "Remove the half star" : "Add a half star"}
+                      onClick={() => rate(night, mine.rating % 1 ? Math.floor(mine.rating) : mine.rating + 0.5)}
+                      className="min-h-11 px-3 rounded-xl border border-zinc-700 text-zinc-200 hover:text-amber-500 disabled:opacity-40 cursor-pointer"
+                    >
+                      {mine.rating % 1 ? "−½" : "+½"}
+                    </button>
                     <button type="button" onClick={() => setSheetNight(night)} className="min-h-11 px-2 text-zinc-300 hover:text-amber-500 flex items-center gap-1.5 cursor-pointer">
                       <PenLine className="w-4 h-4" />
                       {mine.comment ? "Edit words" : "Add words"}
