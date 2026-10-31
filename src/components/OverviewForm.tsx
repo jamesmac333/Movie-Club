@@ -222,7 +222,7 @@ export default function OverviewForm({ nights, currentUser, onPostOverview, over
             Write a recap
           </h2>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Recaps and gathering photos for each night · only Ash and James see this tab
+            Recaps and gathering photos for each night
           </p>
         </div>
       </div>

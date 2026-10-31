@@ -9,19 +9,18 @@ import UserProfileModal from "./components/UserProfileModal.tsx";
 import NextMovieHero from "./components/NextMovieHero.tsx";
 import CalendarView from "./components/CalendarView.tsx";
 import FeedView from "./components/FeedView.tsx";
-import OverviewForm from "./components/OverviewForm.tsx";
 import PriorSessionRecap from "./components/PriorSessionRecap.tsx";
 import GroupStatistics from "./components/GroupStatistics.tsx";
 import SelectionAlertModal from "./components/SelectionAlertModal.tsx";
 import RecapAlertModal from "./components/RecapAlertModal.tsx";
-import { Film, Calendar, Compass, BookOpen, Sparkles, Clapperboard, Heart, KeyRound, LogOut, ShieldCheck, User as UserIcon, Home, Mail, PenLine } from "lucide-react";
+import { Film, Calendar, Compass, BookOpen, Sparkles, Clapperboard, Heart, KeyRound, LogOut, ShieldCheck, User as UserIcon, Home, Mail } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useSpring } from "motion/react";
 import { getToken, clearSession, getSavedUser, saveUser } from "./auth.ts";
 import JustWatchedCard from "./components/JustWatchedCard.tsx";
 import PaletteStrip from "./components/PaletteStrip.tsx";
 import HomeScreenHint from "./components/HomeScreenHint.tsx";
 import GapFillCard from "./components/GapFillCard.tsx";
-import GapTracker from "./components/GapTracker.tsx";
+import AdminView from "./components/AdminView.tsx";
 import FilmPage from "./components/FilmPage.tsx";
 import MemberPage from "./components/MemberPage.tsx";
 import OfflineNotice from "./components/OfflineNotice.tsx";
@@ -57,7 +56,7 @@ export default function App() {
   const openMember = (name: string) => setPages((prev) => [...prev, { type: "member", name }]);
   const closePage = useCallback(() => setPages((prev) => prev.slice(0, -1)), []);
 
-  // App navigation state: 'landing' | 'calendar' | 'feed' | 'writer'
+  // App navigation state: 'landing' | 'calendar' | 'feed' | 'admin'
   const [activeTab, setActiveTab] = useState<string>("landing");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
@@ -604,7 +603,7 @@ export default function App() {
     { id: "landing", label: "Home", icon: Home },
     { id: "calendar", label: "Schedule", icon: Calendar },
     { id: "feed", label: "Memories", icon: Heart },
-    ...(canManageRecaps ? [{ id: "writer", label: "Write", icon: PenLine }] : [])
+    ...(canManageRecaps ? [{ id: "admin", label: "Admin", icon: ShieldCheck }] : [])
   ];
 
   if (!currentUser) {
@@ -847,7 +846,6 @@ export default function App() {
                       onAddReview={handleAddReview}
                       onOpenFilm={openFilm}
                     />
-                    {isAdmin && <GapTracker nights={nights} reviews={reviews} members={members} onOpenMember={openMember} />}
                     <NextMovieHero 
                       nights={nights} 
                       currentUser={currentUser} 
@@ -929,13 +927,18 @@ export default function App() {
                   />
                 )}
 
-                {activeTab === "writer" && canManageRecaps && (
-                  <OverviewForm 
-                    nights={nights}
+                {activeTab === "admin" && canManageRecaps && (
+                  <AdminView
                     currentUser={currentUser}
-                    onPostOverview={handlePostOverview}
+                    nights={nights}
+                    reviews={reviews}
                     overviews={overviews}
+                    members={members}
+                    onPostOverview={handlePostOverview}
                     onUpdateOverviewImage={handleUpdateOverviewImage}
+                    onRealignRotation={handleRealignRotation}
+                    onUserUpdate={fetchUsers}
+                    onOpenMember={openMember}
                   />
                 )}
               </motion.div>

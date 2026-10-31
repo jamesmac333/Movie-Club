@@ -1,5 +1,4 @@
 import React from "react";
-import { ShieldCheck } from "lucide-react";
 import { MovieNight, Review, User, DATA_LOSS_DATE } from "../types.ts";
 import { gapFillProgress } from "../clubStats.ts";
 import { Avatar } from "./OverlayPage.tsx";
@@ -11,7 +10,7 @@ interface GapTrackerProps {
   onOpenMember: (name: string) => void;
 }
 
-// For admins: how far each member has got with Fill in the gaps. Disappears once everyone has finished.
+// Admin tab: how far each member has got with Fill in the gaps. Disappears once everyone has finished.
 export default function GapTracker({ nights, reviews, members, onOpenMember }: GapTrackerProps) {
   const rows = members.map((member) => ({ member, progress: gapFillProgress(nights, reviews, member.name, DATA_LOSS_DATE) }));
   const total = rows[0]?.progress.total || 0;
@@ -24,10 +23,6 @@ export default function GapTracker({ nights, reviews, members, onOpenMember }: G
   return (
     <section aria-labelledby="gap-tracker" className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <p className="slate text-zinc-400 flex items-center gap-1.5">
-          <ShieldCheck className="w-4 h-4 text-amber-500" aria-hidden="true" />
-          Admins only
-        </p>
         <div className="flex items-baseline justify-between gap-3">
           <h2 id="gap-tracker" className="font-serif text-3xl text-zinc-50">Gaps tracker</h2>
           <span className="text-sm text-zinc-400 shrink-0">{finished} of {rows.length} finished</span>
