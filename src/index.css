@@ -73,6 +73,9 @@
   --color-sage: #afaf98;
   --color-sea: #6f8c83;
   --color-slate: #2f4a55;
+  /* Club stats band: slate background with darker tiles */
+  --color-slate-deep: #26404a;
+  --color-slate-line: #3d5c68;
   --color-clay: #5a3a2b;
   --color-taupe: #8c6e5a;
   --color-umber: #2e1b12;

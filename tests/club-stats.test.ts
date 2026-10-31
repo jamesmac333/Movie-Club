@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { filmRatings, memberSummary, gapFillProgress, recapDueNight } from "../src/clubStats.ts";
+import { filmRatings, memberSummary, gapFillProgress, recapDueNight, bestReviewStatus } from "../src/clubStats.ts";
 import { isBeforeDataLoss } from "../src/dataLoss.ts";
 
 const film = (title: string) => ({ title });
@@ -86,4 +86,22 @@ test("Ash is asked for a recap from 7 pm on the night until it's written", () =>
   assert.equal(recapDueNight(night, ["n"], at("2026-11-07T09:00:00Z")), undefined, "gone once written");
   assert.equal(recapDueNight(night, [], at("2026-11-14T06:00:00Z")), undefined, "gone after a week");
   assert.equal(recapDueNight([{ ...night[0], status: "skipped" }], [], at("2026-11-06T08:00:00Z")), undefined, "not for a skipped night");
+});
+
+test("a night is ready for Ash's best-review pick once every member has written a review", () => {
+  const members = ["Ash Macintosh", "Tom Sakai"];
+  const status = bestReviewStatus(nights, [
+    { movieNightId: "a", user: "Ash Macintosh", rating: 4, comment: "Tense" },
+    { movieNightId: "a", user: "Tom Sakai", rating: 2, comment: "Long", isStarred: true },
+    { movieNightId: "b", user: "Ash Macintosh", rating: 5, comment: "Loved it" },
+    { movieNightId: "b", user: "Tom Sakai", rating: 4, comment: " " },
+  ], members);
+  const a = status.find((s) => s.night.id === "a")!;
+  const b = status.find((s) => s.night.id === "b")!;
+  assert.equal(a.ready, true);
+  assert.equal(a.pick?.user, "Tom Sakai");
+  assert.equal(b.ready, false, "stars without words don't count");
+  assert.equal(b.reviewed, 1);
+  assert.equal(status.some((s) => s.night.id === "d"), false, "upcoming nights are left out");
+  assert.equal(status[0].night.id, "c", "newest first");
 });
