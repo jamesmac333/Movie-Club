@@ -858,7 +858,6 @@ export default function App() {
                       reviews={reviews}
                       currentUser={currentUser}
                       onAddReview={handleAddReview}
-                      onOpenFilm={openFilm}
                     />
                     <NextMovieHero 
                       nights={nights} 

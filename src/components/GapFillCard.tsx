@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { PenLine } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { MovieNight, Review, User, DATA_LOSS_DATE } from "../types.ts";
 import { gapFillProgress } from "../clubStats.ts";
 import ReviewSheet from "./ReviewSheet.tsx";
-import StarInput from "./StarInput.tsx";
 import GapsCelebration from "./GapsCelebration.tsx";
 
 interface GapFillCardProps {
@@ -12,13 +11,12 @@ interface GapFillCardProps {
   reviews: Review[];
   currentUser: User;
   onAddReview: (movieNightId: string, user: string, rating: number, comment: string) => Promise<void>;
-  onOpenFilm: (nightId: string) => void;
 }
 
 // Reviews from before the data loss were wiped. This is a task each member chips away at:
 // every lost night needs a rating and a few words. Finished nights drop off,
 // and finishing the lot sets off fireworks and earns a badge on the member's photo.
-export default function GapFillCard({ nights, reviews, currentUser, onAddReview, onOpenFilm }: GapFillCardProps) {
+export default function GapFillCard({ nights, reviews, currentUser, onAddReview }: GapFillCardProps) {
   const [sheet, setSheet] = useState<{ night: MovieNight; rating: number } | null>(null);
   const [celebrating, setCelebrating] = useState(false);
   const hadGaps = useRef(false);
@@ -62,8 +60,8 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview,
           <motion.div className="h-full rounded-full bg-amber-500" initial={false} animate={{ width: `${percent}%` }} transition={{ duration: 0.6, ease: "easeOut" }} />
         </div>
         <p className="text-sm text-zinc-400">
-          {progress.done} of {progress.total} lost nights done. Reviews from before 14 October were wiped, so give each one your stars and a few words.
-          Finish them all to earn a badge on your profile photo.
+          {progress.done} of {progress.total} done. Reviews from before 14 October were lost, so tap each night to give it stars and a few words.
+          Finish them all for a badge on your photo.
         </p>
       </div>
 
@@ -71,7 +69,7 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview,
         <AnimatePresence initial={false}>
           {progress.remaining.map((night) => {
             const mine = myReview(night.id);
-            const date = new Date(night.date).toLocaleDateString("en-NZ", { day: "numeric", month: "short" });
+            const date = new Date(night.date).toLocaleDateString("en-NZ", { weekday: "short", day: "numeric", month: "short" });
             return (
               <motion.li
                 key={night.id}
@@ -81,35 +79,26 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview,
                 exit={{ opacity: 0, height: 0, transition: { duration: 0.35 } }}
                 className="border-b border-zinc-800 last:border-b-0 overflow-hidden"
               >
-                <div className="px-5 py-4 flex flex-col gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <button type="button" onClick={() => onOpenFilm(night.id)} className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer">
-                      {night.movie!.posterUrl ? (
-                        <img src={night.movie!.posterUrl} alt="" className="w-11 aspect-[2/3] rounded-md object-cover border border-zinc-700 shrink-0" referrerPolicy="no-referrer" />
-                      ) : (
-                        <span className="w-11 aspect-[2/3] rounded-md bg-slate border border-zinc-700 shrink-0" />
-                      )}
-                      <span className="min-w-0">
-                        <span className="block font-semibold text-zinc-100 break-words">{night.movie!.title}</span>
-                        <span className="block text-sm text-zinc-400">{date} · {night.selector.split(" ")[0]}'s pick</span>
-                      </span>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <StarInput
-                      value={mine?.rating || 0}
-                      onChange={(rating) => setSheet({ night, rating })}
-                      label={`Rate ${night.movie!.title}`}
-                    />
-                    {mine && (
-                      <button type="button" onClick={() => setSheet({ night, rating: mine.rating })} className="min-h-11 px-2 text-sm text-amber-500 hover:text-amber-400 flex items-center gap-1.5 cursor-pointer">
-                        <PenLine className="w-4 h-4" />
-                        Add your review to finish
-                      </button>
-                    )}
-                  </div>
-                </div>
+                {/* The whole row opens the review sheet */}
+                <button
+                  type="button"
+                  onClick={() => setSheet({ night, rating: mine?.rating || 0 })}
+                  className="w-full min-h-16 px-5 py-3 flex items-center gap-3 text-left hover:bg-zinc-850 active:bg-zinc-850 cursor-pointer"
+                >
+                  {night.movie!.posterUrl ? (
+                    <img src={night.movie!.posterUrl} alt="" className="w-9 aspect-[2/3] rounded object-cover border border-zinc-700 shrink-0" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="w-9 aspect-[2/3] rounded bg-slate border border-zinc-700 shrink-0" />
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold text-zinc-100 leading-snug break-words">{night.movie!.title}</span>
+                    <span className="block text-sm text-zinc-400">{date}</span>
+                  </span>
+                  <span className="shrink-0 flex items-center gap-0.5 text-sm font-semibold text-amber-500">
+                    {mine ? "Add words" : "Review"}
+                    <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                  </span>
+                </button>
               </motion.li>
             );
           })}
