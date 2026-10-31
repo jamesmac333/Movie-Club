@@ -9,10 +9,15 @@ interface OverviewFormProps {
   onPostOverview: (movieNightId: string, title: string, content: string, imageUrl: string) => Promise<void>;
   overviews?: NightOverview[];
   onUpdateOverviewImage?: (overviewId: string, imageUrl: string) => Promise<void>;
+  initialNightId?: string;
 }
 
-export default function OverviewForm({ nights, currentUser, onPostOverview, overviews = [], onUpdateOverviewImage }: OverviewFormProps) {
-  const [selectedNightId, setSelectedNightId] = useState("");
+export default function OverviewForm({ nights, currentUser, onPostOverview, overviews = [], onUpdateOverviewImage, initialNightId = "" }: OverviewFormProps) {
+  const [selectedNightId, setSelectedNightId] = useState(initialNightId);
+  // Coming from the recap prompt on Home opens the form on that night
+  useEffect(() => {
+    if (initialNightId) setSelectedNightId(initialNightId);
+  }, [initialNightId]);
   const [headline, setHeadline] = useState("");
   const [content, setContent] = useState("");
   const [imageBlob, setImageBlob] = useState<string>("");

@@ -17,6 +17,8 @@ interface AdminViewProps {
   onRealignRotation: () => Promise<void>;
   onUserUpdate: () => void;
   onOpenMember: (name: string) => void;
+  // Opens the recap writer on this night, when Ash came from the prompt on Home
+  recapNightId?: string;
 }
 
 // A section that stays folded until it's needed, so the recap writer stays at the top
@@ -98,7 +100,7 @@ function RotationPanel({ onRealignRotation }: { onRealignRotation: () => Promise
 }
 
 // Everything only Ash and James can do, in one place. Per-night controls stay on the nights themselves.
-export default function AdminView({ currentUser, nights, reviews, overviews, members, onPostOverview, onUpdateOverviewImage, onRealignRotation, onUserUpdate, onOpenMember }: AdminViewProps) {
+export default function AdminView({ currentUser, nights, reviews, overviews, members, onPostOverview, onUpdateOverviewImage, onRealignRotation, onUserUpdate, onOpenMember, recapNightId }: AdminViewProps) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -109,7 +111,7 @@ export default function AdminView({ currentUser, nights, reviews, overviews, mem
         <h1 className="font-serif text-4xl text-zinc-50">Admin</h1>
       </div>
 
-      <OverviewForm nights={nights} currentUser={currentUser} onPostOverview={onPostOverview} overviews={overviews} onUpdateOverviewImage={onUpdateOverviewImage} />
+      <OverviewForm initialNightId={recapNightId} nights={nights} currentUser={currentUser} onPostOverview={onPostOverview} overviews={overviews} onUpdateOverviewImage={onUpdateOverviewImage} />
 
       <GapTracker nights={nights} reviews={reviews} members={members} onOpenMember={onOpenMember} />
 

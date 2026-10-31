@@ -21,6 +21,7 @@ import PaletteStrip from "./components/PaletteStrip.tsx";
 import HomeScreenHint from "./components/HomeScreenHint.tsx";
 import GapFillCard from "./components/GapFillCard.tsx";
 import AdminView from "./components/AdminView.tsx";
+import RecapPromptCard from "./components/RecapPromptCard.tsx";
 import FilmPage from "./components/FilmPage.tsx";
 import MemberPage from "./components/MemberPage.tsx";
 import OfflineNotice from "./components/OfflineNotice.tsx";
@@ -58,6 +59,8 @@ export default function App() {
 
   // App navigation state: 'landing' | 'calendar' | 'feed' | 'admin'
   const [activeTab, setActiveTab] = useState<string>("landing");
+  // The night Ash tapped "Write the recap" for on Home, so the Admin tab opens on it
+  const [recapNightId, setRecapNightId] = useState("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
 
@@ -832,6 +835,17 @@ export default function App() {
                 {activeTab === "landing" && (
                   <div className="space-y-12">
                     <HomeScreenHint />
+                    {isAsh && (
+                      <RecapPromptCard
+                        nights={nights}
+                        overviews={overviews}
+                        onWrite={(nightId) => {
+                          setRecapNightId(nightId);
+                          setActiveTab("admin");
+                          window.scrollTo({ top: 0 });
+                        }}
+                      />
+                    )}
                     <JustWatchedCard
                       nights={nights}
                       reviews={reviews}
@@ -939,6 +953,7 @@ export default function App() {
                     onRealignRotation={handleRealignRotation}
                     onUserUpdate={fetchUsers}
                     onOpenMember={openMember}
+                    recapNightId={recapNightId}
                   />
                 )}
               </motion.div>
