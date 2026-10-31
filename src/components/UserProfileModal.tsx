@@ -1032,7 +1032,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
 
                 <div className="text-xs text-zinc-400 leading-relaxed space-y-2">
                   <p>
-                    All member profile photos, movie nights, reviews, ratings, and EDM logs are stored together in your unified database (<span className="font-mono text-zinc-300">server-db.json</span>).
+                    All member profile photos, movie nights, reviews, ratings, and the email history are stored together in your unified database (<span className="font-mono text-zinc-300">server-db.json</span>).
                   </p>
                   <p>
                     An automatic backup copy (<span className="font-mono text-zinc-300">server-db.json.bak</span>) is created synchronously on every single save, alongside rolling historical snapshots. In the event of an unexpected interruption, the server automatically recovers from the backup.
@@ -1077,7 +1077,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                   )}
                 </div>
                 <span className="block text-[10px] text-zinc-500">
-                  Exports complete JSON copies of all movie nights, member avatars, reviews, recaps, and EDM logs.
+                  Exports complete JSON copies of all movie nights, member avatars, reviews, recaps, and the email history.
                 </span>
               </div>
             </div>

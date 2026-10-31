@@ -7,6 +7,7 @@ import PaletteStrip from "./PaletteStrip.tsx";
 interface FeedViewProps {
   nights: MovieNight[];
   reviews: Review[];
+  sealedNightIds?: Set<string>;
   overviews: NightOverview[];
   currentUser: User | null;
   onAddReview: (movieNightId: string, user: string, rating: number, comment: string) => Promise<void>;
@@ -22,6 +23,7 @@ interface FeedViewProps {
 export default function FeedView({
   nights,
   reviews,
+  sealedNightIds,
   overviews,
   currentUser,
   onAddReview,
@@ -397,7 +399,11 @@ export default function FeedView({
           const isAsh = currentUser?.username?.toLowerCase() === "ash" || currentUser?.isAsh === true;
           const isAdmin = currentUser?.isAdmin || currentUser?.username?.toLowerCase() === "james" || currentUser?.username?.toLowerCase() === "ash";
           // Find associated reviews
-          const nightReviews = reviews.filter(rev => rev.movieNightId === night.id);
+          const allNightReviews = reviews.filter(rev => rev.movieNightId === night.id);
+          // Other members' reviews stay hidden until this member has posted theirs
+          const sealed = !!sealedNightIds?.has(night.id);
+          const nightReviews = sealed ? [] : allNightReviews;
+          const myReview = nightReviews.find(r => r.user === currentUser?.name);
           // Average rating
           const avgRating = nightReviews.length > 0 
             ? (nightReviews.reduce((acc, r) => acc + r.rating, 0) / nightReviews.length).toFixed(1)
@@ -722,7 +728,7 @@ export default function FeedView({
                       >
                         <h5 className="text-sm font-mono font-bold tracking-wider uppercase text-zinc-400 group-hover:text-zinc-200 flex items-center gap-2 transition-colors">
                           <MessageSquare className="w-4 h-4 text-zinc-500 group-hover:text-amber-500 transition-colors" />
-                          <span>Member Reviews ({nightReviews.length})</span>
+                          <span>Member Reviews ({allNightReviews.length})</span>
                           {nightReviews.length > 0 && (
                             <span className="p-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 group-hover:text-amber-400 group-hover:border-zinc-700 transition-all inline-flex items-center">
                               {isReviewsExpanded ? (
@@ -780,6 +786,20 @@ export default function FeedView({
                       )}
                     </div>
                   </div>
+
+                  {sealed && (
+                    <p className="mt-2 bg-zinc-950/60 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-400">
+                      {allNightReviews.length === 0
+                        ? "No reviews yet. Be the first."
+                        : `${allNightReviews.length} review${allNightReviews.length === 1 ? " is" : "s are"} in. Post yours to see what everyone else thought.`}
+                    </p>
+                  )}
+
+                  {myReview && avgRating && nightReviews.length > 1 && (
+                    <p className="text-sm text-zinc-400 mb-1">
+                      You gave it <strong className="text-amber-400">{myReview.rating}★</strong> · club average <strong className="text-amber-400">{avgRating}★</strong>
+                    </p>
+                  )}
 
                   {/* Collapsed Reviews Teaser Preview */}
                   {!isReviewsExpanded && nightReviews.length > 0 && (() => {
@@ -910,7 +930,7 @@ export default function FeedView({
 
                         {/* Existing Reviews List */}
                         {nightReviews.length === 0 ? (
-                          <p className="text-xs text-zinc-400 italic py-2">
+                          sealed ? null : <p className="text-xs text-zinc-400 italic py-2">
                             {isBeforeDataLoss(night.date)
                               ? "The original reviews for this night were lost when Google AI Studio wiped the club database on 14 October 2026. If you remember yours, click Add Review to post it again."
                               : "No reviews written for this movie yet. Click Add Review to start!"}

@@ -1103,7 +1103,7 @@ async function startServer() {
         logs: db.edmLogs || []
       });
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch EDM settings and logs" });
+      res.status(500).json({ error: "Couldn't load the club email settings" });
     }
   });
 
@@ -1112,7 +1112,7 @@ async function startServer() {
     const { email, name, requester } = req.body;
     const reqLower = requester?.toLowerCase();
     if (!requester || (reqLower !== "james" && reqLower !== "ash")) {
-      return res.status(403).json({ error: "Unauthorized. Only admins (James or Ash) can manage EDM recipients." });
+      return res.status(403).json({ error: "Only admins (James or Ash) can change the mailing list." });
     }
 
     if (!email || !email.includes("@")) {
@@ -1146,7 +1146,7 @@ async function startServer() {
     const { email, requester } = req.body;
     const reqLower = requester?.toLowerCase();
     if (!requester || (reqLower !== "james" && reqLower !== "ash")) {
-      return res.status(403).json({ error: "Unauthorized. Only admins can manage EDM recipients." });
+      return res.status(403).json({ error: "Only admins can change the mailing list." });
     }
 
     if (!email) {
@@ -1173,7 +1173,7 @@ async function startServer() {
     const { requester } = req.body;
     const reqLower = requester?.toLowerCase();
     if (!requester || (reqLower !== "james" && reqLower !== "ash")) {
-      return res.status(403).json({ error: "Unauthorized. Only admins can initiate EDM test broadcasts." });
+      return res.status(403).json({ error: "Only admins can send a test email." });
     }
 
     try {
@@ -1184,21 +1184,21 @@ async function startServer() {
 
       const testLog = await sendEdm({
         type: "test",
-        subject: `[TEST] Movie Club EDM Transmission Verification - ${adminName}`,
+        subject: `[Test] Movie Club email check from ${adminName}`,
         html: generateTestEmailHtml(adminName, recipientCount),
         previewText: `EDM system check triggered by ${adminName}. Distribution pipeline verified.`
       });
 
       res.json({
         message: testLog.status === "failed" 
-          ? "Test EDM recorded error: " + testLog.error
-          : "Test EDM broadcast completed successfully!",
+          ? "The test email failed: " + testLog.error
+          : "Test email sent.",
         log: testLog,
         logs: readDb().edmLogs || []
       });
     } catch (error: any) {
-      console.error("Failed to dispatch test EDM:", error);
-      res.status(500).json({ error: error?.message || "Failed to dispatch test EDM" });
+      console.error("Couldn't send the test email:", error);
+      res.status(500).json({ error: error?.message || "Couldn't send the test email" });
     }
   });
 

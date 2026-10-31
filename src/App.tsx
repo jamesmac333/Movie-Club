@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS } from "./types.ts";
+import { getSealedNightIds } from "./reviewSeal.ts";
 import LoginScreen from "./components/LoginScreen.tsx";
 import UserProfileModal from "./components/UserProfileModal.tsx";
 import NextMovieHero from "./components/NextMovieHero.tsx";
@@ -26,7 +27,14 @@ export default function App() {
   const [showProfileSettings, setShowProfileSettings] = useState<boolean>(false);
   const [newSelectionAlert, setNewSelectionAlert] = useState<MovieNight | null>(null);
   const [newRecapAlert, setNewRecapAlert] = useState<{ overview: NightOverview; night: MovieNight } | null>(null);
-  
+
+  // Recent nights whose reviews stay hidden until the current member has posted theirs
+  const sealedNightIds = useMemo(() => getSealedNightIds(nights, reviews, currentUser?.name), [nights, reviews, currentUser]);
+  const openReviews = useMemo(
+    () => reviews.filter((r) => r.user === currentUser?.name || !sealedNightIds.has(r.movieNightId)),
+    [reviews, currentUser, sealedNightIds]
+  );
+
   // App navigation state: 'landing' | 'calendar' | 'feed' | 'writer'
   const [activeTab, setActiveTab] = useState<string>("landing");
   const [loading, setLoading] = useState<boolean>(true);
@@ -698,7 +706,7 @@ export default function App() {
           <RecapAlertModal
             overview={newRecapAlert.overview}
             night={newRecapAlert.night}
-            reviews={reviews}
+            reviews={openReviews}
             currentUser={currentUser}
             onClose={handleAcknowledgeRecap}
             onUpdateOverviewImage={handleUpdateOverviewImage}
@@ -881,6 +889,7 @@ export default function App() {
                     <PriorSessionRecap 
                       nights={nights} 
                       reviews={reviews} 
+                      sealedNightIds={sealedNightIds}
                       overviews={overviews} 
                       currentUser={currentUser}
                       onOpenRecapModal={(overview, night) => setNewRecapAlert({ overview, night })}
@@ -890,7 +899,7 @@ export default function App() {
                     </div>
 
                     {/* Group Statistics Dashboard */}
-                    <GroupStatistics nights={nights} reviews={reviews} users={clubUsers} />
+                    <GroupStatistics nights={nights} reviews={openReviews} users={clubUsers} />
 
                     <p className="text-sm leading-relaxed text-zinc-500 max-w-2xl">
                       Every second Friday at 7 pm. Hosting rotates through all six of us, the host picks the film, and Ash writes the recap the next day.
@@ -917,6 +926,7 @@ export default function App() {
                   <FeedView 
                     nights={nights}
                     reviews={reviews}
+                    sealedNightIds={sealedNightIds}
                     overviews={overviews}
                     currentUser={currentUser}
                     onAddReview={handleAddReview}
