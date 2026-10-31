@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import { ChevronLeft, X } from "lucide-react";
 import { User } from "../types.ts";
+import { WithGapBadge } from "./GapBadge.tsx";
 
 // A full-screen page that slides over the app, used for film pages and member pages.
 // Opening one from another stacks them, so the button goes back to the previous page.
@@ -43,11 +44,15 @@ export function OverlayPage({ label, canGoBack, onClose, children }: { label: st
   );
 }
 
-export function Avatar({ user, name, className }: { user?: User; name: string; className: string }) {
-  return user?.avatarUrl ? (
-    <img src={user.avatarUrl} alt="" className={`${className} rounded-full object-cover shrink-0`} referrerPolicy="no-referrer" />
-  ) : (
-    <span className={`${className} rounded-full bg-slate text-zinc-100 text-xs font-semibold flex items-center justify-center shrink-0`}>{name.substring(0, 2).toUpperCase()}</span>
+export function Avatar({ user, name, className, badgeSize = "md" }: { user?: User; name: string; className: string; badgeSize?: "sm" | "md" | "lg" }) {
+  return (
+    <WithGapBadge show={!!user?.hasGapBadge} size={badgeSize}>
+      {user?.avatarUrl ? (
+        <img src={user.avatarUrl} alt="" className={`${className} rounded-full object-cover shrink-0`} referrerPolicy="no-referrer" />
+      ) : (
+        <span className={`${className} rounded-full bg-slate text-zinc-100 text-xs font-semibold flex items-center justify-center shrink-0`}>{name.substring(0, 2).toUpperCase()}</span>
+      )}
+    </WithGapBadge>
   );
 }
 

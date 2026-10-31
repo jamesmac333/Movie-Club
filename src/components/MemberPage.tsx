@@ -3,6 +3,7 @@ import { Settings } from "lucide-react";
 import { MovieNight, Review, User } from "../types.ts";
 import { memberSummary, MemberFilm } from "../clubStats.ts";
 import { Avatar, OverlayPage, Stars } from "./OverlayPage.tsx";
+import GapBadge from "./GapBadge.tsx";
 
 interface MemberPageProps {
   member: User;
@@ -67,7 +68,7 @@ export default function MemberPage({ member, nights, reviews, isSelf, canGoBack,
   return (
     <OverlayPage label={`${first}'s page`} canGoBack={canGoBack} onClose={onClose}>
       <header className="flex items-center gap-4 mt-2">
-        <Avatar user={member} name={member.name} className="w-20 h-20 border-2 border-amber-500/50" />
+        <Avatar user={member} name={member.name} className="w-20 h-20 border-2 border-amber-500/50" badgeSize="lg" />
         <div className="min-w-0 flex-1">
           <h1 className="font-serif text-4xl text-zinc-50 leading-tight">{isSelf ? "Your page" : member.name}</h1>
           {nextHosting && (
@@ -78,8 +79,14 @@ export default function MemberPage({ member, nights, reviews, isSelf, canGoBack,
           )}
         </div>
       </header>
+      {member.hasGapBadge && (
+        <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-amber-950 border border-amber-800 px-3 py-1.5 text-sm text-amber-500">
+          <GapBadge size="sm" />
+          Filled in every night lost in the data loss
+        </p>
+      )}
       {isSelf && (
-        <button type="button" onClick={onOpenSettings} className="mt-4 min-h-11 px-4 rounded-xl border border-zinc-700 text-zinc-200 hover:text-amber-500 inline-flex items-center gap-2 cursor-pointer">
+        <button type="button" onClick={onOpenSettings} className="mt-4 flex min-h-11 px-4 rounded-xl border border-zinc-700 text-zinc-200 hover:text-amber-500 inline-flex items-center gap-2 cursor-pointer">
           <Settings className="w-4 h-4" />
           Profile and settings
         </button>

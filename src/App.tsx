@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS } from "./types.ts";
 import { getSealedNightIds } from "./reviewSeal.ts";
+import { gapFillProgress } from "./clubStats.ts";
+import { DATA_LOSS_DATE } from "./dataLoss.ts";
+import { WithGapBadge } from "./components/GapBadge.tsx";
 import LoginScreen from "./components/LoginScreen.tsx";
 import UserProfileModal from "./components/UserProfileModal.tsx";
 import NextMovieHero from "./components/NextMovieHero.tsx";
@@ -39,6 +42,23 @@ export default function App() {
     () => reviews.filter((r) => r.user === currentUser?.name || !sealedNightIds.has(r.movieNightId)),
     [reviews, currentUser, sealedNightIds]
   );
+
+  // Members who've filled in every lost night get a badge on their photo
+  const members = useMemo(
+    () => clubUsers.map((u) => ({ ...u, hasGapBadge: gapFillProgress(nights, reviews, u.name, u.missedNights, DATA_LOSS_DATE).complete })),
+    [clubUsers, nights, reviews]
+  );
+
+  const handleSetMissed = async (nightId: string, missed: boolean) => {
+    const response = await fetch("/api/me/missed-nights", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nightId, missed })
+    });
+    if (!response.ok) throw new Error("Failed to save");
+    const { missedNights } = await response.json();
+    setClubUsers((prev) => prev.map((u) => (u.username.toLowerCase() === currentUser?.username.toLowerCase() ? { ...u, missedNights } : u)));
+  };
 
   // Film and member pages open over the current tab; opening one from another stacks them
   type Page = { type: "film"; id: string } | { type: "member"; name: string };
@@ -90,6 +110,7 @@ export default function App() {
             ...staticUser,
             isAdmin: dbUser?.isAdmin !== undefined ? dbUser.isAdmin : staticUser.isAdmin,
             isAsh: dbUser?.isAsh !== undefined ? dbUser.isAsh : staticUser.isAsh,
+            missedNights: dbUser?.missedNights || [],
             // The server's ?v= fingerprint changes when the photo changes, so it is safe to cache
             avatarUrl: hasValidCustomAvatar ? dbAvatar : staticUser.avatarUrl
           };
@@ -601,13 +622,16 @@ export default function App() {
     return <LoginScreen onLoginSuccess={handleLogin} />;
   }
 
-  const meUser = clubUsers.find((u) => u.username.toLowerCase() === currentUser.username.toLowerCase());
-  const myAvatar = (size: string) =>
-    meUser?.avatarUrl ? (
-      <img src={meUser.avatarUrl} alt="" className={`${size} rounded-full object-cover border border-amber-500/50`} referrerPolicy="no-referrer" />
-    ) : (
-      <span className={`${size} rounded-full bg-slate text-zinc-100 text-xs font-semibold flex items-center justify-center`}>{currentUser.name.substring(0, 2).toUpperCase()}</span>
-    );
+  const meUser = members.find((u) => u.username.toLowerCase() === currentUser.username.toLowerCase());
+  const myAvatar = (size: string) => (
+    <WithGapBadge show={!!meUser?.hasGapBadge} size="sm">
+      {meUser?.avatarUrl ? (
+        <img src={meUser.avatarUrl} alt="" className={`${size} rounded-full object-cover border border-amber-500/50`} referrerPolicy="no-referrer" />
+      ) : (
+        <span className={`${size} rounded-full bg-slate text-zinc-100 text-xs font-semibold flex items-center justify-center`}>{currentUser.name.substring(0, 2).toUpperCase()}</span>
+      )}
+    </WithGapBadge>
+  );
 
   return (
     <div className="min-h-screen min-h-[100dvh] bg-zinc-950 text-zinc-100 font-sans selection:bg-amber-500 selection:text-zinc-950 flex flex-col">
@@ -652,7 +676,7 @@ export default function App() {
                 reviews={reviews}
                 sealed={sealedNightIds.has(night.id)}
                 overviews={overviews}
-                users={clubUsers}
+                users={members}
                 currentUser={currentUser}
                 canGoBack={pages.length > 1}
                 onClose={closePage}
@@ -661,7 +685,7 @@ export default function App() {
               />
             );
           }
-          const member = clubUsers.find((u) => u.name.toLowerCase() === page.name.toLowerCase());
+          const member = members.find((u) => u.name.toLowerCase() === page.name.toLowerCase());
           if (!member) return null;
           return (
             <MemberPage
@@ -831,6 +855,8 @@ export default function App() {
                       nights={nights}
                       reviews={reviews}
                       currentUser={currentUser}
+                      missedNights={meUser?.missedNights || []}
+                      onSetMissed={handleSetMissed}
                       onAddReview={handleAddReview}
                       onOpenFilm={openFilm}
                     />
@@ -873,7 +899,7 @@ export default function App() {
                     </div>
 
                     {/* Group Statistics Dashboard */}
-                    <GroupStatistics nights={nights} reviews={openReviews} users={clubUsers} onOpenMember={openMember} />
+                    <GroupStatistics nights={nights} reviews={openReviews} users={members} onOpenMember={openMember} />
 
                     <p className="text-sm leading-relaxed text-zinc-500 max-w-2xl">
                       Every second Friday at 7 pm. Hosting rotates through all six of us, the host picks the film, and Ash writes the recap the next day.

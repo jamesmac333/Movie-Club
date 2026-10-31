@@ -317,6 +317,29 @@ async function startServer() {
     }
   });
 
+  // Fill in the gaps: a member marks a lost night they weren't at, or takes that back
+  app.post("/api/me/missed-nights", async (req, res) => {
+    const { nightId, missed } = req.body || {};
+    if (typeof nightId !== "string" || typeof missed !== "boolean") {
+      return res.status(400).json({ error: "Missing night" });
+    }
+    try {
+      const result = await mutateDb((db) => {
+        const night = db.nights.find((n) => n.id === nightId);
+        if (!night || !isBeforeDataLoss(night.date)) return null;
+        const me = db.users.find((u) => u.username.toLowerCase() === req.authUser!.username.toLowerCase());
+        if (!me) return null;
+        const others = (me.missedNights || []).filter((id) => id !== nightId && db.nights.some((n) => n.id === id));
+        me.missedNights = missed ? [...others, nightId] : others;
+        return me.missedNights;
+      });
+      if (!result) return res.status(404).json({ error: "That night can't be marked" });
+      res.json({ missedNights: result });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save" });
+    }
+  });
+
   // Auth: Update user avatar (manually loaded, no AI processing)
   app.put("/api/users/:username/avatar", async (req, res) => {
     const { username } = req.params;

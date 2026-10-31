@@ -81,3 +81,19 @@ export function memberSummary<N extends NightLike, R extends ReviewLike>(nights:
     versusClub: average(compared),
   };
 }
+
+// Fill in the gaps: a lost night is done once the member has rated it and written a few words,
+// or said they weren't there
+export function gapFillProgress<N extends NightLike, R extends ReviewLike & { comment?: string }>(
+  nights: N[],
+  reviews: R[],
+  memberName: string,
+  missedNights: string[] = [],
+  lossDate: string
+) {
+  const lost = watchedFilms(nights).filter((n) => n.date.slice(0, 10) < lossDate);
+  const isDone = (n: N) =>
+    missedNights.includes(n.id) || reviews.some((r) => r.movieNightId === n.id && sameName(r.user, memberName) && !!r.comment?.trim());
+  const remaining = lost.filter((n) => !isDone(n));
+  return { total: lost.length, done: lost.length - remaining.length, remaining, complete: lost.length > 0 && remaining.length === 0 };
+}
