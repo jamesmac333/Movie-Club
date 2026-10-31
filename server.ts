@@ -17,6 +17,7 @@ import {
   getDbFilePath
 } from "./server/db.ts";
 import { fetchMovieMetadata } from "./server/gemini.ts";
+import { isBeforeDataLoss } from "./src/dataLoss.ts";
 import { authenticate, calendarKey, createToken, clientAddress, loginRetryMinutes, recordLoginFailure, recordLoginSuccess } from "./server/auth.ts";
 import { hashPassword, verifyPassword } from "./server/passwords.ts";
 import { buildClubCalendar } from "./server/calendar.ts";
@@ -645,8 +646,16 @@ async function startServer() {
   app.post("/api/reviews", async (req, res) => {
     const { movieNightId, user, rating, comment } = req.body;
 
-    if (!movieNightId || !user || rating === undefined || rating === null || !comment) {
-      return res.status(400).json({ error: "Missing review fields (movieNightId, user, rating, comment)" });
+    if (!movieNightId || !user || rating === undefined || rating === null) {
+      return res.status(400).json({ error: "Missing review fields (movieNightId, user, rating)" });
+    }
+    if (!(Number(rating) >= 0.5 && Number(rating) <= 5)) {
+      return res.status(400).json({ error: "Ratings go from half a star to 5 stars." });
+    }
+    // Nights from before the data loss can be re-rated from memory without words
+    const reviewedNight = readDb().nights.find((n) => n.id === movieNightId);
+    if (!String(comment || "").trim() && !(reviewedNight && isBeforeDataLoss(reviewedNight.date))) {
+      return res.status(400).json({ error: "Add a few words about it." });
     }
 
     try {
@@ -665,7 +674,7 @@ async function startServer() {
         if (existingIndex !== -1) {
           // Update the user's review in place
           db.reviews[existingIndex].rating = numericRating;
-          db.reviews[existingIndex].comment = String(comment).trim();
+          db.reviews[existingIndex].comment = String(comment || "").trim();
           db.reviews[existingIndex].createdAt = nowIso;
           savedReview = db.reviews[existingIndex];
         } else {
@@ -675,7 +684,7 @@ async function startServer() {
             movieNightId,
             user: cleanUser,
             rating: numericRating,
-            comment: String(comment).trim(),
+            comment: String(comment || "").trim(),
             createdAt: nowIso
           };
           db.reviews.push(savedReview);
@@ -712,8 +721,8 @@ async function startServer() {
     const { id } = req.params;
     const { rating, comment, requester, requesterName } = req.body;
 
-    if (rating === undefined || !comment) {
-      return res.status(400).json({ error: "Missing comment or rating" });
+    if (!(Number(rating) >= 0.5 && Number(rating) <= 5)) {
+      return res.status(400).json({ error: "Ratings go from half a star to 5 stars." });
     }
 
     try {
@@ -731,8 +740,13 @@ async function startServer() {
           throw new Error("UNAUTHORIZED");
         }
 
+        const night = db.nights.find((n) => n.id === review.movieNightId);
+        if (!String(comment || "").trim() && !(night && isBeforeDataLoss(night.date))) {
+          throw new Error("COMMENT_REQUIRED");
+        }
+
         db.reviews[index].rating = Number(rating);
-        db.reviews[index].comment = String(comment).trim();
+        db.reviews[index].comment = String(comment || "").trim();
         db.reviews[index].createdAt = new Date().toISOString();
 
         return { review: db.reviews[index], reviews: [...db.reviews] };
@@ -750,6 +764,9 @@ async function startServer() {
     } catch (error: any) {
       if (error?.message === "UNAUTHORIZED") {
         return res.status(403).json({ error: "Unauthorized. You can only edit your own reviews." });
+      }
+      if (error?.message === "COMMENT_REQUIRED") {
+        return res.status(400).json({ error: "Add a few words about it." });
       }
       res.status(500).json({ error: "Failed to edit review" });
     }

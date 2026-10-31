@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS } from "./types.ts";
 import { getSealedNightIds } from "./reviewSeal.ts";
 import LoginScreen from "./components/LoginScreen.tsx";
@@ -17,6 +17,10 @@ import { getToken, clearSession, getSavedUser, saveUser } from "./auth.ts";
 import JustWatchedCard from "./components/JustWatchedCard.tsx";
 import PaletteStrip from "./components/PaletteStrip.tsx";
 import HomeScreenHint from "./components/HomeScreenHint.tsx";
+import GapFillCard from "./components/GapFillCard.tsx";
+import FilmPage from "./components/FilmPage.tsx";
+import MemberPage from "./components/MemberPage.tsx";
+import OfflineNotice from "./components/OfflineNotice.tsx";
 import { CLUB_PALETTE } from "./palette.ts";
 
 export default function App() {
@@ -35,6 +39,13 @@ export default function App() {
     () => reviews.filter((r) => r.user === currentUser?.name || !sealedNightIds.has(r.movieNightId)),
     [reviews, currentUser, sealedNightIds]
   );
+
+  // Film and member pages open over the current tab; opening one from another stacks them
+  type Page = { type: "film"; id: string } | { type: "member"; name: string };
+  const [pages, setPages] = useState<Page[]>([]);
+  const openFilm = (id: string) => setPages((prev) => [...prev, { type: "film", id }]);
+  const openMember = (name: string) => setPages((prev) => [...prev, { type: "member", name }]);
+  const closePage = useCallback(() => setPages((prev) => prev.slice(0, -1)), []);
 
   // App navigation state: 'landing' | 'calendar' | 'feed' | 'writer'
   const [activeTab, setActiveTab] = useState<string>("landing");
@@ -229,6 +240,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    setPages([]);
     setCurrentUser(null);
     clearSession();
   };
@@ -626,6 +638,47 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {(() => {
+          const page = pages[pages.length - 1];
+          if (!page) return null;
+          if (page.type === "film") {
+            const night = nights.find((n) => n.id === page.id && n.movie);
+            if (!night) return null;
+            return (
+              <FilmPage
+                night={night}
+                reviews={reviews}
+                sealed={sealedNightIds.has(night.id)}
+                overviews={overviews}
+                users={clubUsers}
+                currentUser={currentUser}
+                canGoBack={pages.length > 1}
+                onClose={closePage}
+                onOpenMember={openMember}
+                onAddReview={handleAddReview}
+              />
+            );
+          }
+          const member = clubUsers.find((u) => u.name.toLowerCase() === page.name.toLowerCase());
+          if (!member) return null;
+          return (
+            <MemberPage
+              member={member}
+              nights={nights}
+              reviews={openReviews}
+              isSelf={member.username.toLowerCase() === currentUser.username.toLowerCase()}
+              canGoBack={pages.length > 1}
+              onClose={closePage}
+              onOpenFilm={openFilm}
+              onOpenSettings={() => setShowProfileSettings(true)}
+            />
+          );
+        })()}
+      </AnimatePresence>
+
+      <OfflineNotice />
       
       {/* DESKTOP TOP NAVIGATION */}
       <header className="hidden md:block sticky top-0 z-30 bg-ink-deep/95 backdrop-blur-md border-b border-zinc-800">
@@ -652,9 +705,9 @@ export default function App() {
           </nav>
           <button
             type="button"
-            onClick={() => setShowProfileSettings(true)}
+            onClick={() => openMember(currentUser.name)}
             className="flex items-center gap-3 h-11 pl-1 pr-4 rounded-full hover:bg-zinc-900 cursor-pointer"
-            aria-label="Your profile and settings"
+            aria-label="Your page"
           >
             {myAvatar("w-9 h-9")}
             <span className="text-sm text-zinc-200">{currentUser.name.split(" ")[0]}</span>
@@ -688,7 +741,7 @@ export default function App() {
             >
               <LogOut className="w-5 h-5" />
             </button>
-            <button type="button" onClick={() => setShowProfileSettings(true)} aria-label="Your profile and settings" className="cursor-pointer">
+            <button type="button" onClick={() => openMember(currentUser.name)} aria-label="Your page" className="cursor-pointer">
               {myAvatar("w-11 h-11")}
             </button>
           </div>
@@ -708,7 +761,7 @@ export default function App() {
             <button
               key={item.id}
               type="button"
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => { setPages([]); setActiveTab(item.id); }}
               aria-current={on ? "page" : undefined}
               className={`flex-1 min-h-14 flex flex-col items-center justify-center gap-1 text-[11px] font-medium cursor-pointer ${on ? "text-amber-500" : "text-zinc-400"}`}
             >
@@ -719,7 +772,7 @@ export default function App() {
         })}
         <button
           type="button"
-          onClick={() => setShowProfileSettings(true)}
+          onClick={() => openMember(currentUser.name)}
           className="flex-1 min-h-14 flex flex-col items-center justify-center gap-1 text-[11px] font-medium text-zinc-400 cursor-pointer"
         >
           <UserIcon className="w-[22px] h-[22px]" />
@@ -774,6 +827,13 @@ export default function App() {
                       currentUser={currentUser}
                       onAddReview={handleAddReview}
                     />
+                    <GapFillCard
+                      nights={nights}
+                      reviews={reviews}
+                      currentUser={currentUser}
+                      onAddReview={handleAddReview}
+                      onOpenFilm={openFilm}
+                    />
                     <NextMovieHero 
                       nights={nights} 
                       currentUser={currentUser} 
@@ -808,11 +868,12 @@ export default function App() {
                       onOpenRecapModal={(overview, night) => setNewRecapAlert({ overview, night })}
                       onUpdateOverviewImage={handleUpdateOverviewImage}
                       onDeleteOverviewImage={handleDeleteOverviewImage}
+                      onOpenFilm={openFilm}
                     />
                     </div>
 
                     {/* Group Statistics Dashboard */}
-                    <GroupStatistics nights={nights} reviews={openReviews} users={clubUsers} />
+                    <GroupStatistics nights={nights} reviews={openReviews} users={clubUsers} onOpenMember={openMember} />
 
                     <p className="text-sm leading-relaxed text-zinc-500 max-w-2xl">
                       Every second Friday at 7 pm. Hosting rotates through all six of us, the host picks the film, and Ash writes the recap the next day.
@@ -850,6 +911,7 @@ export default function App() {
                     onOpenRecapModal={(overview, night) => setNewRecapAlert({ overview, night })}
                     onUpdateOverviewImage={handleUpdateOverviewImage}
                     onDeleteOverviewImage={handleDeleteOverviewImage}
+                    onOpenFilm={openFilm}
                   />
                 )}
 

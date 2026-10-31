@@ -6,14 +6,17 @@ import { MovieNight } from "../types.ts";
 interface ReviewSheetProps {
   night: MovieNight;
   initialRating?: number;
+  initialComment?: string;
+  // Older nights can be rated from memory without words
+  commentOptional?: boolean;
   onSubmit: (rating: number, comment: string) => Promise<void>;
   onClose: () => void;
 }
 
 // Slide-up panel for writing a review: big tappable stars (with halves) and a comment box
-export default function ReviewSheet({ night, initialRating = 0, onSubmit, onClose }: ReviewSheetProps) {
+export default function ReviewSheet({ night, initialRating = 0, initialComment = "", commentOptional = false, onSubmit, onClose }: ReviewSheetProps) {
   const [rating, setRating] = useState(initialRating);
-  const [comment, setComment] = useState("");
+  const [comment, setComment] = useState(initialComment);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const title = night.movie?.title || "this film";
@@ -25,7 +28,7 @@ export default function ReviewSheet({ night, initialRating = 0, onSubmit, onClos
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rating) return setError("Tap the stars to give it a rating.");
-    if (!comment.trim()) return setError("Add a few words about it.");
+    if (!comment.trim() && !commentOptional) return setError("Add a few words about it.");
     setSaving(true);
     setError("");
     try {
@@ -95,13 +98,13 @@ export default function ReviewSheet({ night, initialRating = 0, onSubmit, onClos
         </fieldset>
 
         <div className="flex flex-col gap-2">
-          <label htmlFor="review-comment" className="slate text-zinc-400">What did you think?</label>
+          <label htmlFor="review-comment" className="slate text-zinc-400">What did you think?{commentOptional && <span className="normal-case tracking-normal font-normal text-zinc-500"> · optional</span>}</label>
           <textarea
             id="review-comment"
             rows={6}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="The bit that got you, the bit that didn't…"
+            placeholder={commentOptional ? "Whatever you remember, or leave it blank" : "The bit that got you, the bit that didn't…"}
             className="rounded-2xl border border-zinc-700 bg-zinc-950 text-zinc-100 text-base leading-relaxed p-4 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
         </div>
