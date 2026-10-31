@@ -87,19 +87,6 @@ test("films from before the data loss can be rated with stars only; newer ones n
   assert.equal((await fetch(`${BASE}/api/reviews`, json({ movieNightId: "night-2", rating: 9, comment: "x" }, amy))).status, 400);
 });
 
-test("members can mark lost nights they weren't at, and everyone can see it", async () => {
-  const tom = await login("Tom");
-  const mark = (nightId: string, missed: boolean) => fetch(`${BASE}/api/me/missed-nights`, json({ nightId, missed }, tom));
-  assert.equal((await mark("night-1", true)).status, 200);
-  assert.equal((await mark("night-3", true)).status, 404); // only nights from before the data loss
-  assert.equal((await fetch(`${BASE}/api/me/missed-nights`, json({ nightId: "night-1", missed: true }))).status, 401);
-  let users = await (await fetch(`${BASE}/api/users`)).json();
-  assert.deepEqual(users.find((u: { username: string }) => u.username === "Tom").missedNights, ["night-1"]);
-  assert.equal((await mark("night-1", false)).status, 200);
-  users = await (await fetch(`${BASE}/api/users`)).json();
-  assert.deepEqual(users.find((u: { username: string }) => u.username === "Tom").missedNights, []);
-});
-
 test("repeated wrong passwords are blocked", async () => {
   for (let i = 0; i < 5; i++) {
     assert.equal((await fetch(`${BASE}/api/auth/login`, json({ username: "Amy", password: "wrong" }))).status, 401);

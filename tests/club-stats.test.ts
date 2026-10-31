@@ -54,19 +54,24 @@ test("nights before 14 October 2026 count as lost in the data loss", () => {
   assert.equal(isBeforeDataLoss("2026-10-14T06:00:00.000Z"), false);
 });
 
-test("Fill in the gaps counts a lost night as done once it has stars and words, or was missed", () => {
+test("Fill in the gaps counts a lost night as done once it has stars and words", () => {
   const lostNights = [...nights, { id: "e", date: "2026-10-20T07:00:00Z", selector: "Max Smith", status: "watched", movie: film("After the loss") }];
   const withWords = [
     { movieNightId: "a", user: "Amy Walsh", rating: 3, comment: "Tense." },
     { movieNightId: "b", user: "Amy Walsh", rating: 4, comment: "  " },
   ];
-  const p = gapFillProgress(lostNights, withWords, "Amy Walsh", [], "2026-10-14");
+  const p = gapFillProgress(lostNights, withWords, "Amy Walsh", "2026-10-14");
   assert.equal(p.total, 3); // the scheduled night and the night after the loss don't count
   assert.equal(p.done, 1); // stars without words isn't finished yet
   assert.deepEqual(p.remaining.map((n) => n.id), ["b", "c"]);
   assert.equal(p.complete, false);
 
-  const finished = gapFillProgress(lostNights, [...withWords, { movieNightId: "b", user: "Amy Walsh", rating: 4, comment: "Lovely." }], "Amy Walsh", ["c"], "2026-10-14");
+  const finished = gapFillProgress(
+    lostNights,
+    [...withWords, { movieNightId: "b", user: "Amy Walsh", rating: 4, comment: "Lovely." }, { movieNightId: "c", user: "Amy Walsh", rating: 5, comment: "Best yet." }],
+    "Amy Walsh",
+    "2026-10-14"
+  );
   assert.equal(finished.done, 3);
   assert.equal(finished.complete, true);
 });

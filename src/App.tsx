@@ -45,20 +45,9 @@ export default function App() {
 
   // Members who've filled in every lost night get a badge on their photo
   const members = useMemo(
-    () => clubUsers.map((u) => ({ ...u, hasGapBadge: gapFillProgress(nights, reviews, u.name, u.missedNights, DATA_LOSS_DATE).complete })),
+    () => clubUsers.map((u) => ({ ...u, hasGapBadge: gapFillProgress(nights, reviews, u.name, DATA_LOSS_DATE).complete })),
     [clubUsers, nights, reviews]
   );
-
-  const handleSetMissed = async (nightId: string, missed: boolean) => {
-    const response = await fetch("/api/me/missed-nights", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nightId, missed })
-    });
-    if (!response.ok) throw new Error("Failed to save");
-    const { missedNights } = await response.json();
-    setClubUsers((prev) => prev.map((u) => (u.username.toLowerCase() === currentUser?.username.toLowerCase() ? { ...u, missedNights } : u)));
-  };
 
   // Film and member pages open over the current tab; opening one from another stacks them
   type Page = { type: "film"; id: string } | { type: "member"; name: string };
@@ -110,7 +99,6 @@ export default function App() {
             ...staticUser,
             isAdmin: dbUser?.isAdmin !== undefined ? dbUser.isAdmin : staticUser.isAdmin,
             isAsh: dbUser?.isAsh !== undefined ? dbUser.isAsh : staticUser.isAsh,
-            missedNights: dbUser?.missedNights || [],
             // The server's ?v= fingerprint changes when the photo changes, so it is safe to cache
             avatarUrl: hasValidCustomAvatar ? dbAvatar : staticUser.avatarUrl
           };
@@ -855,8 +843,6 @@ export default function App() {
                       nights={nights}
                       reviews={reviews}
                       currentUser={currentUser}
-                      missedNights={meUser?.missedNights || []}
-                      onSetMissed={handleSetMissed}
                       onAddReview={handleAddReview}
                       onOpenFilm={openFilm}
                     />

@@ -63,8 +63,6 @@ export interface User {
   isAdmin: boolean;
   isAsh: boolean;
   avatarUrl?: string;
-  // Lost nights from before the data loss this member wasn't at
-  missedNights?: string[];
   // Worked out in the app: has filled in every night lost in the data loss
   hasGapBadge?: boolean;
 }

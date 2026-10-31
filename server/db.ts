@@ -69,8 +69,6 @@ export interface UserWithPassword extends User {
   password?: string;
   // Film picks this member has seen the pop-up for: night id → film title
   seenPicks?: Record<string, string>;
-  // Nights from before the data loss this member says they weren't at (shown to everyone)
-  missedNights?: string[];
 }
 
 export interface DatabaseSchema {
