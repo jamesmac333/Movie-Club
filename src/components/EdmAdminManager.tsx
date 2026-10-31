@@ -358,7 +358,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
           </button>
         </div>
 
-        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+        <div className="space-y-2 max-h-56 overflow-y-auto overflow-x-hidden pr-1">
           {logs.length === 0 ? (
             <p className="text-xs text-zinc-500 italic py-3 text-center">
               No EDMs dispatched yet. Trigger one with the test button or by choosing a movie!
@@ -374,7 +374,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
                   key={log.id}
                   className="bg-zinc-950/70 border border-zinc-800/70 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs"
                 >
-                  <div className="flex items-start gap-2.5 min-w-0">
+                  <div className="flex items-start gap-2.5 min-w-0 w-full sm:w-auto sm:flex-1">
                     <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 sm:mt-0 ${
                       isOverview 
                         ? "bg-amber-500/10 text-amber-400" 
@@ -390,9 +390,9 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
                         <CheckCircle2 className="w-3.5 h-3.5" />
                       )}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-zinc-200 truncate">
+                        <span className="font-semibold text-zinc-200 min-w-0 break-words [overflow-wrap:anywhere]">
                           {log.subject}
                         </span>
                         <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold uppercase ${
