@@ -83,161 +83,64 @@ export default function GroupStatistics({ nights, reviews, users = [] }: GroupSt
     return found?.avatarUrl;
   };
 
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const stats = [
+    { value: String(totalWatched), label: "Nights watched", icon: Film },
+    { value: `${hours}h ${minutes}m`, label: "Screen time", icon: Clock },
+    { value: avgRating === "N/A" ? "—" : `★ ${Number(avgRating).toFixed(1)}`, label: totalReviews ? `Average of ${totalReviews} review${totalReviews === 1 ? "" : "s"}` : "Average rating", icon: Star },
+    { value: favoriteGenre, label: "Top genre", icon: Flame }
+  ];
+
   return (
-    <motion.div 
+    <motion.section
+      aria-labelledby="club-stats"
       initial={{ opacity: 0, y: 35 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
-      className="bg-[#fcfcfc] border border-zinc-200/80 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm"
+      className="space-y-4"
     >
-      {/* Header */}
-      <div className="border-b border-zinc-200/80 pb-5">
-        <span className="text-[10px] font-mono text-amber-600 uppercase tracking-widest flex items-center gap-1 mb-1">
-          <Trophy className="w-3.5 h-3.5" /> Club Insights
-        </span>
-        <h3 className="text-2xl font-serif text-zinc-900 font-bold tracking-tight">Movie Club Statistics</h3>
-        <p className="text-xs text-zinc-500 font-mono mt-0.5">Real-time performance metrics and records of our sessions</p>
+      <h2 id="club-stats" className="font-serif text-3xl text-zinc-50">Club stats</h2>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {stats.map(({ value, label, icon: Icon }) => (
+          <div key={label} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-5 flex flex-col gap-2 min-w-0">
+            <Icon className="w-5 h-5 text-amber-500" aria-hidden="true" />
+            <p className="font-serif text-2xl sm:text-3xl text-zinc-50 leading-tight break-words">{value}</p>
+            <p className="slate text-zinc-400">{label}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Stat 1: Movies */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.35, delay: 0.05 }}
-          whileHover={{ y: -3, transition: { duration: 0.15 } }}
-          className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4 hover:border-zinc-300 transition-colors shadow-sm"
-        >
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl shrink-0">
-            <Film className="w-5 h-5" />
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs text-zinc-400 font-mono uppercase tracking-wider block">Watched</span>
-            <div className="text-2xl font-bold font-mono text-zinc-900">{totalWatched}</div>
-            <span className="text-[10px] text-zinc-500 block font-sans">Movie sessions completed</span>
-          </div>
-        </motion.div>
-
-        {/* Stat 2: Hours */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.35, delay: 0.1 }}
-          whileHover={{ y: -3, transition: { duration: 0.15 } }}
-          className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4 hover:border-zinc-300 transition-colors shadow-sm"
-        >
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl shrink-0">
-            <Clock className="w-5 h-5" />
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs text-zinc-400 font-mono uppercase tracking-wider block">Screen Time</span>
-            <div className="text-2xl font-bold font-mono text-zinc-900">{totalHours}h</div>
-            <span className="text-[10px] text-zinc-500 block font-sans">Based on film runtimes</span>
-          </div>
-        </motion.div>
-
-        {/* Stat 3: Average Rating */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.35, delay: 0.15 }}
-          whileHover={{ y: -3, transition: { duration: 0.15 } }}
-          className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4 hover:border-zinc-300 transition-colors shadow-sm"
-        >
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl shrink-0">
-            <Star className="w-5 h-5 fill-amber-500/20" />
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs text-zinc-400 font-mono uppercase tracking-wider block">Avg Rating</span>
-            <div className="text-2xl font-bold font-mono text-zinc-900">
-              {avgRating} <span className="text-xs text-zinc-400">/ 5</span>
-            </div>
-            <span className="text-[10px] text-zinc-500 block font-sans">Calculated across {totalReviews} reviews</span>
-          </div>
-        </motion.div>
-
-        {/* Stat 4: Favourite Genre */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.35, delay: 0.2 }}
-          whileHover={{ y: -3, transition: { duration: 0.15 } }}
-          className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4 hover:border-zinc-300 transition-colors shadow-sm min-w-0"
-        >
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl shrink-0">
-            <Flame className="w-5 h-5" />
-          </div>
-          <div className="space-y-1 min-w-0">
-            <span className="text-xs text-zinc-400 font-mono uppercase tracking-wider block">Top Genre</span>
-            <div className="text-base font-bold text-zinc-900 break-words leading-tight" title={favoriteGenre}>
-              {favoriteGenre}
-            </div>
-            <span className="text-[10px] text-zinc-500 block font-sans">
-              {maxGenreCount > 0 ? `${maxGenreCount} films watched` : "No genre data"}
-            </span>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Starred Review Winner Section */}
-      <div className="bg-[#fcf8f2] border border-amber-100 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-5 shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-2xl">
-            <Trophy className="w-6 h-6" />
-          </div>
+      <div className="bg-amber-950 border border-amber-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Trophy className="w-6 h-6 text-amber-500 shrink-0" aria-hidden="true" />
           <div>
-            <h4 className="text-sm font-bold text-zinc-800 flex flex-wrap items-center gap-2">
-              Best Reviewer Award
-              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[9px] bg-amber-500/10 border border-amber-500/20 text-amber-700 font-mono rounded-full">
-                Ash's Starred Choice
-              </span>
-            </h4>
-            <p className="text-xs text-zinc-500 mt-1">
-              Calculated dynamically based on who has received the highest number of starred reviews.
-            </p>
+            <p className="font-serif text-xl text-zinc-50">Best reviewer</p>
+            <p className="text-sm text-zinc-400">Whoever has the most reviews starred by Ash</p>
           </div>
         </div>
-
-        <div className="shrink-0 flex items-center gap-3">
-          {maxStarredCount > 0 && bestReviewers.length > 0 ? (
-            <div className="flex items-center gap-3 bg-white border border-zinc-200/80 px-4 py-2.5 rounded-xl shadow-xs">
-              <div className="flex -space-x-2">
-                {bestReviewers.map((reviewer) => {
-                  const avatar = getReviewerAvatar(reviewer);
-                  return (
-                    <div key={reviewer} className="w-8 h-8 rounded-full overflow-hidden border border-white bg-zinc-100 flex items-center justify-center">
-                      {avatar ? (
-                        <img src={avatar} alt={reviewer} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-xs font-bold text-amber-600 uppercase">{reviewer.substring(0, 2)}</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <div>
-                <div className="text-xs font-bold text-zinc-800">
-                  {bestReviewers.join(" & ")}
-                </div>
-                <div className="text-[10px] text-zinc-500 font-mono flex items-center gap-1 mt-0.5">
-                  <Star className="w-3 h-3 text-amber-500 fill-amber-500/20" />
-                  <span>{maxStarredCount} Starred {maxStarredCount === 1 ? "Review" : "Reviews"}</span>
-                </div>
-              </div>
+        {maxStarredCount > 0 && bestReviewers.length > 0 ? (
+          <div className="flex items-center gap-3">
+            <div className="flex -space-x-2">
+              {bestReviewers.map((reviewer) => {
+                const avatar = getReviewerAvatar(reviewer);
+                return avatar ? (
+                  <img key={reviewer} src={avatar} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-amber-950" referrerPolicy="no-referrer" />
+                ) : (
+                  <span key={reviewer} className="w-10 h-10 rounded-full bg-slate text-zinc-100 text-xs font-semibold border-2 border-amber-950 flex items-center justify-center">{reviewer.substring(0, 2).toUpperCase()}</span>
+                );
+              })}
             </div>
-          ) : (
-            <div className="text-xs text-zinc-400 font-mono italic bg-white/40 border border-dashed border-zinc-200 px-4 py-2.5 rounded-xl">
-              No starred reviews yet. Ash has not starred any reviews.
+            <div>
+              <p className="text-base font-semibold text-zinc-100">{bestReviewers.map((r) => r.split(" ")[0]).join(" & ")}</p>
+              <p className="text-sm text-amber-500">★ {maxStarredCount} starred</p>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <p className="text-sm text-zinc-400">No starred reviews yet</p>
+        )}
       </div>
-    </motion.div>
+    </motion.section>
   );
 }

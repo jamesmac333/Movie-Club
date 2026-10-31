@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { MovieNight, Review, NightOverview, User, isAuthenticGatheringPhoto, isBeforeDataLoss } from "../types.ts";
 import { Calendar, Star, MessageSquare, Image as ImageIcon, Film, Heart, BookOpen, Maximize2, Camera, Upload, Trash2, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
+import PaletteStrip from "./PaletteStrip.tsx";
 
 interface PriorSessionRecapProps {
   nights: MovieNight[];
@@ -133,7 +134,7 @@ export default function PriorSessionRecap({
   if (!priorNight) {
     return (
       <div className="bg-zinc-900/5 border border-dashed border-zinc-900 rounded-3xl p-8 text-center space-y-2">
-        <Film className="w-8 h-8 text-zinc-700 mx-auto animate-pulse" />
+        <Film className="w-8 h-8 text-zinc-500 mx-auto animate-pulse" />
         <h4 className="text-sm font-semibold text-zinc-400 font-mono uppercase tracking-wider">No Prior Sessions Yet</h4>
         <p className="text-xs text-zinc-500 max-w-sm mx-auto leading-relaxed">
           Once we complete our first movie night and mark it as watched, its overview and member reviews will be highlighted here.
@@ -173,7 +174,7 @@ export default function PriorSessionRecap({
             <div key={idx} className="relative select-none" style={{ width: "12px", height: "12px" }}>
               <div className="absolute inset-0 pointer-events-none">
                 {/* Background empty star */}
-                <Star className="w-3 h-3 text-zinc-800" />
+                <Star className="w-3 h-3 text-zinc-200" />
                 
                 {/* Foreground filled/half-filled star */}
                 {isFullyFilled ? (
@@ -221,52 +222,44 @@ export default function PriorSessionRecap({
         <div className="lg:col-span-7 space-y-6">
           
           {/* Film banner widget */}
-          <div className="flex gap-4 items-start bg-[#080808] border border-zinc-900/80 p-4 rounded-2xl">
+          <div className="flex gap-4 items-end">
             {priorNight.movie!.posterUrl && (
               <img
                 src={priorNight.movie!.posterUrl}
-                alt={priorNight.movie!.title}
-                className="w-16 sm:w-20 rounded-lg object-cover border border-zinc-800 shrink-0"
+                alt={`${priorNight.movie!.title} poster`}
+                className="w-24 sm:w-28 aspect-[2/3] rounded-xl object-cover border border-zinc-700 shadow-[0_12px_28px_rgba(0,0,0,0.45)] shrink-0"
                 referrerPolicy="no-referrer"
               />
             )}
-            <div className="space-y-1">
-              <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest block">Watched Film</span>
-              <h4 className="text-lg font-serif font-bold text-zinc-100 italic">
-                "{priorNight.movie!.title}"
-                <span className="text-xs text-zinc-400 not-italic ml-1.5">({priorNight.movie!.year})</span>
-              </h4>
-              <p className="text-xs text-zinc-400 leading-normal font-sans">
-                Directed by <strong className="text-zinc-300">{priorNight.movie!.director}</strong> • {priorNight.movie!.genre}
-              </p>
-              <div className="text-[10px] text-zinc-500 font-mono pt-1">
-                📅 Watched on {formatNZTDate(priorNight.date)}
-              </div>
+            <div className="space-y-1 min-w-0 pb-1">
+              <span className="slate text-zinc-400 block">Last time · {formatNZTDate(priorNight.date)}</span>
+              <h4 className="text-2xl font-serif text-zinc-50 break-words">{priorNight.movie!.title}</h4>
+              <p className="text-sm text-zinc-400">{priorNight.selector.split(" ")[0]}'s pick · {priorNight.movie!.year}</p>
             </div>
           </div>
+          <PaletteStrip posterUrl={priorNight.movie!.posterUrl} className="h-2 rounded" />
 
           {/* Overview text content (Light/White Card with Dark Text for effortless reading) */}
           {overview ? (
-            <div className="space-y-3 bg-white text-zinc-900 border border-amber-200/90 rounded-2xl p-5 sm:p-6 shadow-md">
-              <div className="flex items-start justify-between gap-3 flex-wrap border-b border-zinc-200 pb-2.5">
+            <div className="space-y-3 bg-amber-950 text-zinc-100 border border-amber-800 rounded-2xl p-5 sm:p-6 shadow-md">
+              <div className="flex items-start justify-between gap-3 flex-wrap border-b border-amber-800 pb-2.5">
                 <div className="space-y-0.5">
-                  <span className="text-[10px] font-mono text-amber-800 font-bold uppercase tracking-wider block">Recap by {overview.author || "Ash Macintosh"}</span>
-                  <h5 className="text-lg font-serif font-bold text-zinc-900">{overview.title}</h5>
+                  <span className="text-[10px] font-mono text-amber-500 font-bold uppercase tracking-wider block">Recap by {overview.author || "Ash Macintosh"}</span>
+                  <h5 className="text-lg font-serif font-bold text-zinc-100">{overview.title}</h5>
                 </div>
-                {onOpenRecapModal && (
-                  <button
-                    onClick={() => onOpenRecapModal(overview, priorNight)}
-                    className="p-1.5 text-amber-800 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 rounded-lg border border-amber-300 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
-                    title="Read in Pop-up Window"
-                  >
-                    <BookOpen className="w-3.5 h-3.5 text-amber-700" />
-                    <span>Pop-up Window</span>
-                  </button>
-                )}
               </div>
-              <p className="text-zinc-800 text-sm sm:text-base leading-relaxed font-sans font-normal">
+              <p className="text-zinc-200 text-sm sm:text-base leading-relaxed font-sans font-normal line-clamp-4">
                 {overview.content}
               </p>
+              {onOpenRecapModal && (
+                <button
+                  type="button"
+                  onClick={() => onOpenRecapModal(overview, priorNight)}
+                  className="min-h-11 text-sm font-semibold text-amber-500 hover:text-amber-300 cursor-pointer"
+                >
+                  Read the full recap
+                </button>
+              )}
             </div>
           ) : (
             <div className="p-5 bg-zinc-900/10 border border-dashed border-zinc-900 rounded-2xl text-center">
@@ -281,12 +274,12 @@ export default function PriorSessionRecap({
                 <div className="space-y-2">
                   <div 
                     onClick={() => onOpenRecapModal && onOpenRecapModal(overview, priorNight)}
-                    className={`relative rounded-2xl overflow-hidden border border-zinc-900 max-h-72 bg-zinc-950 ${onOpenRecapModal ? 'cursor-pointer group hover:border-amber-500/50 transition-all' : ''}`}
+                    className={`relative letterbox rounded-2xl overflow-hidden border border-zinc-800 ${onOpenRecapModal ? 'cursor-pointer group hover:border-amber-500/50 transition-all' : ''}`}
                   >
                     <img
                       src={overview.imageUrl}
-                      alt="Movie Night Gathering Memory"
-                      className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-300"
+                      alt="Movie Club friends at the gathering"
+                      className="group-hover:scale-[1.01] transition-transform duration-300"
                       referrerPolicy="no-referrer"
                     />
                     <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md text-zinc-300 border border-zinc-800 rounded px-2.5 py-1 text-[10px] font-mono flex items-center gap-1.5">
@@ -311,9 +304,9 @@ export default function PriorSessionRecap({
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={uploading}
-                          className="text-xs font-mono text-amber-800 hover:text-amber-950 font-semibold px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          className="text-xs font-mono text-amber-500 hover:text-amber-950 font-semibold px-2.5 py-1 rounded-lg bg-amber-900/40 hover:bg-amber-900/70 border border-amber-800 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                         >
-                          {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3 text-amber-700" />}
+                          {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3 text-amber-500" />}
                           <span>Change Photo</span>
                         </button>
                         <button
@@ -372,16 +365,16 @@ export default function PriorSessionRecap({
 
           {nightReviews.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#080808] border border-zinc-900 rounded-2xl text-center space-y-1.5 my-auto">
-              <Heart className="w-5 h-5 text-zinc-800" />
+              <Heart className="w-5 h-5 text-zinc-200" />
               {isBeforeDataLoss(priorNight.date) ? (
                 <>
                   <p className="text-xs text-zinc-500 font-sans italic">The original reviews for this night were lost.</p>
-                  <p className="text-[10px] text-zinc-600">Google AI Studio wiped the club database on 14 October 2026. If you remember yours, add it again in the "Memories" tab.</p>
+                  <p className="text-[10px] text-zinc-400">Google AI Studio wiped the club database on 14 October 2026. If you remember yours, add it again in the "Memories" tab.</p>
                 </>
               ) : (
                 <>
                   <p className="text-xs text-zinc-500 font-sans italic">No member reviews submitted yet.</p>
-                  <p className="text-[10px] text-zinc-600">Reviewers can submit their memories in the "Memories" tab!</p>
+                  <p className="text-[10px] text-zinc-400">Reviewers can submit their memories in the "Memories" tab!</p>
                 </>
               )}
             </div>

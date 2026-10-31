@@ -10,9 +10,12 @@ import PriorSessionRecap from "./components/PriorSessionRecap.tsx";
 import GroupStatistics from "./components/GroupStatistics.tsx";
 import SelectionAlertModal from "./components/SelectionAlertModal.tsx";
 import RecapAlertModal from "./components/RecapAlertModal.tsx";
-import { Film, Calendar, Compass, BookOpen, Sparkles, Clapperboard, Heart, KeyRound, LogOut, ShieldCheck, User as UserIcon, Home, Mail } from "lucide-react";
+import { Film, Calendar, Compass, BookOpen, Sparkles, Clapperboard, Heart, KeyRound, LogOut, ShieldCheck, User as UserIcon, Home, Mail, PenLine } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useSpring } from "motion/react";
 import { getToken, clearSession } from "./auth.ts";
+import JustWatchedCard from "./components/JustWatchedCard.tsx";
+import PaletteStrip from "./components/PaletteStrip.tsx";
+import { CLUB_PALETTE } from "./palette.ts";
 
 export default function App() {
   const [nights, setNights] = useState<MovieNight[]>([]);
@@ -655,12 +658,27 @@ export default function App() {
     }
   };
 
+  const navItems = [
+    { id: "landing", label: "Home", icon: Home },
+    { id: "calendar", label: "Schedule", icon: Calendar },
+    { id: "feed", label: "Memories", icon: Heart },
+    ...(canManageRecaps ? [{ id: "writer", label: "Write", icon: PenLine }] : [])
+  ];
+
   if (!currentUser) {
     return <LoginScreen onLoginSuccess={handleLogin} />;
   }
 
+  const meUser = clubUsers.find((u) => u.username.toLowerCase() === currentUser.username.toLowerCase());
+  const myAvatar = (size: string) =>
+    meUser?.avatarUrl ? (
+      <img src={meUser.avatarUrl} alt="" className={`${size} rounded-full object-cover border border-amber-500/50`} referrerPolicy="no-referrer" />
+    ) : (
+      <span className={`${size} rounded-full bg-slate text-zinc-100 text-xs font-semibold flex items-center justify-center`}>{currentUser.name.substring(0, 2).toUpperCase()}</span>
+    );
+
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#080808] text-zinc-100 font-sans selection:bg-amber-500 selection:text-zinc-950 flex flex-col md:flex-row">
+    <div className="min-h-screen min-h-[100dvh] bg-zinc-950 text-zinc-100 font-sans selection:bg-amber-500 selection:text-zinc-950 flex flex-col">
       <AnimatePresence>
         {showProfileSettings && (
           <UserProfileModal 
@@ -689,266 +707,108 @@ export default function App() {
         )}
       </AnimatePresence>
       
-      {/* LEFT SIDEBAR - Desktop only */}
-      <aside className="hidden md:flex w-[280px] bg-[#0c0c0c] border-r border-zinc-800/40 flex-col h-screen sticky top-0 overflow-y-auto shrink-0 z-30 justify-between">
-        <div className="flex flex-col">
-          <div className="p-8 pb-4">
-            <h1 
-              className="text-2xl font-serif tracking-widest text-amber-500 italic cursor-pointer font-bold select-none hover:opacity-90 transition-opacity" 
-              onClick={() => setActiveTab("landing")}
-            >
-              MOVIE CLUB
-            </h1>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mt-1">Fortnightly • NZT 19:00</p>
-          </div>
-          
-          <div className="px-8 mt-8">
-            <h2 className="text-xs uppercase tracking-widest text-zinc-400 mb-4 border-b border-zinc-800/80 pb-2 font-mono">Upcoming Rotation</h2>
-            <ul className="space-y-4">
-              {sortedNightsForRotation.filter(n => n.status === "scheduled").length > 0 ? (
-                sortedNightsForRotation.filter(n => n.status === "scheduled").slice(0, 6).map((night) => {
-                  const isNext = nextUpcomingNight && nextUpcomingNight.id === night.id;
-                  const u = clubUsers.find(
-                    user => user.username.toLowerCase() === night.selector.toLowerCase() ||
-                            user.name.toLowerCase() === night.selector.toLowerCase()
-                  );
-                  return (
-                    <li key={night.id} className="flex items-center gap-3 transition-all">
-                      {u?.avatarUrl ? (
-                        <img 
-                          src={u.avatarUrl} 
-                          alt={night.selector}
-                          className={`w-6 h-6 rounded-full object-cover shrink-0 ${
-                            isNext ? 'border border-amber-500/80 shadow-[0_0_6px_rgba(245,158,11,0.3)]' : 'border border-zinc-800'
-                          }`}
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                          isNext 
-                            ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]' 
-                            : 'bg-zinc-600'
-                        }`} />
-                      )}
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="text-[10px] text-zinc-500 font-mono">{formatNZTMonthDay(night.date)}</span>
-                        <span className={`text-xs truncate ${isNext ? 'font-semibold text-zinc-100' : 'text-zinc-400'}`}>{night.selector}</span>
-                      </div>
-                      {isNext && (
-                        <span className="ml-auto text-[9px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded font-mono">Next</span>
-                      )}
-                    </li>
-                  );
-                })
-              ) : (
-                <p className="text-xs text-zinc-600 italic">No schedules loaded...</p>
-              )}
-            </ul>
-          </div>
-        </div>
-
-        <div className="p-6 bg-[#0a0a0a] border-t border-zinc-900/60 flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            {(() => {
-              const u = clubUsers.find(
-                user => user.username.toLowerCase() === currentUser.username.toLowerCase() ||
-                        user.name.toLowerCase() === currentUser.name.toLowerCase()
-              );
-              return u?.avatarUrl ? (
-                <img 
-                  src={u.avatarUrl} 
-                  alt={currentUser.name} 
-                  className="w-9 h-9 rounded-full object-cover border border-amber-500/30"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-zinc-800 border border-zinc-700/50 flex items-center justify-center text-xs font-bold text-amber-500 uppercase">
-                  {currentUser.name.substring(0, 2)}
-                </div>
-              );
-            })()}
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold text-zinc-100 truncate">{currentUser.name}</span>
-              <span className="text-[9px] text-zinc-500 uppercase tracking-tighter">
-                {currentUser.username === "Ash" ? "Night Writer & Admin" : currentUser.isAdmin ? "Admin" : "Club Member"}
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <button
-              onClick={() => setShowProfileSettings(true)}
-              className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-amber-400 border border-zinc-800 hover:border-amber-500/30 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              {currentUser.isAdmin ? (
-                <>
-                  <Mail className="w-3.5 h-3.5 text-amber-500" />
-                  Admin & EDM Settings
-                </>
-              ) : (
-                <>
-                  <KeyRound className="w-3.5 h-3.5 text-amber-500/80" />
-                  Reset Password / Profile
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleLogout}
-              className="w-full py-2 bg-zinc-950 hover:bg-red-950/40 hover:text-red-400 text-zinc-400 hover:border-red-900/40 border border-zinc-900 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* RIGHT MAIN PANEL */}
-      <div className="flex-1 flex flex-col min-h-screen relative pb-20 md:pb-8">
-        
-        {/* DESKTOP STICKY HEADER NAV */}
-        <header className="hidden md:flex items-center justify-between px-12 py-6 border-b border-zinc-900/40 bg-[#080808]/75 backdrop-blur-md sticky top-0 z-20">
-          {/* Scroll progress indicator line */}
-          <motion.div 
-            className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 origin-left"
-            style={{ scaleX }}
-          />
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-500 font-mono">
-              {activeTab === "landing" ? "Home" : activeTab === "calendar" ? "Full Schedule" : activeTab === "feed" ? "Memories & Feed" : "Night Writer Recap"}
-            </span>
-          </div>
-          <div className="flex gap-8 items-center">
-            <button 
-              onClick={() => setActiveTab("landing")} 
-              className={`text-[11px] uppercase tracking-widest hover:text-white transition-all cursor-pointer ${
-                activeTab === "landing" 
-                  ? "text-amber-500 font-bold underline underline-offset-8 decoration-amber-500" 
-                  : "text-zinc-400"
-              }`}
-            >
-              Home
-            </button>
-            <button 
-              onClick={() => setActiveTab("calendar")} 
-              className={`text-[11px] uppercase tracking-widest hover:text-white transition-all cursor-pointer ${
-                activeTab === "calendar" 
-                  ? "text-amber-500 font-bold underline underline-offset-8 decoration-amber-500" 
-                  : "text-zinc-400"
-              }`}
-            >
-              Schedule
-            </button>
-            <button 
-              onClick={() => setActiveTab("feed")} 
-              className={`text-[11px] uppercase tracking-widest hover:text-white transition-all cursor-pointer ${
-                activeTab === "feed" 
-                  ? "text-amber-500 font-bold underline underline-offset-8 decoration-amber-500" 
-                  : "text-zinc-400"
-              }`}
-            >
-              Memories
-            </button>
-            {canManageRecaps && (
-              <button 
-                onClick={() => setActiveTab("writer")} 
-                className={`text-[11px] uppercase tracking-widest hover:text-white transition-all cursor-pointer ${
-                  activeTab === "writer" 
-                    ? "text-amber-500 font-bold underline underline-offset-8 decoration-amber-500" 
-                    : "text-zinc-400"
+      {/* DESKTOP TOP NAVIGATION */}
+      <header className="hidden md:block sticky top-0 z-30 bg-ink-deep/95 backdrop-blur-md border-b border-zinc-800">
+        <motion.div className="absolute bottom-0 left-0 right-0 h-[2px] bg-amber-500 origin-left" style={{ scaleX }} />
+        <div className="max-w-6xl mx-auto h-20 px-8 flex items-center gap-10">
+          <button type="button" onClick={() => setActiveTab("landing")} className="flex flex-col gap-1.5 text-left cursor-pointer">
+            <span className="font-serif text-3xl leading-none text-zinc-100">Movie Club</span>
+            <PaletteStrip colors={CLUB_PALETTE} className="h-1 w-36 rounded-full" />
+          </button>
+          <nav aria-label="Main" className="flex gap-1 flex-1">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveTab(item.id)}
+                aria-current={activeTab === item.id ? "page" : undefined}
+                className={`h-11 px-4 rounded-xl text-[15px] font-medium cursor-pointer transition-colors ${
+                  activeTab === item.id ? "bg-zinc-900 text-amber-500" : "text-zinc-400 hover:text-zinc-100"
                 }`}
-                title="Manage and publish session recaps & gathering photos"
               >
-                {isAsh ? "Night Writer" : "Recaps & Photos"}
+                {item.label}
               </button>
-            )}
-          </div>
-        </header>
+            ))}
+          </nav>
+          <button
+            type="button"
+            onClick={() => setShowProfileSettings(true)}
+            className="flex items-center gap-3 h-11 pl-1 pr-4 rounded-full hover:bg-zinc-900 cursor-pointer"
+            aria-label="Your profile and settings"
+          >
+            {myAvatar("w-9 h-9")}
+            <span className="text-sm text-zinc-200">{currentUser.name.split(" ")[0]}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+            aria-label="Sign out"
+            title="Sign out"
+            className="w-11 h-11 rounded-xl text-zinc-400 hover:text-red-400 hover:bg-zinc-900 flex items-center justify-center cursor-pointer"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
 
-        {/* MOBILE HEADER SECTION */}
-        <header className="md:hidden bg-[#0c0c0c] border-b border-zinc-900 sticky top-0 z-40 relative">
-          <motion.div 
-            className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 origin-left"
-            style={{ scaleX }}
-          />
-          <div className="px-4 py-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab("landing")}>
-              <div className="relative p-1.5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg">
-                <Clapperboard className="w-4 h-4 text-zinc-950" />
-              </div>
-              <div>
-                <span className="font-serif font-bold text-base tracking-tight text-zinc-100 block">
-                  Movie Club
-                </span>
-                <span className="text-[9px] font-mono tracking-wider text-zinc-500 uppercase block -mt-1">
-                  NZT 19:00
-                </span>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowProfileSettings(true)}
-                className="p-2 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-lg text-xs font-semibold flex items-center gap-1 hover:text-amber-500 hover:border-amber-500/30 transition-all cursor-pointer"
-                title="Credentials Settings"
-              >
-                <KeyRound className="w-3.5 h-3.5 text-amber-500/80" />
-                <span className="hidden sm:inline">Settings</span>
-              </button>
-              <button
-                onClick={handleLogout}
-                className="p-2 bg-zinc-900 border border-zinc-800 hover:bg-red-950/20 hover:text-red-400 hover:border-red-900/30 text-zinc-400 rounded-lg transition-all cursor-pointer"
-                title="Sign Out"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* MOBILE BOTTOM TAB BAR */}
-        <nav 
-          aria-label="Mobile navigation"
-          className="md:hidden fixed bottom-0 inset-x-0 bg-[#0c0c0c]/95 border-t border-zinc-900/90 z-40 backdrop-blur-lg pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] flex justify-around px-5 shadow-2xl select-none overscroll-contain"
-        >
-          <button
-            onClick={() => setActiveTab("landing")}
-            className={`flex flex-col items-center gap-1 transition-all text-[10px] font-medium cursor-pointer py-1 ${
-              activeTab === "landing" ? "text-amber-500 font-semibold" : "text-zinc-500"
-            }`}
-          >
-            <Home className="w-4.5 h-4.5" />
-            <span>Home</span>
+      {/* MOBILE HEADER */}
+      <header className="md:hidden sticky top-0 z-40 bg-ink-deep/95 backdrop-blur-md border-b border-zinc-800 pt-[max(0.5rem,env(safe-area-inset-top))]">
+        <motion.div className="absolute bottom-0 left-0 right-0 h-[2px] bg-amber-500 origin-left" style={{ scaleX }} />
+        <div className="px-4 pt-2 pb-3 flex items-center justify-between gap-3">
+          <button type="button" onClick={() => setActiveTab("landing")} className="flex flex-col gap-1 text-left cursor-pointer min-w-0">
+            <span className="slate text-zinc-400 truncate">Kia ora, {currentUser.name.split(" ")[0]}</span>
+            <span className="font-serif text-[28px] leading-none text-zinc-100">Movie Club</span>
           </button>
-          <button
-            onClick={() => setActiveTab("calendar")}
-            className={`flex flex-col items-center gap-1 transition-all text-[10px] font-medium cursor-pointer py-1 ${
-              activeTab === "calendar" ? "text-amber-500 font-semibold" : "text-zinc-500"
-            }`}
-          >
-            <Calendar className="w-4.5 h-4.5" />
-            <span>Schedule</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("feed")}
-            className={`flex flex-col items-center gap-1 transition-all text-[10px] font-medium cursor-pointer py-1 ${
-              activeTab === "feed" ? "text-amber-500 font-semibold" : "text-zinc-500"
-            }`}
-          >
-            <Heart className="w-4.5 h-4.5" />
-            <span>Memories</span>
-          </button>
-          {canManageRecaps && (
+          <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setActiveTab("writer")}
-              className={`flex flex-col items-center gap-1 transition-all text-[10px] font-medium cursor-pointer py-1 ${
-                activeTab === "writer" ? "text-amber-500 font-semibold" : "text-zinc-500"
-              }`}
+              type="button"
+              onClick={handleLogout}
+              aria-label="Sign out"
+              className="w-11 h-11 rounded-full text-zinc-400 hover:text-red-400 flex items-center justify-center cursor-pointer"
             >
-              <BookOpen className="w-4.5 h-4.5" />
-              <span>{isAsh ? "Recaps" : "Recaps/Photo"}</span>
+              <LogOut className="w-5 h-5" />
             </button>
-          )}
-        </nav>
+            <button type="button" onClick={() => setShowProfileSettings(true)} aria-label="Your profile and settings" className="cursor-pointer">
+              {myAvatar("w-11 h-11")}
+            </button>
+          </div>
+        </div>
+        <PaletteStrip colors={CLUB_PALETTE} className="h-1.5 mx-4 mb-3 rounded-full" />
+      </header>
+
+      {/* MOBILE BOTTOM TAB BAR */}
+      <nav
+        aria-label="Main"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-ink-deep/95 backdrop-blur-lg border-t border-zinc-800 px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] flex select-none overscroll-contain"
+      >
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const on = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setActiveTab(item.id)}
+              aria-current={on ? "page" : undefined}
+              className={`flex-1 min-h-14 flex flex-col items-center justify-center gap-1 text-[11px] font-medium cursor-pointer ${on ? "text-amber-500" : "text-zinc-400"}`}
+            >
+              <Icon className="w-[22px] h-[22px]" />
+              {item.label}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => setShowProfileSettings(true)}
+          className="flex-1 min-h-14 flex flex-col items-center justify-center gap-1 text-[11px] font-medium text-zinc-400 cursor-pointer"
+        >
+          <UserIcon className="w-[22px] h-[22px]" />
+          You
+        </button>
+      </nav>
+
+      {/* MAIN PANEL */}
+      <div className="flex-1 flex flex-col relative">
 
         {/* ERROR DISPLAY */}
         {error && (
@@ -966,7 +826,7 @@ export default function App() {
         )}
 
         {/* CORE CONTENT LAYOUT */}
-        <main className="flex-1 px-5 sm:px-8 md:px-12 py-8 pb-32 md:pb-12 w-full max-w-5xl">
+        <main className="flex-1 px-4 sm:px-8 py-6 md:py-10 pb-32 md:pb-16 w-full max-w-6xl mx-auto">
           {loading ? (
             <div className="h-96 flex flex-col items-center justify-center gap-4">
               <div className="relative w-12 h-12">
@@ -986,6 +846,13 @@ export default function App() {
               >
                 {activeTab === "landing" && (
                   <div className="space-y-12">
+                    <JustWatchedCard
+                      nights={nights}
+                      reviews={reviews}
+                      users={clubUsers}
+                      currentUser={currentUser}
+                      onAddReview={handleAddReview}
+                    />
                     <NextMovieHero 
                       nights={nights} 
                       currentUser={currentUser} 
@@ -993,6 +860,8 @@ export default function App() {
                       onResetMovie={handleResetMovie}
                       users={clubUsers}
                     />
+                    {/* Coming up and last time, side by side on wide screens */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-8 items-start">
                     <CalendarView 
                       nights={nights}
                       currentUser={currentUser}
@@ -1009,30 +878,6 @@ export default function App() {
                       title="Next 3 Upcoming Sessions"
                       subtitle="Upcoming scheduled cinema sessions in chronological order • 7:00 PM NZT"
                     />
-                    
-                    {/* Classy Footer Info Section */}
-                    <motion.div 
-                      initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: "-50px" }}
-                      transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
-                      className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-zinc-900/10 border border-zinc-900 rounded-3xl p-6 sm:p-8 mt-12 text-center md:text-left font-sans"
-                    >
-                      <div>
-                        <h4 className="font-serif font-bold text-lg text-zinc-200">The 14-Day Cycle</h4>
-                        <p className="text-zinc-400 text-sm mt-1">Every second Friday at 7 PM NZT. Rotate turns deterministically through our 6 friends.</p>
-                      </div>
-                      <div>
-                        <h4 className="font-serif font-bold text-lg text-zinc-200">Reviews & Ratings</h4>
-                        <p className="text-zinc-400 text-sm mt-1">Reviewing watched films keeps our club rating alive and preserves our historic movie ledger!</p>
-                      </div>
-                      <div>
-                        <h4 className="font-serif font-bold text-lg text-zinc-200">Ash's Recaps</h4>
-                        <p className="text-zinc-400 text-sm mt-1">The next day, Ash documents our collective laughter, arguments, food logs, and posts a gathering image.</p>
-                      </div>
-                    </motion.div>
-
-                    {/* Prior Session Recap & Member Reviews */}
                     <PriorSessionRecap 
                       nights={nights} 
                       reviews={reviews} 
@@ -1042,9 +887,14 @@ export default function App() {
                       onUpdateOverviewImage={handleUpdateOverviewImage}
                       onDeleteOverviewImage={handleDeleteOverviewImage}
                     />
+                    </div>
 
                     {/* Group Statistics Dashboard */}
                     <GroupStatistics nights={nights} reviews={reviews} users={clubUsers} />
+
+                    <p className="text-sm leading-relaxed text-zinc-500 max-w-2xl">
+                      Every second Friday at 7 pm. Hosting rotates through all six of us, the host picks the film, and Ash writes the recap the next day.
+                    </p>
                   </div>
                 )}
 

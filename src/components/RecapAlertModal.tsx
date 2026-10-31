@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { MovieNight, NightOverview, Review, User, isAuthenticGatheringPhoto } from "../types.ts";
 import { motion } from "motion/react";
+import PaletteStrip from "./PaletteStrip.tsx";
 import { BookOpen, Sparkles, X, Calendar, User as UserIcon, Film, Clock, Star, Camera, Quote, Award, Trophy, Upload, Loader2, Trash2 } from "lucide-react";
 
 interface RecapAlertModalProps {
@@ -164,300 +165,114 @@ export default function RecapAlertModal({
     }
   };
 
+  const hasPhoto = isAuthenticGatheringPhoto(overview.imageUrl);
+  const hostFirstName = night.selector.split(" ")[0];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto overscroll-contain">
-      {/* Dark Ambient Cinema Backdrop Filter */}
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-6 overscroll-contain">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-[#0a0807]/92 backdrop-blur-lg pointer-events-auto overscroll-contain"
+        className="fixed inset-0 bg-black/90 backdrop-blur-sm"
         onClick={() => onClose(overview.id)}
       />
 
-      {/* Retro Spotlight glow behind the modal */}
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.12)_0%,transparent_65%)] pointer-events-none" />
-
-      {/* Main Modal Dialog Box */}
-      <motion.div
-        initial={{ scale: 0.92, y: 35, opacity: 0 }}
-        animate={{
-          scale: 1,
-          y: 0,
-          opacity: 1,
-          transition: { type: "spring", damping: 24, stiffness: 140 }
-        }}
-        exit={{ scale: 0.94, y: 20, opacity: 0 }}
-        className="relative bg-[#14100e] border-2 border-amber-500/70 rounded-[28px] sm:rounded-[36px] w-full max-w-3xl max-h-[90dvh] flex flex-col shadow-[0_0_80px_rgba(245,158,11,0.25)] z-10 overflow-hidden my-auto overscroll-contain"
+      <motion.article
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="recap-title"
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 30, opacity: 0 }}
+        transition={{ duration: 0.25 }}
+        className="relative w-full sm:max-w-2xl max-h-[94dvh] overflow-y-auto overscroll-contain bg-zinc-900 border border-zinc-800 rounded-t-[28px] sm:rounded-3xl"
       >
-        {/* Flashing Vintage Film Border Ribbon */}
-        <div className="h-1.5 bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600 shrink-0" />
+        <button
+          type="button"
+          onClick={() => onClose(overview.id)}
+          aria-label="Close"
+          className="absolute top-3 right-3 z-10 w-11 h-11 rounded-full bg-black/70 text-zinc-100 flex items-center justify-center cursor-pointer"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
-        {/* Modal Sticky Header */}
-        <div className="px-6 sm:px-8 py-5 border-b border-zinc-800/80 bg-[#191411]/90 flex items-center justify-between gap-4 shrink-0 backdrop-blur-md">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2 bg-amber-500/15 border border-amber-500/30 text-amber-500 rounded-xl shrink-0">
-              <BookOpen className="w-5 h-5 text-amber-500" />
+        {/* Widescreen gathering photo */}
+        <div className="letterbox">
+          {hasPhoto ? (
+            <img src={overview.imageUrl} alt={`Gathering photo for ${movie?.title || "the night"}`} referrerPolicy="no-referrer" />
+          ) : (
+            <div className="letterbox-frame bg-slate flex flex-col items-center justify-center gap-2 text-zinc-200 text-sm px-6 text-center">
+              <Camera className="w-6 h-6" />
+              {canManagePhotos ? "Add the gathering photo" : "No gathering photo yet"}
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-bold tracking-[0.25em] text-amber-500 uppercase flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-500 animate-spin" /> FRESH RECAP PUBLISHED
-                </span>
-                <span className="text-zinc-600 hidden sm:inline">•</span>
-                <span className="text-[11px] text-zinc-400 font-mono hidden sm:inline">
-                  {formatNZTDate(overview.createdAt || night.date)}
-                </span>
-              </div>
-              <p className="text-xs text-zinc-400 truncate">
-                By <strong className="text-zinc-200">{overview.author || "Ash Macintosh"}</strong> for Movie Night with <span className="text-amber-400/90">{night.selector}</span>
-              </p>
-            </div>
+          )}
+        </div>
+        {canManagePhotos && (
+          <div className="flex flex-wrap gap-2 px-5 pt-3">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="min-h-11 px-4 rounded-xl border border-zinc-700 text-sm text-zinc-100 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {hasPhoto ? "Replace photo" : "Add photo"}
+            </button>
+            {hasPhoto && (
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                disabled={uploading}
+                className="min-h-11 px-4 rounded-xl text-sm text-zinc-400 hover:text-red-400 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                Remove photo
+              </button>
+            )}
+            {photoFeedback && <p className="w-full text-sm text-emerald-400">{photoFeedback}</p>}
           </div>
+        )}
+        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
 
-          {/* Top-Right Quick Close Button */}
+        {/* Poster and night details */}
+        <div className="px-5 sm:px-8 pt-5 flex gap-4 items-end">
+          {movie?.posterUrl && (
+            <img src={movie.posterUrl} alt={`${movie.title} poster`} className="w-24 sm:w-28 aspect-[2/3] object-cover rounded-xl border border-zinc-700 shadow-[0_12px_28px_rgba(0,0,0,0.5)] shrink-0" referrerPolicy="no-referrer" />
+          )}
+          <div className="min-w-0 pb-1 space-y-1">
+            <p className="slate text-amber-500">Recap from {(overview.author || "Ash Macintosh").split(" ")[0]}</p>
+            <p className="text-sm text-zinc-400">{formatNZTDate(night.date)} · {movie?.title} · {hostFirstName}'s pick</p>
+            {avgRating && <p className="text-sm font-semibold text-amber-500">★ {avgRating} · {nightReviews.length} review{nightReviews.length === 1 ? "" : "s"}</p>}
+          </div>
+        </div>
+        {movie?.posterUrl && <div className="px-5 sm:px-8 pt-4"><PaletteStrip posterUrl={movie.posterUrl} className="h-2 rounded" /></div>}
+
+        {/* The recap itself */}
+        <div className="px-5 sm:px-8 pt-5">
+          <h2 id="recap-title" className="font-serif text-3xl sm:text-4xl leading-tight text-zinc-50">{overview.title}</h2>
+          <p className="mt-4 text-base sm:text-[17px] leading-relaxed text-zinc-200 whitespace-pre-wrap">{overview.content}</p>
+        </div>
+
+        {/* Ash's pick of the reviews */}
+        {topReview && (
+          <figure className="mx-5 sm:mx-8 mt-6 p-5 rounded-2xl bg-amber-950 border border-amber-800">
+            <figcaption className="slate text-amber-500">{topReview.isStarred ? "Ash's pick of the reviews" : "Top review"}</figcaption>
+            <blockquote className="mt-3 font-serif text-lg leading-relaxed text-zinc-100">“{topReview.comment}”</blockquote>
+            <p className="mt-3 text-sm text-zinc-300">{topReview.user.split(" ")[0]} · ★ {topReview.rating}</p>
+          </figure>
+        )}
+
+        <div className="px-5 sm:px-8 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <button
+            type="button"
             onClick={() => onClose(overview.id)}
-            className="p-2.5 rounded-2xl bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 border border-zinc-800 transition-all cursor-pointer shrink-0"
-            title="Close window (Esc)"
+            className="w-full min-h-14 rounded-2xl bg-red-700 hover:bg-red-600 text-ticket font-semibold text-lg cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            Done
           </button>
         </div>
-
-        {/* Scrollable Content Container */}
-        <div className="p-6 sm:p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
-          
-          {/* Headline Banner */}
-          <div className="space-y-2">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif text-zinc-100 font-extrabold tracking-tight leading-tight">
-              {overview.title}
-            </h2>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400 font-mono pt-1">
-              <span className="flex items-center gap-1 text-zinc-300">
-                <Calendar className="w-3.5 h-3.5 text-amber-500" />
-                {formatNZTDate(night.date)}
-              </span>
-              <span className="text-zinc-700">•</span>
-              <span>Host/Selector: <strong className="text-zinc-200">{night.selector}</strong></span>
-              {avgRating && (
-                <>
-                  <span className="text-zinc-700">•</span>
-                  <span className="flex items-center gap-1 text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                    <Star className="w-3 h-3 fill-amber-400" />
-                    Score {avgRating}/5.0
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Featured Friends Memory Photo */}
-          {isAuthenticGatheringPhoto(overview.imageUrl) ? (
-            <div className="space-y-2">
-              <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-zinc-800/80 bg-zinc-950 shadow-2xl group">
-                <img
-                  src={overview.imageUrl}
-                  alt={overview.title}
-                  className="w-full max-h-[420px] object-cover sm:object-contain bg-zinc-950 mx-auto"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="p-3 bg-zinc-950/90 border-t border-zinc-900/60 flex items-center justify-between text-xs text-zinc-400 font-mono">
-                  <span className="flex items-center gap-1.5 text-zinc-300">
-                    <Camera className="w-3.5 h-3.5 text-amber-500" />
-                    Friends Gathering Photo
-                  </span>
-                  <span className="text-[11px] text-zinc-500">Documented by Ash</span>
-                </div>
-              </div>
-
-              {canManagePhotos && (
-                <div className="flex items-center justify-between gap-3 px-1 pt-1 flex-wrap">
-                  <span className="text-[11px] text-zinc-400 font-mono">
-                    {photoFeedback || "Real group photo saved in database"}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                      className="text-xs font-mono text-amber-400 hover:text-amber-300 font-semibold px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                    >
-                      {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3 text-amber-400" />}
-                      <span>Change Photo</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRemovePhoto}
-                      disabled={uploading}
-                      className="text-xs font-mono text-zinc-400 hover:text-red-400 font-medium px-2 py-1 rounded-lg hover:bg-red-950/30 border border-transparent hover:border-red-900/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      <span>Remove</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="bg-[#120e0c] border border-dashed border-amber-500/30 rounded-2xl sm:rounded-3xl p-6 text-center space-y-3">
-              <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
-                <Camera className="w-5 h-5" />
-              </div>
-              <div className="space-y-1">
-                <h5 className="text-sm font-serif font-bold text-zinc-200">No Gathering Photo Attached Yet</h5>
-                <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-                  The original group photos documented by Ash Macintosh are displayed here alongside each recap chronicle.
-                </p>
-              </div>
-              {canManagePhotos && (
-                <div className="pt-1">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-mono font-bold shadow-md shadow-amber-600/30 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                    <span>+ Upload Gathering Photo</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Hidden File Input */}
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept="image/*"
-            className="hidden"
-          />
-
-          {/* Full Narrative Recap Story (Light/White Card with Dark Text for Maximum Legibility) */}
-          <div className="bg-white text-zinc-900 border-2 border-amber-300/80 rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
-              <div className="flex items-center gap-2 text-xs font-mono text-amber-800 tracking-wider uppercase font-bold">
-                <Quote className="w-4 h-4 text-amber-600" />
-                The Night Chronicles • Curated by {overview.author || "Ash Macintosh"}
-              </div>
-              <span className="text-[11px] font-mono text-zinc-500 hidden sm:inline">Official Session Chronicle</span>
-            </div>
-            <div className="text-zinc-900 text-base sm:text-lg leading-relaxed font-serif sm:font-sans font-normal whitespace-pre-line selection:bg-amber-100">
-              {overview.content}
-            </div>
-          </div>
-
-          {/* Top Review Picked with Congratulations */}
-          {topReview && (
-            <div className="relative overflow-hidden bg-gradient-to-br from-amber-950/40 via-[#1a1410] to-[#120e0c] border-2 border-amber-500/40 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xl shadow-amber-500/10 space-y-3.5">
-              {/* Top Golden Accent Ribbon */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600" />
-              
-              {/* Header with Winner Badge & Congrats */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/20 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-amber-500/20 border border-amber-500/40 text-amber-400 rounded-xl shrink-0 shadow-inner">
-                    <Trophy className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-mono font-bold tracking-widest text-amber-400 uppercase flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-amber-400" /> Top Review Pick of the Night
-                    </span>
-                    <div className="text-xs sm:text-sm font-serif font-bold text-amber-200/95 flex items-center gap-1.5 pt-0.5">
-                      🎉 Congratulations <strong className="text-white underline decoration-amber-500 decoration-2 underline-offset-2">{topReview.user}</strong>!
-                    </div>
-                  </div>
-                </div>
-
-                {/* Star rating pill */}
-                <div className="flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 px-3 py-1 rounded-xl shrink-0">
-                  <div className="flex items-center gap-0.5">
-                    {Array.from({ length: 5 }).map((_, idx) => (
-                      <Star
-                        key={idx}
-                        className={`w-3.5 h-3.5 ${
-                          idx < Math.round(topReview.rating)
-                            ? "text-amber-400 fill-amber-400"
-                            : "text-zinc-700"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-xs font-mono font-bold text-amber-300">
-                    {topReview.rating.toFixed(1)}/5
-                  </span>
-                </div>
-              </div>
-
-              {/* Highlighted Review Comment */}
-              <div className="relative pl-3.5 sm:pl-4 border-l-2 border-amber-500/60 py-0.5">
-                <p className="text-zinc-100 text-sm sm:text-base italic font-serif leading-relaxed">
-                  "{topReview.comment}"
-                </p>
-                <div className="flex items-center gap-2 mt-2 text-[11px] font-mono text-zinc-400">
-                  <span>Reviewed by <strong className="text-zinc-200">{topReview.user}</strong></span>
-                  {topReview.isStarred && (
-                    <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded text-[9px] font-bold border border-amber-500/30 uppercase tracking-wider">
-                      Ash's Star Pick ⭐
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Associated Film Badge */}
-          {movie && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-[#191411]/40 border border-zinc-800/60 rounded-2xl p-4 sm:p-5">
-              {movie.posterUrl && (
-                <img
-                  src={movie.posterUrl}
-                  alt={movie.title}
-                  className="w-16 sm:w-20 rounded-xl object-cover border border-zinc-800 shadow-md shrink-0"
-                  referrerPolicy="no-referrer"
-                />
-              )}
-              <div className="space-y-1 min-w-0 flex-1">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block font-bold">
-                  Film Spotlight
-                </span>
-                <h4 className="text-lg sm:text-xl font-serif text-zinc-100 font-bold italic leading-tight truncate">
-                  "{movie.title}" <span className="text-sm text-zinc-400 not-italic">({movie.year})</span>
-                </h4>
-                <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400 font-mono">
-                  <span>Dir: <strong className="text-zinc-300">{movie.director}</strong></span>
-                  <span className="text-zinc-700">•</span>
-                  <span>{movie.genre}</span>
-                  <span className="text-zinc-700">•</span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-zinc-500" />
-                    {movie.runtime} min
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-        </div>
-
-        {/* Modal Footer with Clear Dismissal / Exit Button */}
-        <div className="px-6 sm:px-8 py-4 bg-[#191411] border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-          <span className="text-xs text-zinc-500 font-mono hidden sm:inline">
-            Press <kbd className="px-1.5 py-0.5 bg-zinc-800 text-zinc-300 rounded border border-zinc-700 text-[10px]">ESC</kbd> or click below to exit
-          </span>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => onClose(overview.id)}
-            className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-zinc-950 font-serif font-bold text-sm sm:text-base py-2.5 sm:py-3 px-8 rounded-2xl shadow-lg shadow-amber-500/20 transition-all cursor-pointer tracking-wide flex items-center justify-center gap-2"
-          >
-            <span>📖 Finished Reading • Exit Window</span>
-          </motion.button>
-        </div>
-      </motion.div>
+      </motion.article>
     </div>
   );
 }

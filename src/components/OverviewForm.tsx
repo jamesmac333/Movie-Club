@@ -196,7 +196,7 @@ export default function OverviewForm({ nights, currentUser, onPostOverview, over
   if (!isAuthorized) {
     return (
       <div className="bg-zinc-950/20 border border-zinc-900 rounded-3xl p-8 text-center max-w-xl mx-auto space-y-4">
-        <AlertCircle className="w-10 h-10 text-zinc-600 mx-auto" />
+        <AlertCircle className="w-10 h-10 text-zinc-500 mx-auto" />
         <h3 className="text-xl font-serif font-bold text-zinc-300">Administrative Dashboard</h3>
         <p className="text-sm text-zinc-500 leading-relaxed">
           Only <strong className="text-zinc-400">Ash Macintosh</strong> and club administrators have access to draft, publish, and replace movie night overviews and friends photography. Please sign in as Ash or James to access this dashboard.
@@ -219,10 +219,10 @@ export default function OverviewForm({ nights, currentUser, onPostOverview, over
         </div>
         <div>
           <h2 className="text-2xl font-serif text-zinc-100 font-bold">
-            {isAuthorized && currentUser?.username?.toLowerCase() !== "ash" ? "Admin Recap & Photo Manager" : "Night Writer Dashboard"}
+            Write a recap
           </h2>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Logged in as {currentUser?.name || "Admin"} • Add, replace, or update session recaps & gathering photos
+            Recaps and gathering photos for each night · only Ash and James see this tab
           </p>
         </div>
       </div>
@@ -402,7 +402,7 @@ export default function OverviewForm({ nights, currentUser, onPostOverview, over
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:from-zinc-900 disabled:to-zinc-900 disabled:text-zinc-600 text-zinc-950 font-bold py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full bg-red-700 hover:bg-red-600 disabled:from-zinc-900 disabled:to-zinc-900 disabled:text-zinc-500 text-ticket font-bold py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? (
               <>

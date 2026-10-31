@@ -1,44 +1,110 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/*
+  Movie Club theme: colours from the "Her" palette (deep teal-black, sand,
+  sage, browns and Theodore's red). The zinc, amber, red and emerald scales are
+  redefined here, so every component picks the palette up from its existing
+  Tailwind classes.
+*/
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Outfit", "Inter", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-serif: "Fraunces", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
-  /* Premium Retro Cinema Color Theme */
-  --color-zinc-950: #14100d; /* Deep vintage espresso bean */
-  --color-zinc-900: #1c1613; /* Roasted coffee bean */
-  --color-zinc-800: #2b221d; /* Warm chocolate brown border */
-  --color-zinc-700: #3f322b; /* Soft retro clay */
-  --color-zinc-600: #59483e; /* Warm brown-gray accent */
-  --color-zinc-500: #7d695c; /* Dusty retro taupe */
-  --color-zinc-400: #aa9484; /* Soft rose-beige */
-  --color-zinc-300: #d5c3b5; /* Warm oatmeal */
-  --color-zinc-200: #eae1d4; /* Antique retro cream */
-  --color-zinc-100: #f6f1e5; /* Soft vintage ivory */
+  /* Grounds and text: teal-black to warm cream */
+  --color-zinc-950: #1c2626; /* page */
+  --color-zinc-900: #233130; /* cards */
+  --color-zinc-850: #2a3836;
+  --color-zinc-800: #34433f; /* borders */
+  --color-zinc-750: #3f4f4a;
+  --color-zinc-700: #4a5a55;
+  --color-zinc-600: #5a6b66;
+  --color-zinc-500: #9a9a84; /* quiet text */
+  --color-zinc-400: #afaf98; /* secondary text (sage) */
+  --color-zinc-300: #cdc4b0;
+  --color-zinc-200: #e2d7c3;
+  --color-zinc-100: #ede3d1; /* main text */
+  --color-zinc-50: #f6eddc;
 
-  --color-amber-500: #df8b39; /* Warm vintage burnt honey-amber */
-  --color-amber-600: #c57324; /* Deep sunset amber */
-  --color-amber-700: #9b5113; /* Rich caramel brown */
-  --color-amber-400: #eba563; /* Pastel peach-amber */
+  /* Accent: sand */
+  --color-amber-50: #fbf3e6;
+  --color-amber-100: #f6e7cc;
+  --color-amber-200: #f0d3a6;
+  --color-amber-300: #eac796;
+  --color-amber-400: #e8c493;
+  --color-amber-500: #e3be8a;
+  --color-amber-600: #c9a06a;
+  --color-amber-700: #8c6e5a;
+  --color-amber-800: #5a3a2b;
+  --color-amber-900: #3a2a22;
+  --color-amber-950: #2e1b12;
+
+  /* Theodore's red: main buttons and warnings */
+  --color-red-50: #fbeceb;
+  --color-red-200: #f0b7b0;
+  --color-red-300: #e8958b;
+  --color-red-400: #e2857a;
+  --color-red-500: #c2463b;
+  --color-red-600: #a3271f;
+  --color-red-700: #8e1c15;
+  --color-red-800: #7d1712;
+  --color-red-900: #4a1410;
+  --color-red-950: #2e140f;
+
+  /* Success: sage teal */
+  --color-emerald-200: #cfe0d9;
+  --color-emerald-400: #8fb3a8;
+  --color-emerald-500: #6f8c83;
+  --color-emerald-800: #34514a;
+  --color-emerald-900: #2a3d38;
+  --color-emerald-950: #1e2c29;
+
+  --color-black: #0f1414;
+
+  /* Named palette colours for new components */
+  --color-ink: #1c2626;
+  --color-ink-deep: #151d1d;
+  --color-letterbox: #0f1414;
+  --color-panel: #233130;
+  --color-line: #34433f;
+  --color-sand: #e3be8a;
+  --color-cream: #ede3d1;
+  --color-sage: #afaf98;
+  --color-sea: #6f8c83;
+  --color-slate: #2f4a55;
+  --color-clay: #5a3a2b;
+  --color-taupe: #8c6e5a;
+  --color-umber: #2e1b12;
+  --color-theo: #8e1c15;
+  --color-theo-deep: #7d1712;
+  --color-ticket: #f4e6cc;
 }
 
-/* Custom retro lounge styling */
 html {
   min-height: 100%;
   min-height: 100dvh;
   overscroll-behavior-y: contain;
   -webkit-text-size-adjust: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: #5a6b66 #151d1d;
 }
 
 body {
   min-height: 100%;
   min-height: 100dvh;
-  background-color: #14100d;
-  color: #eae1d4;
+  background-color: #1c2626;
+  color: #ede3d1;
   font-family: var(--font-sans);
   overscroll-behavior-y: contain;
+  /* Nothing should ever scroll sideways */
+  overflow-x: hidden;
+}
+
+/* Display type is the italic serif throughout */
+.font-serif {
+  font-style: italic;
+  font-weight: 500;
 }
 
 /* 1. Prevent iOS WebKit (Chrome & Safari) Auto-Zoom on form inputs */
@@ -72,50 +138,75 @@ body {
   min-height: 100dvh;
 }
 
-/* Hardcoded hex utility overrides for seamless retro transition */
-.bg-\[\#080808\] {
-  background-color: #14100d !important;
-}
-.bg-\[\#0c0c0c\] {
-  background-color: #1c1613 !important;
-}
-.bg-\[\#0a0a0a\] {
-  background-color: #181310 !important;
-}
-.bg-\[\#0d0d0d\] {
-  background-color: #231c18 !important;
-}
+/* Older hard-coded backgrounds in components, mapped onto the palette */
+.bg-\[\#080808\] { background-color: #1c2626 !important; }
+.bg-\[\#0c0c0c\] { background-color: #151d1d !important; }
+.bg-\[\#0a0a0a\] { background-color: #182221 !important; }
+.bg-\[\#0d0d0d\] { background-color: #233130 !important; }
+.bg-\[\#080808\]\/75 { background-color: rgba(28, 38, 38, 0.75) !important; }
+.bg-\[\#080808\]\/50 { background-color: rgba(28, 38, 38, 0.5) !important; }
+.bg-\[\#080808\]\/40 { background-color: rgba(28, 38, 38, 0.4) !important; }
+.bg-\[\#080808\]\/80 { background-color: rgba(28, 38, 38, 0.8) !important; }
+.bg-\[\#0c0c0c\]\/95 { background-color: rgba(21, 29, 29, 0.95) !important; }
 
-/* Map translucent backgrounds */
-.bg-\[\#080808\]\/75 {
-  background-color: rgba(20, 16, 13, 0.75) !important;
-}
-.bg-\[\#080808\]\/50 {
-  background-color: rgba(20, 16, 13, 0.5) !important;
-}
-.bg-\[\#080808\]\/40 {
-  background-color: rgba(20, 16, 13, 0.4) !important;
-}
-.bg-\[\#080808\]\/80 {
-  background-color: rgba(20, 16, 13, 0.8) !important;
-}
-.bg-\[\#0c0c0c\]\/95 {
-  background-color: rgba(28, 22, 19, 0.95) !important;
-}
-
-/* Scrollbars */
+/* Scrollbars in the palette */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #14100d;
+  background: #151d1d;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2b221d;
-  border-radius: 3px;
+  background: #5a6b66;
+  border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f322b;
+  background: #e3be8a;
 }
 
+/* Typewriter "film slate" labels */
+.slate {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Gathering photos sit in a widescreen frame with letterbox bars */
+.letterbox {
+  background: #0f1414;
+  padding-block: 14px;
+}
+.letterbox > img,
+.letterbox > .letterbox-frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2.39 / 1;
+  object-fit: cover;
+}
+
+/* Ticket perforation: a dashed tear line with notches cut into each edge */
+.ticket-tear {
+  position: relative;
+  height: 22px;
+}
+.ticket-tear::before,
+.ticket-tear::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ticket-notch, #1c2626);
+}
+.ticket-tear::before { left: -11px; }
+.ticket-tear::after { right: -11px; }
+.ticket-tear > span {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 10px;
+  border-top: 2px dashed #4a5a55;
+}

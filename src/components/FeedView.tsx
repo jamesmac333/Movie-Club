@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS, isAuthenticGatheringPhoto, isBeforeDataLoss, DATA_LOSS_NOTE } from "../types.ts";
 import { Star, MessageSquare, Trash2, Edit3, Plus, Image as ImageIcon, Heart, Calendar, Sparkles, BookOpen, Maximize2, ChevronDown, ChevronUp, Camera, Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import PaletteStrip from "./PaletteStrip.tsx";
 
 interface FeedViewProps {
   nights: MovieNight[];
@@ -317,7 +318,7 @@ export default function FeedView({
               {/* Visual star layers */}
               <div className="absolute inset-0 z-10 pointer-events-none">
                 {/* Background empty star */}
-                <Star className="w-4 h-4 text-zinc-700" />
+                <Star className="w-4 h-4 text-zinc-500" />
                 
                 {/* Foreground filled/half-filled star */}
                 {isFullyFilled ? (
@@ -343,9 +344,9 @@ export default function FeedView({
   if (watchedNights.length === 0) {
     return (
       <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-12 text-center text-zinc-500 font-serif">
-        <MessageSquare className="w-12 h-12 mx-auto text-zinc-700 mb-3 animate-bounce" />
+        <MessageSquare className="w-12 h-12 mx-auto text-zinc-500 mb-3 animate-bounce" />
         <p className="text-zinc-400 font-medium">No movies watched yet.</p>
-        <p className="text-sm text-zinc-600 mt-1">Once movies are watched and reviews are written, they will populate here!</p>
+        <p className="text-sm text-zinc-400 mt-1">Once movies are watched and reviews are written, they will populate here!</p>
       </div>
     );
   }
@@ -354,12 +355,9 @@ export default function FeedView({
     <div className="space-y-12">
       <div className="border-b border-zinc-900 pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl sm:text-4xl font-serif text-zinc-100 font-bold flex items-center gap-3">
-            <Heart className="w-8 h-8 text-red-500 fill-red-500/20" />
-            Nostalgic Feed & Memories
-          </h2>
-          <p className="text-sm text-zinc-400 mt-1">
-            Relive our club nights: Read Ash's overviews, see the photos, and check out everyone's reviews!
+          <h2 className="text-4xl sm:text-5xl font-serif text-zinc-50">Memories</h2>
+          <p className="text-sm sm:text-base text-zinc-400 mt-1">
+            Recaps, photos and everyone's reviews
           </p>
           {watchedNights.some((n) => isBeforeDataLoss(n.date)) && (
             <div className="mt-4 flex items-start gap-2.5 p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/20 text-amber-200/90 text-xs leading-relaxed max-w-3xl">
@@ -416,8 +414,10 @@ export default function FeedView({
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
               whileHover={{ y: -3, transition: { duration: 0.2 } }}
-              className="bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl overflow-hidden shadow-xl shadow-[0_0_24px_rgba(245,158,11,0.01)] transition-colors hover:border-zinc-800"
+              className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden transition-colors hover:border-zinc-700"
             >
+              {/* The film's colours, sampled from its poster */}
+              <PaletteStrip posterUrl={night.movie!.posterUrl} className="h-2.5" />
               {/* Header metadata ribbon */}
               <div className="bg-[#080808]/50 border-b border-zinc-900/60 px-6 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-zinc-400">
                 <div className="flex items-center gap-3">
@@ -425,7 +425,7 @@ export default function FeedView({
                     <Calendar className="w-4 h-4 text-amber-500/80" />
                     {formatNZTDateOnly(night.date)}
                   </span>
-                  <span className="text-zinc-600">•</span>
+                  <span className="text-zinc-400">•</span>
                   <span>Selector: <strong className="text-zinc-200">{night.selector}</strong></span>
                 </div>
                 
@@ -441,42 +441,42 @@ export default function FeedView({
               <div className="p-6 sm:p-8 space-y-6">
                 
                 {/* Movie Details bar */}
-                <div className="flex items-start gap-4 bg-[#080808]/80 border border-zinc-900/50 rounded-2xl p-4 sm:p-5">
+                <div className="flex items-end gap-4 sm:gap-6">
                   {night.movie!.posterUrl && (
                     <img
                       src={night.movie!.posterUrl}
-                      alt={night.movie!.title}
-                      className="w-16 sm:w-20 rounded-lg object-cover border border-zinc-800 shrink-0"
+                      alt={`${night.movie!.title} poster`}
+                      className="w-28 sm:w-36 aspect-[2/3] rounded-xl object-cover border border-zinc-700 shadow-[0_14px_30px_rgba(0,0,0,0.45)] shrink-0"
                       referrerPolicy="no-referrer"
                     />
                   )}
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">The Film watched</span>
-                    <h3 className="text-xl font-serif text-zinc-50 font-bold italic leading-tight">
-                      "{night.movie!.title}"
-                      <span className="text-sm text-zinc-400 not-italic ml-1.5">({night.movie!.year})</span>
+                  <div className="space-y-1.5 min-w-0 pb-1">
+                    <span className="slate text-zinc-400">The film</span>
+                    <h3 className="text-2xl sm:text-4xl font-serif text-zinc-50 leading-tight break-words">
+                      {night.movie!.title}
                     </h3>
-                    <p className="text-xs text-zinc-400">
-                      Dir: <strong className="text-zinc-300">{night.movie!.director}</strong> | Genre: <strong className="text-zinc-300">{night.movie!.genre}</strong> | Runtime: <strong className="text-zinc-300">{night.movie!.runtime} mins</strong>
+                    <p className="text-sm text-zinc-400">
+                      {[night.movie!.year, night.movie!.runtime ? `${Math.floor(night.movie!.runtime / 60)}h ${night.movie!.runtime % 60}m` : null, night.movie!.genre].filter(Boolean).join(" · ")}
                     </p>
+                    {night.movie!.director && <p className="slate text-zinc-300">A film by {night.movie!.director}</p>}
                   </div>
                 </div>
 
                 {/* Night Overview Section: Clean White Card with Dark Text for Maximum Legibility */}
                 {overview ? (
-                  <div className="space-y-3 bg-white text-zinc-900 border border-amber-200/90 rounded-2xl p-5 sm:p-6 shadow-md transition-colors">
+                  <div className="space-y-3 bg-amber-950 text-zinc-100 border border-amber-800 rounded-2xl p-5 sm:p-6 shadow-md transition-colors">
                     <div className="space-y-1">
                       <div className="flex items-center justify-between gap-4 flex-wrap">
-                        <span className="text-xs font-mono text-amber-800 font-bold tracking-widest uppercase">The Next Day Overview by Ash</span>
+                        <span className="text-xs font-mono text-amber-500 font-bold tracking-widest uppercase">The Next Day Overview by Ash</span>
                         <div className="flex items-center gap-2 flex-wrap">
                           {onOpenRecapModal && (
                             <button
                               type="button"
                               onClick={() => onOpenRecapModal(overview, night)}
-                              className="p-1.5 text-amber-800 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 rounded-lg border border-amber-300 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
+                              className="p-1.5 text-amber-500 hover:text-amber-950 bg-amber-900/70 hover:bg-amber-800 rounded-lg border border-amber-300 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
                               title="Read in Pop-up Window"
                             >
-                              <BookOpen className="w-3.5 h-3.5 text-amber-700" />
+                              <BookOpen className="w-3.5 h-3.5 text-amber-500" />
                               <span>Pop-up Window</span>
                             </button>
                           )}
@@ -485,13 +485,13 @@ export default function FeedView({
                               type="button"
                               onClick={() => handlePhotoUploadTrigger(overview.id)}
                               disabled={uploadingPhotoId === overview.id}
-                              className="p-1.5 text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
+                              className="p-1.5 text-amber-500 hover:text-amber-950 bg-amber-900/40 hover:bg-amber-900/70 rounded-lg border border-amber-800 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
                               title={isAuthenticGatheringPhoto(overview.imageUrl) ? "Upload / Replace Gathering Photo" : "+ Add Gathering Photo"}
                             >
                               {uploadingPhotoId === overview.id ? (
-                                <Loader2 className="w-3.5 h-3.5 text-amber-700 animate-spin" />
+                                <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin" />
                               ) : (
-                                <Camera className="w-3.5 h-3.5 text-amber-700" />
+                                <Camera className="w-3.5 h-3.5 text-amber-500" />
                               )}
                               <span>{isAuthenticGatheringPhoto(overview.imageUrl) ? "Replace Photo" : "+ Add Photo"}</span>
                             </button>
@@ -519,11 +519,11 @@ export default function FeedView({
                       {/* Overview Title: Clicking toggles expand/collapse */}
                       <h4 
                         onClick={() => toggleOverviewExpand(night.id)}
-                        className="text-xl sm:text-2xl font-serif font-bold text-zinc-900 tracking-wide hover:text-amber-700 transition-colors cursor-pointer flex items-center gap-2 group/title"
+                        className="text-xl sm:text-2xl font-serif font-bold text-zinc-100 tracking-wide hover:text-amber-500 transition-colors cursor-pointer flex items-center gap-2 group/title"
                         title={isOverviewExpanded ? "Click to collapse overview" : "Click to expand full overview"}
                       >
                         <span>{overview.title}</span>
-                        <span className="text-zinc-400 group-hover/title:text-amber-700 transition-colors">
+                        <span className="text-zinc-400 group-hover/title:text-amber-500 transition-colors">
                           {isOverviewExpanded ? (
                             <ChevronUp className="w-4 h-4 inline" />
                           ) : (
@@ -538,7 +538,7 @@ export default function FeedView({
                       onClick={() => !isOverviewExpanded && toggleOverviewExpand(night.id)}
                       className={`space-y-3 ${!isOverviewExpanded ? "cursor-pointer group/ov" : ""}`}
                     >
-                      <p className={`text-zinc-800 text-sm sm:text-base leading-relaxed font-sans font-normal transition-colors ${
+                      <p className={`text-zinc-200 text-sm sm:text-base leading-relaxed font-sans font-normal transition-colors ${
                         !isOverviewExpanded ? "line-clamp-2 sm:line-clamp-3 group-hover/ov:text-zinc-950" : ""
                       }`}>
                         {overview.content}
@@ -552,7 +552,7 @@ export default function FeedView({
                             e.stopPropagation();
                             toggleOverviewExpand(night.id);
                           }}
-                          className="text-amber-800 hover:text-amber-950 text-xs font-mono font-bold flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-amber-100 hover:bg-amber-200 border border-amber-300 transition-all cursor-pointer"
+                          className="text-amber-500 hover:text-amber-950 text-xs font-mono font-bold flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-amber-900/70 hover:bg-amber-800 border border-amber-300 transition-all cursor-pointer"
                         >
                           {isOverviewExpanded ? (
                             <>
@@ -573,7 +573,7 @@ export default function FeedView({
                               e.stopPropagation();
                               toggleOverviewExpand(night.id);
                             }}
-                            className="text-[11px] font-mono text-zinc-500 group-hover/ov:text-zinc-700 flex items-center gap-1.5 cursor-pointer transition-colors"
+                            className="text-[11px] font-mono text-zinc-500 group-hover/ov:text-zinc-500 flex items-center gap-1.5 cursor-pointer transition-colors"
                           >
                             {isAuthenticGatheringPhoto(overview.imageUrl) ? (
                               <>
@@ -607,12 +607,12 @@ export default function FeedView({
                                     e.stopPropagation();
                                     onOpenRecapModal && onOpenRecapModal(overview, night);
                                   }}
-                                  className={`relative bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 max-h-[460px] ${onOpenRecapModal ? 'cursor-pointer group hover:border-amber-500/50 transition-all' : ''}`}
+                                  className={`relative letterbox rounded-2xl overflow-hidden border border-zinc-800 ${onOpenRecapModal ? 'cursor-pointer group hover:border-amber-500/50 transition-all' : ''}`}
                                 >
                                   <img
                                     src={overview.imageUrl}
-                                    alt="Movie Club Friends Gathering"
-                                    className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-300"
+                                    alt="Movie Club friends at the gathering"
+                                    className="group-hover:scale-[1.01] transition-transform duration-300"
                                     referrerPolicy="no-referrer"
                                   />
                                   <div className="absolute bottom-4 left-4 bg-black/80 backdrop-blur-md text-zinc-200 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs font-mono flex items-center gap-2 shadow-lg">
@@ -640,9 +640,9 @@ export default function FeedView({
                                           handlePhotoUploadTrigger(overview.id);
                                         }}
                                         disabled={uploadingPhotoId === overview.id}
-                                        className="text-xs font-mono text-amber-800 hover:text-amber-950 font-semibold px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                                        className="text-xs font-mono text-amber-500 hover:text-amber-950 font-semibold px-2.5 py-1 rounded-lg bg-amber-900/40 hover:bg-amber-900/70 border border-amber-800 transition-all flex items-center gap-1.5 cursor-pointer"
                                       >
-                                        <Camera className="w-3.5 h-3.5 text-amber-700" />
+                                        <Camera className="w-3.5 h-3.5 text-amber-500" />
                                         <span>Replace Photo</span>
                                       </button>
                                       <button
@@ -662,13 +662,13 @@ export default function FeedView({
                                 )}
                               </div>
                             ) : (
-                              <div className="bg-amber-50/70 border-2 border-dashed border-amber-300/80 rounded-2xl p-5 text-center space-y-2.5">
-                                <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                              <div className="bg-amber-900/40 border-2 border-dashed border-amber-300/80 rounded-2xl p-5 text-center space-y-2.5">
+                                <div className="w-10 h-10 rounded-full bg-amber-900/70 text-amber-500 flex items-center justify-center mx-auto">
                                   <Camera className="w-5 h-5" />
                                 </div>
                                 <div>
-                                  <h6 className="text-sm font-serif font-bold text-zinc-900">No Gathering Photo Attached Yet</h6>
-                                  <p className="text-xs text-zinc-600 max-w-md mx-auto mt-0.5">
+                                  <h6 className="text-sm font-serif font-bold text-zinc-100">No Gathering Photo Attached Yet</h6>
+                                  <p className="text-xs text-zinc-400 max-w-md mx-auto mt-0.5">
                                     Ash documents our group memories and reactions the day after every session.
                                   </p>
                                 </div>
@@ -701,7 +701,7 @@ export default function FeedView({
                   </div>
                 ) : (
                   <div className="bg-zinc-900/10 border border-dashed border-zinc-900 rounded-2xl p-6 text-center space-y-2">
-                    <ImageIcon className="w-8 h-8 text-zinc-700 mx-auto" />
+                    <ImageIcon className="w-8 h-8 text-zinc-500 mx-auto" />
                     <p className="text-sm font-serif text-zinc-500 italic">Ash Macintosh is preparing the night overview and gather image for this event...</p>
                     {(isAdmin || isAsh) && (
                       <p className="text-xs text-amber-600 font-mono">
@@ -772,10 +772,10 @@ export default function FeedView({
                             }
                             setActiveReviewFormId(activeReviewFormId === night.id ? null : night.id);
                           }}
-                          className="bg-zinc-900 hover:bg-zinc-800 hover:text-zinc-100 border border-zinc-800 text-zinc-300 text-xs px-3 py-1.5 rounded-lg font-mono flex items-center gap-1 transition-all cursor-pointer"
+                          className="bg-amber-500 hover:bg-amber-400 text-zinc-950 text-sm font-semibold min-h-11 px-4 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
                         >
-                          <Plus className="w-3.5 h-3.5" />
-                          Add Review
+                          <Plus className="w-4 h-4" />
+                          Add yours
                         </button>
                       )}
                     </div>
@@ -899,7 +899,7 @@ export default function FeedView({
                                   type="button"
                                   onClick={() => handlePostReviewSubmit(night.id)}
                                   disabled={submittingReview}
-                                  className="bg-amber-500 hover:bg-amber-600 text-zinc-950 text-xs font-bold px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                  className="bg-red-700 hover:bg-red-600 text-ticket text-xs font-bold px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                                 >
                                   {submittingReview ? "Posting..." : "Submit Review"}
                                 </button>
@@ -910,7 +910,7 @@ export default function FeedView({
 
                         {/* Existing Reviews List */}
                         {nightReviews.length === 0 ? (
-                          <p className="text-xs text-zinc-600 italic py-2">
+                          <p className="text-xs text-zinc-400 italic py-2">
                             {isBeforeDataLoss(night.date)
                               ? "The original reviews for this night were lost when Google AI Studio wiped the club database on 14 October 2026. If you remember yours, click Add Review to post it again."
                               : "No reviews written for this movie yet. Click Add Review to start!"}
@@ -1024,7 +1024,7 @@ export default function FeedView({
                                             type="button"
                                             onClick={() => handleSaveEditReview(review.id)}
                                             disabled={updatingReview}
-                                            className="bg-amber-500 hover:bg-amber-600 text-zinc-950 text-xs font-bold px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                            className="bg-red-700 hover:bg-red-600 text-ticket text-xs font-bold px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                                           >
                                             {updatingReview ? "Saving..." : "Save Changes"}
                                           </button>

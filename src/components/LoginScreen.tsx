@@ -1,23 +1,46 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { User, MOVIE_CLUB_USERS } from "../types.ts";
-import { Ticket, LogIn, Film, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import { setToken } from "../auth.ts";
+import PaletteStrip from "./PaletteStrip.tsx";
+import { CLUB_PALETTE } from "../palette.ts";
 
 interface LoginScreenProps {
   onLoginSuccess: (user: User) => void;
 }
 
 export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
-  const [username, setUsername] = useState("James");
+  const [members, setMembers] = useState<User[]>(MOVIE_CLUB_USERS);
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Use members' current profile photos when the server has them
+  useEffect(() => {
+    fetch("/api/users")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((dbUsers: User[] | null) => {
+        if (!dbUsers) return;
+        setMembers(
+          MOVIE_CLUB_USERS.map((m) => {
+            const found = dbUsers.find((u) => u.username.toLowerCase() === m.username.toLowerCase());
+            return found?.avatarUrl && !found.avatarUrl.startsWith("/src/") ? { ...m, avatarUrl: found.avatarUrl } : m;
+          })
+        );
+      })
+      .catch(() => {});
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!username) {
+      setError("Tap your photo first.");
+      return;
+    }
     if (!password) {
-      setError("Please enter your password to gain entry.");
+      setError("Enter your password to come in.");
       return;
     }
 
@@ -46,148 +69,81 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black overflow-y-auto flex flex-col items-center justify-center p-4 md:p-8 select-none z-50">
-      
-      {/* Background Ambience */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.06)_0%,transparent_70%)] pointer-events-none" />
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
-      <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-amber-500/10 to-transparent" />
+  const selected = members.find((m) => m.username === username);
 
-      {/* Main Container */}
-      <div className="w-full max-w-md relative z-10 my-auto flex flex-col items-center">
-        
-        {/* Cinematic Branding */}
-        <div className="text-center mb-8 flex flex-col items-center">
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-3 text-amber-500 shadow-lg shadow-amber-500/5"
-          >
-            <Film className="w-8 h-8" />
-          </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="text-4xl font-serif tracking-[0.2em] text-zinc-100 font-bold italic"
-          >
-            MOVIE CLUB
-          </motion.h1>
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="flex flex-col items-center gap-1.5 mt-2.5"
-          >
-            <span className="text-[10px] uppercase tracking-[0.3em] text-amber-500 font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-              Private Members-Only Society
-            </span>
-            <p className="text-xs text-zinc-400 max-w-xs text-center font-sans font-light leading-relaxed mt-1">
-              Restricted portal for scheduled fortnightly screenings, member voting, and session chronicles.
-            </p>
-          </motion.div>
+  return (
+    <div className="min-h-[100dvh] bg-zinc-950 text-zinc-100 overflow-y-auto flex flex-col items-center px-5 pt-[max(3.5rem,env(safe-area-inset-top))] pb-8">
+      <motion.form
+        onSubmit={handleSubmit}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-sm flex flex-col gap-8 flex-1"
+      >
+        <header className="flex flex-col items-center text-center gap-3">
+          <h1 className="font-serif text-5xl text-zinc-50">Movie Club</h1>
+          <PaletteStrip colors={CLUB_PALETTE} className="h-3.5 w-60 rounded" />
+          <p className="slate text-zinc-400 mt-1">Admit one · Every second Friday · 7 pm</p>
+        </header>
+
+        <fieldset className="flex flex-col gap-3">
+          <legend className="slate text-zinc-400 mb-3">Who's watching?</legend>
+          <div className="grid grid-cols-3 gap-3">
+            {members.map((m) => {
+              const on = m.username === username;
+              return (
+                <button
+                  key={m.username}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => {
+                    setUsername(m.username);
+                    setError("");
+                  }}
+                  className={`flex flex-col items-center gap-2 py-3 rounded-2xl border-2 cursor-pointer transition-colors ${
+                    on ? "bg-amber-950 border-amber-500" : "bg-zinc-900 border-transparent hover:border-zinc-700"
+                  }`}
+                >
+                  {m.avatarUrl ? (
+                    <img src={m.avatarUrl} alt="" className="w-14 h-14 rounded-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="w-14 h-14 rounded-full bg-slate flex items-center justify-center font-semibold">{m.name.substring(0, 2).toUpperCase()}</span>
+                  )}
+                  <span className="text-sm font-medium">{m.username}</span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="password" className="slate text-zinc-400">
+            {selected ? `Password for ${selected.username}` : "Password"}
+          </label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            className="h-14 rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-100 text-lg px-4 focus:outline-none focus:ring-2 focus:ring-amber-500"
+          />
+          {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
         </div>
 
-        {/* Ticket Styled Box */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.97, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="relative bg-[#0c0c0c] border border-zinc-800 rounded-3xl w-full overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
-        >
-          {/* Ticket Header */}
-          <div className="relative h-14 bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-between px-8">
-            <span className="text-zinc-950 font-serif font-black text-xl tracking-[0.1em] flex items-center gap-2">
-              <Ticket className="w-5.5 h-5.5" />
-              ADMIT ONE
-            </span>
-            <span className="text-zinc-950/70 font-mono text-xs font-bold tracking-wider">RESTRICTED</span>
-            
-            {/* Cutout Punch */}
-            <div className="absolute left-1/2 -bottom-3.5 -translate-x-1/2 w-7 h-7 bg-black rounded-full" />
-          </div>
-
-          {/* Form Content (Tagged with data-nosnippet to prevent search engine indexing of member names) */}
-          <div className="p-8 pt-12 relative" data-nosnippet="true">
-            
-            {/* Decorative Ticket Side Notch Cutouts */}
-            <div className="absolute top-1/2 -left-3.5 -translate-y-1/2 w-7 h-7 bg-black rounded-full border-r border-zinc-800" />
-            <div className="absolute top-1/2 -right-3.5 -translate-y-1/2 w-7 h-7 bg-black rounded-full border-l border-zinc-800" />
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              
-              {/* Member Selection */}
-              <div data-nosnippet="true">
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2.5 font-mono">
-                  Select Member Profile
-                </label>
-                <select
-                  value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value);
-                    setError("");
-                  }}
-                  className="w-full bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-base font-medium cursor-pointer"
-                >
-                  {MOVIE_CLUB_USERS.map((user) => (
-                    <option key={user.username} value={user.username}>
-                      {user.name} ({user.isAdmin ? "Admin" : "Member"})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Password Input */}
-              <div>
-                <div className="flex justify-between items-center mb-2.5">
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest font-mono">
-                    Password
-                  </label>
-                </div>
-                
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError("");
-                  }}
-                  placeholder="••••••••"
-                  className="w-full bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all font-mono tracking-widest text-base"
-                />
-              </div>
-
-              {/* Error Message */}
-              {error && (
-                <p className="text-xs text-red-400 font-semibold flex items-center gap-1.5 bg-red-950/20 border border-red-900/30 p-3 rounded-lg font-mono">
-                  <span>⚠️ {error}</span>
-                </p>
-              )}
-
-              {/* Action Buttons */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 text-zinc-950 font-black text-sm uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-amber-500/10 cursor-pointer active:scale-[0.99]"
-              >
-                <LogIn className="w-4 h-4" />
-                {loading ? "Verifying Token..." : "Access Movie Club"}
-              </button>
-
-            </form>
-          </div>
-
-          {/* Ticket Footer branding */}
-          <div className="bg-zinc-900/40 px-8 py-3.5 border-t border-zinc-900 flex justify-between items-center text-[10px] text-zinc-500 font-mono">
-            <span className="flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500/60" /> Classy Movie Club
-            </span>
-            <span>Est. 2026</span>
-          </div>
-        </motion.div>
-      </div>
+        <div className="mt-auto flex flex-col gap-3">
+          <button
+            type="submit"
+            disabled={loading}
+            className="min-h-14 rounded-2xl bg-red-700 hover:bg-red-600 disabled:opacity-60 text-ticket font-semibold text-lg flex items-center justify-center gap-2 cursor-pointer"
+          >
+            {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+            {loading ? "Checking…" : "Enter"}
+          </button>
+          <p className="text-center text-sm text-zinc-500">Members only</p>
+        </div>
+      </motion.form>
     </div>
   );
 }
