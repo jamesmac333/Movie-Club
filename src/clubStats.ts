@@ -108,3 +108,14 @@ export function recapDueNight<N extends NightLike>(nights: N[], recappedNightIds
     .sort((a, b) => byDate(b, a))
     .find((n) => !recappedNightIds.includes(n.id));
 }
+
+// Ash picks the best review for a night once every member has reviewed it (stars and words)
+export function bestReviewStatus<N extends NightLike, R extends ReviewLike & { comment?: string; isStarred?: boolean }>(nights: N[], reviews: R[], memberNames: string[]) {
+  return watchedFilms(nights)
+    .map((night) => {
+      const nightReviews = reviews.filter((r) => r.movieNightId === night.id && !!r.comment?.trim());
+      const reviewed = memberNames.filter((name) => nightReviews.some((r) => sameName(r.user, name))).length;
+      return { night, reviews: nightReviews, reviewed, total: memberNames.length, ready: reviewed === memberNames.length, pick: nightReviews.find((r) => r.isStarred) };
+    })
+    .reverse();
+}

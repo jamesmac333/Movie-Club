@@ -22,6 +22,7 @@ import HomeScreenHint from "./components/HomeScreenHint.tsx";
 import GapFillCard from "./components/GapFillCard.tsx";
 import AdminView from "./components/AdminView.tsx";
 import RecapPromptCard from "./components/RecapPromptCard.tsx";
+import { BestReviewNudge } from "./components/BestReviewPicks.tsx";
 import FilmPage from "./components/FilmPage.tsx";
 import MemberPage from "./components/MemberPage.tsx";
 import OfflineNotice from "./components/OfflineNotice.tsx";
@@ -61,6 +62,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>("landing");
   // The night Ash tapped "Write the recap" for on Home, so the Admin tab opens on it
   const [recapNightId, setRecapNightId] = useState("");
+  // Set when Ash taps the best-review nudge on Home, so the Admin tab opens scrolled to the picks
+  const [showBestReviews, setShowBestReviews] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
 
@@ -852,6 +855,17 @@ export default function App() {
                         }}
                       />
                     )}
+                    {isAsh && (
+                      <BestReviewNudge
+                        nights={nights}
+                        reviews={reviews}
+                        members={members}
+                        onOpen={() => {
+                          setShowBestReviews(true);
+                          setActiveTab("admin");
+                        }}
+                      />
+                    )}
                     <JustWatchedCard
                       nights={nights}
                       reviews={reviews}
@@ -953,6 +967,10 @@ export default function App() {
                     onUserUpdate={fetchUsers}
                     onOpenMember={openMember}
                     recapNightId={recapNightId}
+                    isAsh={isAsh}
+                    onToggleStarReview={handleToggleStarReview}
+                    showBestReviews={showBestReviews}
+                    onShownBestReviews={() => setShowBestReviews(false)}
                   />
                 )}
               </motion.div>

@@ -3,6 +3,7 @@ import { ChevronDown, Mail, RefreshCw, ShieldCheck, Users } from "lucide-react";
 import { MovieNight, NightOverview, Review, User, ROTATION_MEMBERS } from "../types.ts";
 import OverviewForm from "./OverviewForm.tsx";
 import GapTracker from "./GapTracker.tsx";
+import BestReviewPicks from "./BestReviewPicks.tsx";
 import AdminMembersPanel from "./AdminMembersPanel.tsx";
 import EdmAdminManager from "./EdmAdminManager.tsx";
 
@@ -19,6 +20,11 @@ interface AdminViewProps {
   onOpenMember: (name: string) => void;
   // Opens the recap writer on this night, when Ash came from the prompt on Home
   recapNightId?: string;
+  // Only Ash picks best reviews
+  isAsh: boolean;
+  onToggleStarReview: (reviewId: string) => Promise<void>;
+  showBestReviews?: boolean;
+  onShownBestReviews?: () => void;
 }
 
 // A section that stays folded until it's needed, so the recap writer stays at the top
@@ -100,7 +106,7 @@ function RotationPanel({ onRealignRotation }: { onRealignRotation: () => Promise
 }
 
 // Everything only Ash and James can do, in one place. Per-night controls stay on the nights themselves.
-export default function AdminView({ currentUser, nights, reviews, overviews, members, onPostOverview, onUpdateOverviewImage, onRealignRotation, onUserUpdate, onOpenMember, recapNightId }: AdminViewProps) {
+export default function AdminView({ currentUser, nights, reviews, overviews, members, onPostOverview, onUpdateOverviewImage, onRealignRotation, onUserUpdate, onOpenMember, recapNightId, isAsh, onToggleStarReview, showBestReviews, onShownBestReviews }: AdminViewProps) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -114,6 +120,8 @@ export default function AdminView({ currentUser, nights, reviews, overviews, mem
       <OverviewForm initialNightId={recapNightId} nights={nights} currentUser={currentUser} onPostOverview={onPostOverview} overviews={overviews} onUpdateOverviewImage={onUpdateOverviewImage} />
 
       <GapTracker nights={nights} reviews={reviews} members={members} onOpenMember={onOpenMember} />
+
+      {isAsh && <BestReviewPicks nights={nights} reviews={reviews} members={members} onToggleStar={onToggleStarReview} scrollIntoView={showBestReviews} onScrolled={onShownBestReviews} />}
 
       <Fold id="admin-members" title="Members" subtitle="Photos, password resets and backups" icon={Users}>
         <AdminMembersPanel currentUser={currentUser} users={members} onUserUpdate={onUserUpdate} />

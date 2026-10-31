@@ -166,7 +166,7 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
                     <span className="block text-sm text-zinc-400">{date}</span>
                   </span>
                   <span className="shrink-0 flex items-center gap-0.5 text-sm font-semibold text-amber-500">
-                    {mine ? "Add words" : "Review"}
+                    {mine ? "Review again" : "Review"}
                     <ChevronRight className="w-4 h-4" aria-hidden="true" />
                   </span>
                 </button>
