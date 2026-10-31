@@ -837,35 +837,38 @@ export default function App() {
               >
                 {activeTab === "landing" && (
                   <div className="space-y-12">
-                    <HomeScreenHint />
-                    <GapFillCard
-                      nights={nights}
-                      reviews={reviews}
-                      currentUser={currentUser}
-                      onAddReview={handleAddReview}
-                    />
-                    {isAsh && (
-                      <RecapPromptCard
-                        nights={nights}
-                        overviews={overviews}
-                        onWrite={(nightId) => {
-                          setRecapNightId(nightId);
-                          setActiveTab("admin");
-                          window.scrollTo({ top: 0 });
-                        }}
-                      />
-                    )}
-                    {isAsh && (
-                      <BestReviewNudge
+                    {/* Things to do: kept together, and empty ones take no space */}
+                    <div className="space-y-4 empty:hidden !mb-6">
+                      <HomeScreenHint />
+                      <GapFillCard
                         nights={nights}
                         reviews={reviews}
-                        members={members}
-                        onOpen={() => {
-                          setShowBestReviews(true);
-                          setActiveTab("admin");
-                        }}
+                        currentUser={currentUser}
+                        onAddReview={handleAddReview}
                       />
-                    )}
+                      {isAsh && (
+                        <RecapPromptCard
+                          nights={nights}
+                          overviews={overviews}
+                          onWrite={(nightId) => {
+                            setRecapNightId(nightId);
+                            setActiveTab("admin");
+                            window.scrollTo({ top: 0 });
+                          }}
+                        />
+                      )}
+                      {isAsh && (
+                        <BestReviewNudge
+                          nights={nights}
+                          reviews={reviews}
+                          members={members}
+                          onOpen={() => {
+                            setShowBestReviews(true);
+                            setActiveTab("admin");
+                          }}
+                        />
+                      )}
+                    </div>
                     <JustWatchedCard
                       nights={nights}
                       reviews={reviews}

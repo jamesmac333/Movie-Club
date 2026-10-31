@@ -3,6 +3,8 @@ import { MovieNight, Review, User } from "../types.ts";
 import { Film, Clock, Star, Trophy, Flame, Heart } from "lucide-react";
 import { motion } from "motion/react";
 import { WithGapBadge } from "./GapBadge.tsx";
+import PaletteStrip from "./PaletteStrip.tsx";
+import { CLUB_PALETTE } from "../palette.ts";
 
 interface GroupStatisticsProps {
   nights: MovieNight[];
@@ -101,26 +103,27 @@ export default function GroupStatistics({ nights, reviews, users = [], onOpenMem
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
-      className="space-y-4"
+      className="relative overflow-hidden -mx-4 sm:mx-0 px-4 sm:px-6 pt-9 pb-8 sm:rounded-3xl bg-slate space-y-4"
     >
+      <PaletteStrip colors={CLUB_PALETTE} className="absolute top-0 inset-x-0 h-1.5" />
       <h2 id="club-stats" className="font-serif text-3xl text-zinc-50">Club stats</h2>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {stats.map(({ value, label, icon: Icon }) => (
-          <div key={label} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-5 flex flex-col gap-2 min-w-0">
+          <div key={label} className="bg-slate-deep border border-slate-line rounded-2xl p-4 sm:p-5 flex flex-col gap-2 min-w-0">
             <Icon className="w-5 h-5 text-amber-500" aria-hidden="true" />
             <p className="font-serif text-2xl sm:text-3xl text-zinc-50 leading-tight break-words">{value}</p>
-            <p className="slate text-zinc-400">{label}</p>
+            <p className="slate text-zinc-300">{label}</p>
           </div>
         ))}
       </div>
 
       {onOpenMember && users.length > 0 && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-5">
-          <p className="slate text-zinc-400">Members · tap for their picks and ratings</p>
+        <div className="bg-slate-deep border border-slate-line rounded-2xl p-4 sm:p-5">
+          <p className="slate text-zinc-300">Members · tap for their picks and ratings</p>
           <ul className="mt-3 grid grid-cols-3 sm:grid-cols-6 gap-2">
             {users.map((u) => (
               <li key={u.username}>
-                <button type="button" onClick={() => onOpenMember(u.name)} className="w-full min-h-11 py-2 rounded-xl hover:bg-zinc-800 flex flex-col items-center gap-1.5 cursor-pointer">
+                <button type="button" onClick={() => onOpenMember(u.name)} className="w-full min-h-11 py-2 rounded-xl hover:bg-slate-line flex flex-col items-center gap-1.5 cursor-pointer">
                   <WithGapBadge show={!!u.hasGapBadge}>
                     {u.avatarUrl ? (
                       <img src={u.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover" referrerPolicy="no-referrer" />

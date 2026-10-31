@@ -71,7 +71,7 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
 
   if (minimised) {
     return (
-      <section aria-labelledby="gap-fill" className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+      <section aria-labelledby="gap-fill" className="bg-amber-950 border border-amber-800 rounded-2xl overflow-hidden">
         <button
           type="button"
           aria-expanded={false}
@@ -85,7 +85,7 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
                 {progress.remaining.length} left · <span className="font-semibold text-amber-500">{percent}%</span>
               </span>
             </span>
-            <span className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+            <span className="h-1.5 rounded-full bg-black/30 overflow-hidden">
               <span className="block h-full rounded-full bg-amber-500" style={{ width: `${percent}%` }} />
             </span>
           </span>
@@ -102,7 +102,7 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
       onPointerDown={touch}
       onKeyDown={touch}
       onFocus={touch}
-      className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden"
+      className="bg-amber-950 border border-amber-800 rounded-3xl overflow-hidden"
     >
       <div className="px-5 pt-5 pb-4 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
@@ -114,7 +114,7 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
               aria-expanded={true}
               aria-label="Minimise Fill in the gaps"
               onClick={() => minimise(true)}
-              className="w-11 h-11 -mr-2 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 cursor-pointer"
+              className="w-11 h-11 -mr-2 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-black/20 cursor-pointer"
             >
               <ChevronUp className="w-5 h-5" aria-hidden="true" />
             </button>
@@ -126,7 +126,7 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
           aria-valuemin={0}
           aria-valuemax={progress.total}
           aria-valuenow={progress.done}
-          className="h-3 rounded-full bg-zinc-800 overflow-hidden"
+          className="h-3 rounded-full bg-black/30 overflow-hidden"
         >
           <motion.div className="h-full rounded-full bg-amber-500" initial={false} animate={{ width: `${percent}%` }} transition={{ duration: 0.6, ease: "easeOut" }} />
         </div>
@@ -136,7 +136,7 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
         </p>
       </div>
 
-      <ul className="border-t border-zinc-800">
+      <ul className="border-t border-amber-800">
         <AnimatePresence initial={false}>
           {progress.remaining.map((night) => {
             const mine = myReview(night.id);
@@ -148,13 +148,13 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0, height: 0, transition: { duration: 0.35 } }}
-                className="border-b border-zinc-800 last:border-b-0 overflow-hidden"
+                className="border-b border-amber-800/60 last:border-b-0 overflow-hidden"
               >
                 {/* The whole row opens the review sheet */}
                 <button
                   type="button"
                   onClick={() => setSheet({ night, rating: mine?.rating || 0 })}
-                  className="w-full min-h-16 px-5 py-3 flex items-center gap-3 text-left hover:bg-zinc-850 active:bg-zinc-850 cursor-pointer"
+                  className="w-full min-h-16 px-5 py-3 flex items-center gap-3 text-left hover:bg-black/20 active:bg-black/20 cursor-pointer"
                 >
                   {night.movie!.posterUrl ? (
                     <img src={night.movie!.posterUrl} alt="" className="w-9 aspect-[2/3] rounded object-cover border border-zinc-700 shrink-0" referrerPolicy="no-referrer" />
