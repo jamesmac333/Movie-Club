@@ -161,9 +161,10 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
   const movie = night.movie;
   const nightReviews = reviews.filter((r) => r.movieNightId === night.id);
   const avgRating = nightReviews.length > 0 ? (nightReviews.reduce((sum, r) => sum + r.rating, 0) / nightReviews.length).toFixed(1) : null;
+  const quotable = nightReviews.filter((r) => r.comment);
   const topReview =
-    nightReviews.find((r) => r.isStarred) ||
-    (nightReviews.length > 0 ? [...nightReviews].sort((a, b) => b.rating - a.rating || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] : null);
+    quotable.find((r) => r.isStarred) ||
+    (quotable.length > 0 ? [...quotable].sort((a, b) => b.rating - a.rating || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] : null);
   const author = (overview.author || "Ash Macintosh").split(" ")[0];
   const host = night.selector.split(" ")[0];
 

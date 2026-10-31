@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS, isAuthenticGatheringPhoto, isBeforeDataLoss, DATA_LOSS_NOTE } from "../types.ts";
-import { Star, MessageSquare, Trash2, Edit3, Plus, Image as ImageIcon, Heart, Calendar, Sparkles, BookOpen, Maximize2, ChevronDown, ChevronUp, Camera, Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Star, MessageSquare, Trash2, Edit3, Plus, Image as ImageIcon, Heart, Calendar, Sparkles, BookOpen, Maximize2, ChevronDown, ChevronUp, Camera, Upload, Loader2, CheckCircle2, AlertCircle, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import PaletteStrip from "./PaletteStrip.tsx";
 
@@ -18,6 +18,7 @@ interface FeedViewProps {
   onOpenRecapModal?: (overview: NightOverview, night: MovieNight) => void;
   onUpdateOverviewImage?: (overviewId: string, imageUrl: string) => Promise<void>;
   onDeleteOverviewImage?: (overviewId: string) => Promise<void>;
+  onOpenFilm?: (nightId: string) => void;
 }
 
 export default function FeedView({
@@ -33,7 +34,8 @@ export default function FeedView({
   onDeleteOverview,
   onOpenRecapModal,
   onUpdateOverviewImage,
-  onDeleteOverviewImage
+  onDeleteOverviewImage,
+  onOpenFilm
 }: FeedViewProps) {
   const [activeReviewFormId, setActiveReviewFormId] = useState<string | null>(null);
   const [newRating, setNewRating] = useState(5);
@@ -255,7 +257,9 @@ export default function FeedView({
   };
 
   const handleSaveEditReview = async (id: string) => {
-    if (!editComment.trim()) return;
+    // Words are optional only for nights re-rated from memory after the data loss
+    const editedNight = nights.find((n) => n.id === reviews.find((r) => r.id === id)?.movieNightId);
+    if (!editComment.trim() && !(editedNight && isBeforeDataLoss(editedNight.date))) return;
     setUpdatingReview(true);
     try {
       await onEditReview(id, editRating, editComment);
@@ -465,6 +469,11 @@ export default function FeedView({
                       {[night.movie!.year, night.movie!.runtime ? `${Math.floor(night.movie!.runtime / 60)}h ${night.movie!.runtime % 60}m` : null, night.movie!.genre].filter(Boolean).join(" · ")}
                     </p>
                     {night.movie!.director && <p className="slate text-zinc-300">A film by {night.movie!.director}</p>}
+                    {onOpenFilm && (
+                      <button type="button" onClick={() => onOpenFilm(night.id)} className="min-h-11 -ml-1 px-1 text-sm font-semibold text-amber-500 hover:text-amber-400 inline-flex items-center gap-1 cursor-pointer">
+                        {night.status === "watched" ? "Everyone's ratings and the film page" : "Film page"} <ChevronRight className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -854,9 +863,11 @@ export default function FeedView({
                                 {renderStars(ashStarredPick.rating)}
                               </div>
                             </div>
-                            <p className="text-xs text-zinc-300 font-serif italic line-clamp-2 leading-relaxed pl-1 border-l-2 border-amber-500/50">
-                              "{ashStarredPick.comment}"
-                            </p>
+                            {ashStarredPick.comment && (
+                              <p className="text-xs text-zinc-300 font-serif italic line-clamp-2 leading-relaxed pl-1 border-l-2 border-amber-500/50">
+                                "{ashStarredPick.comment}"
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1051,11 +1062,11 @@ export default function FeedView({
                                         </div>
                                       </div>
                                     </div>
-                                  ) : (
+                                  ) : review.comment ? (
                                     <p className="text-zinc-300 text-sm font-sans pl-1">
                                       {review.comment}
                                     </p>
-                                  )}
+                                  ) : null}
                                 </motion.div>
                               );
                             })}

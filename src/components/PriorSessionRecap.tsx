@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { MovieNight, Review, NightOverview, User, isAuthenticGatheringPhoto, isBeforeDataLoss } from "../types.ts";
-import { Calendar, Star, MessageSquare, Image as ImageIcon, Film, Heart, BookOpen, Maximize2, Camera, Upload, Trash2, Loader2 } from "lucide-react";
+import { Calendar, Star, MessageSquare, Image as ImageIcon, Film, Heart, BookOpen, Maximize2, Camera, Upload, Trash2, Loader2, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import PaletteStrip from "./PaletteStrip.tsx";
 
@@ -13,6 +13,7 @@ interface PriorSessionRecapProps {
   onOpenRecapModal?: (overview: NightOverview, night: MovieNight) => void;
   onUpdateOverviewImage?: (overviewId: string, imageUrl: string) => Promise<void>;
   onDeleteOverviewImage?: (overviewId: string) => Promise<void>;
+  onOpenFilm?: (nightId: string) => void;
 }
 
 export default function PriorSessionRecap({
@@ -23,7 +24,8 @@ export default function PriorSessionRecap({
   currentUser,
   onOpenRecapModal,
   onUpdateOverviewImage,
-  onDeleteOverviewImage
+  onDeleteOverviewImage,
+  onOpenFilm
 }: PriorSessionRecapProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -240,6 +242,11 @@ export default function PriorSessionRecap({
               <span className="slate text-zinc-400 block">Last time · {formatNZTDate(priorNight.date)}</span>
               <h4 className="text-2xl font-serif text-zinc-50 break-words">{priorNight.movie!.title}</h4>
               <p className="text-sm text-zinc-400">{priorNight.selector.split(" ")[0]}'s pick · {priorNight.movie!.year}</p>
+                    {onOpenFilm && (
+                      <button type="button" onClick={() => onOpenFilm(priorNight.id)} className="min-h-11 -ml-1 px-1 text-sm font-semibold text-amber-500 hover:text-amber-400 inline-flex items-center gap-1 cursor-pointer">
+                        Film page <ChevronRight className="w-4 h-4" />
+                      </button>
+                    )}
             </div>
           </div>
           <PaletteStrip posterUrl={priorNight.movie!.posterUrl} className="h-2 rounded" />
@@ -401,9 +408,11 @@ export default function PriorSessionRecap({
                     <span className="text-xs font-bold text-zinc-200">{review.user}</span>
                     {renderStars(review.rating)}
                   </div>
-                  <p className="text-zinc-400 text-xs leading-relaxed font-sans font-light">
-                    "{review.comment}"
-                  </p>
+                  {review.comment && (
+                    <p className="text-zinc-400 text-xs leading-relaxed font-sans font-light">
+                      "{review.comment}"
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

@@ -77,6 +77,16 @@ test("a review is always saved under the signed-in member's name", async () => {
   assert.ok(reviews.some((r: { user: string; comment: string }) => r.user === "Max Smith" && r.comment === "mine"));
 });
 
+test("films from before the data loss can be rated with stars only; newer ones need words", async () => {
+  const amy = await login("Amy");
+  assert.equal((await fetch(`${BASE}/api/reviews`, json({ movieNightId: "night-2", rating: 3.5, comment: "" }, amy))).status, 200);
+  const saved = (await (await fetch(`${BASE}/api/reviews`)).json()).find((r: { user: string; movieNightId: string }) => r.user === "Amy Walsh" && r.movieNightId === "night-2");
+  assert.equal(saved.rating, 3.5);
+  assert.equal(saved.comment, "");
+  assert.equal((await fetch(`${BASE}/api/reviews`, json({ movieNightId: "night-3", rating: 4, comment: "" }, amy))).status, 400);
+  assert.equal((await fetch(`${BASE}/api/reviews`, json({ movieNightId: "night-2", rating: 9, comment: "x" }, amy))).status, 400);
+});
+
 test("repeated wrong passwords are blocked", async () => {
   for (let i = 0; i < 5; i++) {
     assert.equal((await fetch(`${BASE}/api/auth/login`, json({ username: "Amy", password: "wrong" }))).status, 401);

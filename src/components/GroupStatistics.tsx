@@ -7,9 +7,10 @@ interface GroupStatisticsProps {
   nights: MovieNight[];
   reviews: Review[];
   users?: User[];
+  onOpenMember?: (name: string) => void;
 }
 
-export default function GroupStatistics({ nights, reviews, users = [] }: GroupStatisticsProps) {
+export default function GroupStatistics({ nights, reviews, users = [], onOpenMember }: GroupStatisticsProps) {
   // 1. Movies watched
   const watchedNights = nights.filter((n) => n.status === "watched" && n.movie);
   const totalWatched = watchedNights.length;
@@ -111,6 +112,26 @@ export default function GroupStatistics({ nights, reviews, users = [] }: GroupSt
           </div>
         ))}
       </div>
+
+      {onOpenMember && users.length > 0 && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-5">
+          <p className="slate text-zinc-400">Members · tap for their picks and ratings</p>
+          <ul className="mt-3 grid grid-cols-3 sm:grid-cols-6 gap-2">
+            {users.map((u) => (
+              <li key={u.username}>
+                <button type="button" onClick={() => onOpenMember(u.name)} className="w-full min-h-11 py-2 rounded-xl hover:bg-zinc-800 flex flex-col items-center gap-1.5 cursor-pointer">
+                  {u.avatarUrl ? (
+                    <img src={u.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="w-12 h-12 rounded-full bg-slate text-zinc-100 text-xs font-semibold flex items-center justify-center">{u.name.substring(0, 2).toUpperCase()}</span>
+                  )}
+                  <span className="text-sm text-zinc-200">{u.name.split(" ")[0]}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="bg-amber-950 border border-amber-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">

@@ -1,5 +1,5 @@
 # Use official Node.js image as the base
-FROM node:20-slim AS builder
+FROM node:24-slim AS builder
 
 # Set working directory
 WORKDIR /app
@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:20-slim AS runner
+FROM node:24-slim AS runner
 
 # Set environment to production and disable HMR
 ENV NODE_ENV=production
