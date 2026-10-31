@@ -1,7 +1,7 @@
 {
   "name": "Movie Club",
   "short_name": "Movie Club",
-  "description": "Private members-only cinema society portal for fortnightly movie nights, archives, and reviews.",
+  "description": "A private film club that meets every second Friday at 7 pm. Members take turns picking the film, then everyone rates and reviews it.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
