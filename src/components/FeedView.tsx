@@ -3,6 +3,7 @@ import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS, isAuthenticG
 import { Star, MessageSquare, Trash2, Edit3, Plus, Image as ImageIcon, Heart, Calendar, Sparkles, BookOpen, Maximize2, ChevronDown, ChevronUp, Camera, Upload, Loader2, CheckCircle2, AlertCircle, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import PaletteStrip from "./PaletteStrip.tsx";
+import StarInput from "./StarInput.tsx";
 
 interface FeedViewProps {
   nights: MovieNight[];
@@ -290,37 +291,16 @@ export default function FeedView({
     });
   };
 
-  const renderStars = (rating: number, interactive = false, onClick?: (val: number) => void) => {
+  const renderStars = (rating: number) => {
     return (
-      <div className="flex items-center gap-1.5" style={{ touchAction: "manipulation" }}>
+      <div className="flex items-center gap-1.5">
         {Array.from({ length: 5 }).map((_, idx) => {
           const val = idx + 1;
           const isFullyFilled = rating >= val;
           const isHalfFilled = !isFullyFilled && rating >= val - 0.5;
 
           return (
-            <div
-              key={idx}
-              className={`relative select-none ${interactive ? "cursor-pointer hover:scale-110 transition-all" : ""}`}
-              style={{ width: "16px", height: "16px" }}
-            >
-              {interactive && (
-                <>
-                  {/* Left half clickable area */}
-                  <div
-                    className="absolute left-0 top-0 w-1/2 h-full z-20"
-                    onClick={() => onClick && onClick(idx + 0.5)}
-                    title={`Rate ${idx + 0.5} Stars`}
-                  />
-                  {/* Right half clickable area */}
-                  <div
-                    className="absolute right-0 top-0 w-1/2 h-full z-20"
-                    onClick={() => onClick && onClick(idx + 1)}
-                    title={`Rate ${idx + 1} Stars`}
-                  />
-                </>
-              )}
-
+            <div key={idx} className="relative select-none" style={{ width: "16px", height: "16px" }}>
               {/* Visual star layers */}
               <div className="absolute inset-0 z-10 pointer-events-none">
                 {/* Background empty star */}
@@ -338,11 +318,6 @@ export default function FeedView({
             </div>
           );
         })}
-        {interactive && (
-          <span className="text-xs text-amber-500 font-mono font-bold ml-1.5">
-            {rating.toFixed(1)}
-          </span>
-        )}
       </div>
     );
   };
@@ -897,7 +872,8 @@ export default function FeedView({
                               </span>
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-zinc-400 font-mono">Rating:</span>
-                                {renderStars(newRating, true, setNewRating)}
+                                <StarInput value={newRating} onChange={setNewRating} label="Your rating" />
+                                <span className="text-xs text-amber-500 font-mono font-bold">{newRating.toFixed(1)}</span>
                               </div>
                             </div>
 
@@ -1002,7 +978,7 @@ export default function FeedView({
                                       )}
 
                                       {isReviewEditing ? (
-                                        renderStars(editRating, true, setEditRating)
+                                        <StarInput value={editRating} onChange={setEditRating} label="Your rating" />
                                       ) : (
                                         renderStars(review.rating)
                                       )}

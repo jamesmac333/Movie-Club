@@ -4,6 +4,7 @@ import { Check, Loader2, PenLine } from "lucide-react";
 import { MovieNight, Review, User, DATA_LOSS_DATE } from "../types.ts";
 import { watchedFilms } from "../clubStats.ts";
 import ReviewSheet from "./ReviewSheet.tsx";
+import StarInput from "./StarInput.tsx";
 
 const SKIPPED_KEY = "movie_club_gap_fill_skipped";
 
@@ -69,7 +70,7 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview,
           <span className="text-sm text-zinc-400 shrink-0">{ratedCount} of {oldFilms.length} rated</span>
         </div>
         <p className="text-sm text-zinc-400">
-          Reviews from before 14 October were lost. Tap the stars for each film you remember. Words are optional.
+          Reviews from before 14 October were lost. Tap or slide along the stars for each film you remember. The left side of a star is a half. Words are optional.
         </p>
       </div>
 
@@ -100,35 +101,12 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview,
               </div>
 
               <div className="flex items-center gap-3 flex-wrap">
-                <div role="group" aria-label={`Rate ${night.movie!.title}`} className="flex">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      disabled={!!saving}
-                      aria-label={`${n} star${n > 1 ? "s" : ""}`}
-                      aria-pressed={Math.floor(shown) >= n}
-                      onClick={() => rate(night, n)}
-                      className={`w-11 h-11 text-4xl leading-none cursor-pointer disabled:cursor-wait ${n <= shown ? "text-amber-500" : n - 0.5 === shown ? "text-amber-700" : "text-zinc-700 hover:text-amber-700"}`}
-                    >
-                      ★
-                    </button>
-                  ))}
-                </div>
+                <StarInput value={shown} onChange={(rating) => rate(night, rating)} label={`Rate ${night.movie!.title}`} disabled={!!saving} />
                 {saving?.id === night.id ? (
                   <Loader2 className="w-5 h-5 text-zinc-400 animate-spin" aria-label="Saving" />
                 ) : mine ? (
                   <span className="flex items-center gap-2 text-sm flex-wrap">
                     <span className="flex items-center gap-1 text-emerald-400"><Check className="w-4 h-4" />Saved</span>
-                    <button
-                      type="button"
-                      disabled={!!saving || mine.rating >= 5}
-                      aria-label={mine.rating % 1 ? "Remove the half star" : "Add a half star"}
-                      onClick={() => rate(night, mine.rating % 1 ? Math.floor(mine.rating) : mine.rating + 0.5)}
-                      className="min-h-11 px-3 rounded-xl border border-zinc-700 text-zinc-200 hover:text-amber-500 disabled:opacity-40 cursor-pointer"
-                    >
-                      {mine.rating % 1 ? "−½" : "+½"}
-                    </button>
                     <button type="button" onClick={() => setSheetNight(night)} className="min-h-11 px-2 text-zinc-300 hover:text-amber-500 flex items-center gap-1.5 cursor-pointer">
                       <PenLine className="w-4 h-4" />
                       {mine.comment ? "Edit words" : "Add words"}

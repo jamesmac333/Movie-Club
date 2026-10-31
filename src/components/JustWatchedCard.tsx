@@ -4,6 +4,7 @@ import { PenLine } from "lucide-react";
 import { MovieNight, Review, User } from "../types.ts";
 import PaletteStrip from "./PaletteStrip.tsx";
 import ReviewSheet from "./ReviewSheet.tsx";
+import StarInput from "./StarInput.tsx";
 
 const REVIEW_WINDOW_DAYS = 7;
 
@@ -77,19 +78,7 @@ export default function JustWatchedCard({ nights, reviews, users, currentUser, o
 
       <div className="px-5 pt-4 md:px-0">
         <p id="quick-rate" className="text-sm font-semibold text-zinc-400 mb-1">Tap to rate</p>
-        <div role="group" aria-labelledby="quick-rate" className="flex justify-between max-w-sm">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
-              onClick={() => openSheet(n)}
-              className={`w-14 h-14 text-5xl leading-none cursor-pointer ${n <= quickRating ? "text-amber-500" : "text-zinc-700 hover:text-amber-700"}`}
-            >
-              ★
-            </button>
-          ))}
-        </div>
+        <StarInput value={quickRating} onChange={(rating) => openSheet(rating)} label={`Rate ${movie.title}`} size="lg" />
       </div>
 
       <div className="px-5 pt-3 pb-5 md:px-0 flex flex-col gap-3">
