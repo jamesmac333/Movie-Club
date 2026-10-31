@@ -65,6 +65,11 @@ function sign(payload: string): string {
   return crypto.createHmac("sha256", SESSION_SECRET).update(payload).digest("base64url");
 }
 
+// Private part of the club calendar link: calendar apps can't sign in, so the link itself is the key
+export function calendarKey(): string {
+  return sign("club-calendar-feed").slice(0, 32);
+}
+
 export function createToken(username: string): string {
   const payload = Buffer.from(JSON.stringify({ u: username, exp: Date.now() + TOKEN_TTL_MS })).toString("base64url");
   return `${payload}.${sign(payload)}`;
@@ -116,6 +121,7 @@ const PUBLIC_ROUTES: Array<[string, RegExp]> = [
   ["GET", /^\/api\/reviews$/],
   ["GET", /^\/api\/overviews$/],
   ["GET", /^\/api\/overviews\/[^/]+\/image$/],
+  ["GET", /^\/api\/calendar\/[^/]+\.ics$/],
 ];
 
 // Routes that only admins may call (on top of each route's own checks)

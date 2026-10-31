@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { 
   readDb, 
@@ -16,8 +17,9 @@ import {
   getDbFilePath
 } from "./server/db.ts";
 import { fetchMovieMetadata } from "./server/gemini.ts";
-import { authenticate, createToken, clientAddress, loginRetryMinutes, recordLoginFailure, recordLoginSuccess } from "./server/auth.ts";
+import { authenticate, calendarKey, createToken, clientAddress, loginRetryMinutes, recordLoginFailure, recordLoginSuccess } from "./server/auth.ts";
 import { hashPassword, verifyPassword } from "./server/passwords.ts";
+import { buildClubCalendar } from "./server/calendar.ts";
 import { storeImage, sendImage, imageVersion, isStoredImage, isInlineImage } from "./server/images.ts";
 
 // Public address of the site, used for links and images in club emails
@@ -99,7 +101,7 @@ async function startServer() {
         return res.status(401).json({ error: "Incorrect username or password" });
       }
       recordLoginSuccess(user.username);
-      const { password: _, ...safeUser } = user;
+      const { password: _, seenPicks: __, ...safeUser } = user;
       res.json({ user: safeUser, token: createToken(user.username) });
     } catch (error) {
       res.status(500).json({ error: "Authentication failed" });
@@ -254,7 +256,7 @@ async function startServer() {
   app.get("/api/users", (req, res) => {
     try {
       const db = readDb();
-      const safeUsers = db.users.map(({ password, ...u }) => {
+      const safeUsers = db.users.map(({ password, seenPicks, ...u }) => {
         if (u.avatarUrl && (isStoredImage(u.avatarUrl) || isInlineImage(u.avatarUrl))) {
           // Fingerprint changes whenever the photo does, so the URL can be cached
           return {
@@ -268,6 +270,49 @@ async function startServer() {
       res.json(safeUsers);
     } catch (error) {
       res.status(500).json({ error: "Failed to load users" });
+    }
+  });
+
+  // Club calendar: members get the private subscription link, calendar apps fetch the feed
+  app.get("/api/calendar-link", (req, res) => {
+    res.json({ path: `/api/calendar/${calendarKey()}.ics` });
+  });
+
+  app.get("/api/calendar/:file", (req, res) => {
+    const expected = Buffer.from(`${calendarKey()}.ics`);
+    const given = Buffer.from(req.params.file);
+    if (given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) {
+      return res.status(404).send("Not found");
+    }
+    res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
+    res.send(buildClubCalendar(readDb().nights, process.env.APP_URL || "https://www.movieclub.co.nz"));
+  });
+
+  // The film picks the signed-in member has already seen announced, so the pop-up shows once per pick
+  app.get("/api/me/seen-picks", (req, res) => {
+    const me = readDb().users.find((u) => u.username.toLowerCase() === req.authUser!.username.toLowerCase());
+    res.setHeader("Cache-Control", "no-store");
+    res.json(me?.seenPicks || {});
+  });
+
+  app.post("/api/me/seen-picks", async (req, res) => {
+    const { nightId, title } = req.body || {};
+    if (typeof nightId !== "string" || typeof title !== "string" || !nightId || nightId.length > 100 || title.length > 300) {
+      return res.status(400).json({ error: "Missing night or film" });
+    }
+    try {
+      const seen = await mutateDb((db) => {
+        const me = db.users.find((u) => u.username.toLowerCase() === req.authUser!.username.toLowerCase());
+        if (!me) return {};
+        me.seenPicks = { ...me.seenPicks, [nightId]: title };
+        // Forget nights that no longer exist
+        for (const id of Object.keys(me.seenPicks)) if (!db.nights.some((n) => n.id === id)) delete me.seenPicks[id];
+        return me.seenPicks;
+      });
+      res.json(seen);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save" });
     }
   });
 

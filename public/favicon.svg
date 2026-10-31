@@ -1,34 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
-  <defs>
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24"/>
-      <stop offset="50%" stop-color="#f59e0b"/>
-      <stop offset="100%" stop-color="#d97706"/>
-    </linearGradient>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#18181b"/>
-      <stop offset="100%" stop-color="#09090b"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
-  <rect x="24" y="24" width="464" height="464" rx="92" fill="none" stroke="#f59e0b" stroke-width="8" stroke-opacity="0.25"/>
-  
-  <!-- Film Reel Emblem -->
-  <g transform="translate(256, 256)">
-    <!-- Outer rim -->
-    <circle r="160" fill="none" stroke="url(#goldGrad)" stroke-width="28"/>
-    <!-- Outer track perforations -->
-    <circle r="126" fill="none" stroke="#fbbf24" stroke-width="4" stroke-dasharray="14 18" stroke-opacity="0.7"/>
-    <!-- Center hub -->
-    <circle r="52" fill="#09090b" stroke="url(#goldGrad)" stroke-width="16"/>
-    <circle r="18" fill="#fbbf24"/>
-    
-    <!-- Reel spokes / cutouts -->
-    <circle cx="0" cy="-84" r="26" fill="#09090b" stroke="url(#goldGrad)" stroke-width="8"/>
-    <circle cx="73" cy="-42" r="26" fill="#09090b" stroke="url(#goldGrad)" stroke-width="8"/>
-    <circle cx="73" cy="42" r="26" fill="#09090b" stroke="url(#goldGrad)" stroke-width="8"/>
-    <circle cx="0" cy="84" r="26" fill="#09090b" stroke="url(#goldGrad)" stroke-width="8"/>
-    <circle cx="-73" cy="42" r="26" fill="#09090b" stroke="url(#goldGrad)" stroke-width="8"/>
-    <circle cx="-73" cy="-42" r="26" fill="#09090b" stroke="url(#goldGrad)" stroke-width="8"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#1c2626"/>
+  <text x="32" y="40" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="40" font-weight="bold" font-style="italic" fill="#f4e6cc">M</text>
+  <g transform="translate(10 47)">
+    <rect width="5.5" height="5" fill="#2e1b12"/><rect x="5.5" width="5.5" height="5" fill="#5a3a2b"/>
+    <rect x="11" width="5.5" height="5" fill="#8c6e5a"/><rect x="16.5" width="5.5" height="5" fill="#7d1712"/>
+    <rect x="22" width="5.5" height="5" fill="#e3be8a"/><rect x="27.5" width="5.5" height="5" fill="#afaf98"/>
+    <rect x="33" width="5.5" height="5" fill="#6f8c83"/><rect x="38.5" width="5.5" height="5" fill="#2f4a55"/>
   </g>
 </svg>

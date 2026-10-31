@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import AddToCalendarButton from "./AddToCalendarButton.tsx";
 import { MovieNight, User, NightOverview, MOVIE_CLUB_USERS, ROTATION_MEMBERS, HOST_ROTATION } from "../types.ts";
 import { 
   Calendar, 
@@ -622,6 +623,10 @@ export default function CalendarView({
           <p className="text-sm text-zinc-400 mt-1">
             {subtitle || "Every second Friday · 7:00 pm"}
           </p>
+        </div>
+
+        <div className="flex flex-col sm:items-end gap-1">
+          <AddToCalendarButton showCopyLink />
         </div>
 
         {isAdmin && (
