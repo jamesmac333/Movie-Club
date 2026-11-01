@@ -14,12 +14,13 @@ import GroupStatistics from "./components/GroupStatistics.tsx";
 import SelectionAlertModal from "./components/SelectionAlertModal.tsx";
 import RecapAlertModal from "./components/RecapAlertModal.tsx";
 import { Film, Calendar, Compass, BookOpen, Sparkles, Clapperboard, Heart, KeyRound, LogOut, ShieldCheck, User as UserIcon, Home, Mail } from "lucide-react";
-import { motion, AnimatePresence, useScroll, useSpring } from "motion/react";
+import { motion, AnimatePresence, MotionConfig, useScroll, useSpring } from "motion/react";
 import { getToken, clearSession, getSavedUser, saveUser } from "./auth.ts";
 import JustWatchedCard from "./components/JustWatchedCard.tsx";
 import PaletteStrip from "./components/PaletteStrip.tsx";
 import HomeScreenHint from "./components/HomeScreenHint.tsx";
 import GapFillCard from "./components/GapFillCard.tsx";
+import LightsDown from "./components/LightsDown.tsx";
 import AdminView from "./components/AdminView.tsx";
 import RecapPromptCard from "./components/RecapPromptCard.tsx";
 import { BestReviewNudge } from "./components/BestReviewPicks.tsx";
@@ -635,6 +636,7 @@ export default function App() {
   );
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="min-h-screen min-h-[100dvh] bg-zinc-950 text-zinc-100 font-sans selection:bg-amber-500 selection:text-zinc-950 flex flex-col">
       <AnimatePresence>
         {showProfileSettings && (
@@ -773,6 +775,8 @@ export default function App() {
         </div>
         <PaletteStrip colors={CLUB_PALETTE} className="h-1.5 mx-4 mb-3 rounded-full" />
       </header>
+
+      {activeTab === "landing" && pages.length === 0 && <LightsDown nights={nights} />}
 
       {confirmSignOut && (
         <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="sign-out-title">
@@ -1006,5 +1010,6 @@ export default function App() {
 
       </div>
     </div>
+    </MotionConfig>
   );
 }

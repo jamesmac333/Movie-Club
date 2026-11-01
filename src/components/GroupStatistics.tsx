@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { WithGapBadge } from "./GapBadge.tsx";
 import PaletteStrip from "./PaletteStrip.tsx";
 import { CLUB_PALETTE } from "../palette.ts";
+import { CountUp } from "./Motion.tsx";
 
 interface GroupStatisticsProps {
   nights: MovieNight[];
@@ -87,12 +88,12 @@ export default function GroupStatistics({ nights, reviews, users = [], onOpenMem
     return found?.avatarUrl;
   };
 
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  const stats = [
-    { value: String(totalWatched), label: "Nights watched", icon: Film },
-    { value: `${hours}h ${minutes}m`, label: "Screen time", icon: Clock },
-    { value: avgRating === "N/A" ? "—" : `★ ${Number(avgRating).toFixed(1)}`, label: totalReviews ? `Average of ${totalReviews} review${totalReviews === 1 ? "" : "s"}` : "Average rating", icon: Star },
+  // The numbers tick up from zero the first time Club stats scrolls into view
+  const screenTime = (m: number) => `${Math.floor(Math.round(m) / 60)}h ${Math.round(m) % 60}m`;
+  const stats: { value: React.ReactNode; label: string; icon: typeof Film }[] = [
+    { value: <CountUp to={totalWatched} />, label: "Nights watched", icon: Film },
+    { value: <CountUp to={totalMinutes} format={screenTime} duration={1.4} />, label: "Screen time", icon: Clock },
+    { value: avgRating === "N/A" ? "—" : <CountUp to={Number(Number(avgRating).toFixed(1))} format={(n) => `★ ${n.toFixed(1)}`} />, label: totalReviews ? `Average of ${totalReviews} review${totalReviews === 1 ? "" : "s"}` : "Average rating", icon: Star },
     { value: favoriteGenre, label: "Top genre", icon: Flame }
   ];
 
@@ -144,7 +145,7 @@ export default function GroupStatistics({ nights, reviews, users = [], onOpenMem
           <Trophy className="w-6 h-6 text-amber-500 shrink-0" aria-hidden="true" />
           <div>
             <p className="font-serif text-xl text-zinc-50">Best reviewer</p>
-            <p className="text-sm text-zinc-400">Whoever has the most reviews starred by Ash</p>
+            <p className="text-sm text-zinc-400">Whoever has the most reviews picked as Ash's favourite</p>
           </div>
         </div>
         {maxStarredCount > 0 && bestReviewers.length > 0 ? (
@@ -161,7 +162,7 @@ export default function GroupStatistics({ nights, reviews, users = [], onOpenMem
             </div>
             <div>
               <p className="text-base font-semibold text-zinc-100">{bestReviewers.map((r) => r.split(" ")[0]).join(" & ")}</p>
-              <p className="text-sm text-amber-500">★ {maxStarredCount} starred</p>
+              <p className="text-sm text-amber-500">★ {maxStarredCount} {maxStarredCount === 1 ? "favourite" : "favourites"}</p>
             </div>
           </div>
         ) : (

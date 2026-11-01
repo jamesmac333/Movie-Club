@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { ChevronLeft, X } from "lucide-react";
 import { User } from "../types.ts";
 import { WithGapBadge } from "./GapBadge.tsx";
+import { StarRow } from "./Motion.tsx";
 
 // A full-screen page that slides over the app, used for film pages and member pages.
 // Opening one from another stacks them, so the button goes back to the previous page.
@@ -57,11 +58,5 @@ export function Avatar({ user, name, className, badgeSize = "md" }: { user?: Use
 }
 
 export function Stars({ rating }: { rating: number }) {
-  return (
-    <span className="flex text-lg leading-none shrink-0" aria-label={`${rating} out of 5`}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <span key={n} aria-hidden="true" className={n <= rating ? "text-amber-500" : n - 0.5 === rating ? "text-amber-700" : "text-zinc-700"}>★</span>
-      ))}
-    </span>
-  );
+  return <StarRow rating={rating} />;
 }

@@ -1,8 +1,9 @@
 import React, { useState, useRef } from "react";
 import { MovieNight, Review, NightOverview, User, isAuthenticGatheringPhoto, isBeforeDataLoss } from "../types.ts";
 import { Calendar, Star, MessageSquare, Image as ImageIcon, Film, Heart, BookOpen, Maximize2, Camera, Upload, Trash2, Loader2, ChevronRight } from "lucide-react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import PaletteStrip from "./PaletteStrip.tsx";
+import { FavouriteStamp, StarRow, dealt, useJustRevealed } from "./Motion.tsx";
 import { Avatar } from "./OverlayPage.tsx";
 
 interface PriorSessionRecapProps {
@@ -34,6 +35,9 @@ export default function PriorSessionRecap({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [feedback, setFeedback] = useState<string>("");
+  // Posting your review unlocks everyone else's: deal them out
+  const justRevealed = useJustRevealed([...(sealedNightIds || [])]);
+  const reduce = useReducedMotion();
   // Long reviews show a few lines until opened
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const toggleExpanded = (id: string) =>
@@ -181,35 +185,6 @@ export default function PriorSessionRecap({
     });
   };
 
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex items-center gap-0.5">
-        {Array.from({ length: 5 }).map((_, idx) => {
-          const val = idx + 1;
-          const isFullyFilled = rating >= val;
-          const isHalfFilled = !isFullyFilled && rating >= val - 0.5;
-
-          return (
-            <div key={idx} className="relative select-none" style={{ width: "12px", height: "12px" }}>
-              <div className="absolute inset-0 pointer-events-none">
-                {/* Background empty star */}
-                <Star className="w-3 h-3 text-zinc-200" />
-                
-                {/* Foreground filled/half-filled star */}
-                {isFullyFilled ? (
-                  <Star className="w-3 h-3 text-amber-500 fill-amber-500 absolute inset-0" />
-                ) : isHalfFilled ? (
-                  <div className="absolute inset-0 w-[50%] overflow-hidden">
-                    <Star className="w-3 h-3 text-amber-500 fill-amber-500 max-w-none" />
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
 
   return (
     <motion.div 
@@ -403,19 +378,19 @@ export default function PriorSessionRecap({
             </div>
           ) : (
             <ul className="flex flex-col divide-y divide-zinc-800">
-              {nightReviews.map((review) => {
+              {nightReviews.map((review, i) => {
                 const member = users.find((u) => u.name.toLowerCase() === review.user.toLowerCase());
                 const isLong = (review.comment?.length || 0) > 180;
                 const open = expanded.has(review.id);
                 return (
-                  <li key={review.id} className="py-4 first:pt-0 last:pb-0 flex gap-3">
+                  <motion.li key={review.id} {...dealt(i, justRevealed.has(priorNight.id), reduce)} className="py-4 first:pt-0 last:pb-0 flex gap-3">
                     <Avatar user={member} name={review.user} className="w-10 h-10" badgeSize="sm" />
                     <div className="min-w-0 flex-1 flex flex-col gap-1.5">
                       <div className="flex items-center justify-between gap-3 flex-wrap">
                         <span className="font-semibold text-zinc-100">{review.user.split(" ")[0]}</span>
                         <span className="flex items-center gap-2">
-                          {review.isStarred && <span className="text-xs font-semibold text-amber-500">Ash's favourite</span>}
-                          {renderStars(review.rating)}
+                          <AnimatePresence initial={false}>{review.isStarred && <FavouriteStamp />}</AnimatePresence>
+                          <StarRow rating={review.rating} size="sm" />
                         </span>
                       </div>
                       {review.comment && (
@@ -431,7 +406,7 @@ export default function PriorSessionRecap({
                         </>
                       )}
                     </div>
-                  </li>
+                  </motion.li>
                 );
               })}
             </ul>

@@ -109,6 +109,17 @@ export function recapDueNight<N extends NightLike>(nights: N[], recappedNightIds
     .find((n) => !recappedNightIds.includes(n.id));
 }
 
+// How long the house lights stay down on Home after a night starts
+export const SHOWING_HOURS = 4;
+
+// The night the club is watching right now: from its start time until a few hours after
+export function showingNow<N extends NightLike>(nights: N[], now = Date.now()): N | undefined {
+  return nights.find((n) => {
+    const start = new Date(n.date).getTime();
+    return n.movie && n.status !== "skipped" && start <= now && now - start < SHOWING_HOURS * 3600000;
+  });
+}
+
 // Ash picks the best review for a night once every member has reviewed it (stars and words)
 export function bestReviewStatus<N extends NightLike, R extends ReviewLike & { comment?: string; isStarred?: boolean }>(nights: N[], reviews: R[], memberNames: string[]) {
   return watchedFilms(nights)
