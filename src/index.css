@@ -190,6 +190,23 @@ body {
 }
 
 /* Ticket perforation: a dashed tear line with notches cut into each edge */
+/* Marquee bulbs on Home during a club night: they glow, then chase in threes */
+.marquee-bulb {
+  box-shadow: 0 0 6px 1px rgb(252 211 77 / 0.7);
+  animation: bulb-chase 1.2s infinite;
+}
+@keyframes bulb-chase {
+  0%, 33% { opacity: 1; }
+  34%, 100% { opacity: 0.35; box-shadow: none; }
+}
+/* Tonight's title glows like a lit marquee */
+.marquee-glow {
+  text-shadow: 0 0 18px rgb(245 158 11 / 0.55), 0 0 2px rgb(253 230 138 / 0.8);
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-bulb { animation: none; }
+}
+
 .ticket-tear {
   position: relative;
   height: 22px;

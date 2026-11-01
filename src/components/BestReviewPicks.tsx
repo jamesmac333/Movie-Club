@@ -4,6 +4,7 @@ import { Award, ChevronRight, Loader2, Star, X } from "lucide-react";
 import { MovieNight, Review, User } from "../types.ts";
 import { bestReviewStatus } from "../clubStats.ts";
 import { Avatar } from "./OverlayPage.tsx";
+import { FavouriteStamp, StarRow } from "./Motion.tsx";
 
 type Status = ReturnType<typeof bestReviewStatus<MovieNight, Review>>[number];
 
@@ -14,15 +15,6 @@ function Poster({ night }: { night: MovieNight }) {
     <img src={night.movie.posterUrl} alt="" className="w-9 aspect-[2/3] rounded object-cover border border-zinc-700 shrink-0" referrerPolicy="no-referrer" />
   ) : (
     <span className="w-9 aspect-[2/3] rounded bg-slate border border-zinc-700 shrink-0" />
-  );
-}
-
-function Stars({ rating }: { rating: number }) {
-  return (
-    <span className="text-amber-500 text-sm tracking-tight" aria-label={`${rating} out of 5 stars`}>
-      {"★".repeat(Math.floor(rating))}
-      {rating % 1 ? "½" : ""}
-    </span>
   );
 }
 
@@ -37,7 +29,8 @@ function PickSheet({ status, members, onToggleStar, onClose }: { status: Status;
     setError("");
     try {
       await onToggleStar(review.id);
-      if (!review.isStarred) onClose();
+      // Let the stamp land before the sheet closes
+      if (!review.isStarred) setTimeout(onClose, 1100);
     } catch (err: any) {
       setError(err?.message || "Couldn't save your pick. Please try again.");
     } finally {
@@ -78,7 +71,8 @@ function PickSheet({ status, members, onToggleStar, onClose }: { status: Status;
                 <div className="flex items-center gap-3">
                   <Avatar user={member} name={review.user} className="w-9 h-9" badgeSize="sm" />
                   <span className="font-semibold text-zinc-100 flex-1">{first}</span>
-                  <Stars rating={review.rating} />
+                  <AnimatePresence initial={false}>{review.isStarred && <FavouriteStamp />}</AnimatePresence>
+                  <StarRow rating={review.rating} />
                 </div>
                 <p className="text-zinc-300 whitespace-pre-line break-words">{review.comment}</p>
                 <button

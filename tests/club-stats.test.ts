@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { filmRatings, memberSummary, gapFillProgress, recapDueNight, bestReviewStatus } from "../src/clubStats.ts";
+import { filmRatings, memberSummary, gapFillProgress, recapDueNight, bestReviewStatus, showingNow } from "../src/clubStats.ts";
 import { isBeforeDataLoss } from "../src/dataLoss.ts";
 
 const film = (title: string) => ({ title });
@@ -74,6 +74,18 @@ test("Fill in the gaps counts a lost night as done once it has stars and words",
   );
   assert.equal(finished.done, 3);
   assert.equal(finished.complete, true);
+});
+
+test("the house lights go down on Home from 7 pm on the night, for four hours", () => {
+  const at = (iso: string) => new Date(iso).getTime();
+  // 6 Nov, 7 pm NZDT is 06:00 UTC
+  const night = [{ id: "n", date: "2026-11-06T06:00:00.000Z", selector: "Ash Macintosh", status: "scheduled", movie: film("Wildwood") }];
+  assert.equal(showingNow(night, at("2026-11-06T05:59:00Z")), undefined, "not before 7 pm");
+  assert.equal(showingNow(night, at("2026-11-06T06:00:00Z"))?.id, "n", "from 7 pm");
+  assert.equal(showingNow(night, at("2026-11-06T09:59:00Z"))?.id, "n", "still at 10:59 pm");
+  assert.equal(showingNow(night, at("2026-11-06T10:00:00Z")), undefined, "back up at 11 pm");
+  assert.equal(showingNow([{ ...night[0], status: "skipped" }], at("2026-11-06T07:00:00Z")), undefined, "not for a skipped night");
+  assert.equal(showingNow([{ ...night[0], movie: null }], at("2026-11-06T07:00:00Z")), undefined, "not without a film");
 });
 
 test("Ash is asked for a recap from 7 pm on the night until it's written", () => {

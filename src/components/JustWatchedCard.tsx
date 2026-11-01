@@ -23,7 +23,8 @@ export default function JustWatchedCard({ nights, reviews, users, currentUser, o
 
   const now = Date.now();
   const night = nights
-    .filter((n) => n.movie && n.status !== "skipped" && new Date(n.date).getTime() <= now && now - new Date(n.date).getTime() < REVIEW_WINDOW_DAYS * 86400000)
+    // Appears once the film has finished, so it doesn't ask for a review mid-screening
+    .filter((n) => n.movie && n.status !== "skipped" && new Date(n.date).getTime() + (n.movie.runtime || 120) * 60000 <= now && now - new Date(n.date).getTime() < REVIEW_WINDOW_DAYS * 86400000)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
   if (!night) return null;
 

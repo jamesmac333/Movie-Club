@@ -19,6 +19,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { showingNow } from "../clubStats.ts";
 
 interface CalendarViewProps {
   nights: MovieNight[];
@@ -172,7 +173,7 @@ export default function CalendarView({
   // Home page: a compact "Coming up" list; editing lives on the full Schedule tab
   if (limit !== undefined) {
     // The next night already has the big card above, so the list starts from the one after
-    const nextId = sortedNights.find((n) => n.status === "scheduled" && new Date(n.date).getTime() > Date.now() - 4 * 3600000)?.id;
+    const nextId = (showingNow(sortedNights) || sortedNights.find((n) => n.status === "scheduled" && new Date(n.date).getTime() > Date.now() - 4 * 3600000))?.id;
     const afterNext = rawDisplayNights.filter((n) => n.id !== nextId).slice(0, limit);
     if (!afterNext.length) return null;
     return (

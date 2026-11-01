@@ -3,6 +3,10 @@ import { MovieNight, User, MOVIE_CLUB_USERS } from "../types.ts";
 import { Film, Clock, Search, Calendar, Sparkles, AlertCircle, RefreshCw, RotateCcw, Play, ExternalLink, Share2 } from "lucide-react";
 import { motion } from "motion/react";
 import PaletteStrip from "./PaletteStrip.tsx";
+import { FlipText } from "./Motion.tsx";
+import { MarqueeBulbs } from "./LightsDown.tsx";
+import { showingNow } from "../clubStats.ts";
+import { TICKET_LANDED_EVENT } from "./SelectionAlertModal.tsx";
 import AddToCalendarButton from "./AddToCalendarButton.tsx";
 
 interface NextMovieHeroProps {
@@ -22,6 +26,14 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
   const [success, setSuccess] = useState("");
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
+  // Lights up for a moment when the ticket from the new-film pop-up lands here
+  const [caught, setCaught] = useState(0);
+  useEffect(() => {
+    const onLanded = () => setCaught((n) => n + 1);
+    window.addEventListener(TICKET_LANDED_EVENT, onLanded);
+    return () => window.removeEventListener(TICKET_LANDED_EVENT, onLanded);
+  }, []);
+
   // Auto-clear confirmation state after 4 seconds
   useEffect(() => {
     if (!confirmReset) return;
@@ -33,7 +45,8 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
 
   // Find the next upcoming scheduled night (chronologically, date is in the future)
   // A night stays "next" until four hours after it starts; then the following one takes over
-  const nextNight = nights
+  // A night being shown right now stays here even if it's already been marked watched
+  const nextNight = showingNow(nights) || nights
     .filter(n => n.status === "scheduled" && new Date(n.date).getTime() > Date.now() - 4 * 3600000)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0] ||
     nights
@@ -56,13 +69,13 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
   useEffect(() => {
     if (!nextNight) return;
 
-    const timer = setInterval(() => {
+    // Work it out straight away, so the label doesn't start at "now"
+    const tick = () => {
       const now = new Date().getTime();
       const eventTime = new Date(nextNight.date).getTime();
       const difference = eventTime - now;
 
       if (difference <= 0) {
-        clearInterval(timer);
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       } else {
         const days = Math.floor(difference / (1000 * 60 * 60 * 24));
@@ -71,7 +84,9 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
         const seconds = Math.floor((difference % (1000 * 60)) / 1000);
         setTimeLeft({ days, hours, minutes, seconds });
       }
-    }, 1000);
+    };
+    tick();
+    const timer = setInterval(tick, 1000);
 
     return () => clearInterval(timer);
   }, [nextNight]);
@@ -134,7 +149,17 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
   const shortDate = eventDate.toLocaleDateString("en-NZ", { weekday: "short", day: "numeric", month: "short" });
   const shortTime = eventDate.toLocaleTimeString("en-NZ", { hour: "numeric", minute: "2-digit", hour12: true });
   const hostFirstName = nextNight.selector.split(" ")[0];
-  const countdownLabel = timeLeft.days > 1 ? `in ${timeLeft.days} days` : timeLeft.days === 1 ? "tomorrow" : (timeLeft.hours || timeLeft.minutes) ? "tonight" : "now";
+  // Counts down in bigger steps when it's far off, and turns over like a flip clock as it changes
+  const totalHours = timeLeft.days * 24 + timeLeft.hours;
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const countdownLabel =
+    timeLeft.days >= 2 ? `in ${plural(timeLeft.days, "day")}`
+    : totalHours >= 1 ? `in ${plural(totalHours, "hour")}`
+    : timeLeft.minutes >= 1 ? `in ${plural(timeLeft.minutes, "minute")}`
+    : timeLeft.seconds > 0 ? "any minute"
+    : "now";
+  // 7 pm on the night: the card becomes a lit marquee
+  const showing = hasMovie && !!showingNow([nextNight]);
 
   return (
     <motion.section
@@ -144,10 +169,35 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
       transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
       className="relative bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden mb-12 [--ticket-notch:var(--color-zinc-950)]"
     >
-      <div className="flex items-baseline justify-between gap-3 px-5 sm:px-8 pt-5 sm:pt-7">
-        <p className="slate text-amber-500">Now showing · {countdownLabel}</p>
-        <p className="text-sm text-zinc-400">{shortDate} · {shortTime}</p>
-      </div>
+      {caught > 0 && (
+        <motion.div
+          key={caught}
+          aria-hidden="true"
+          initial={{ opacity: 0.9 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 1.4, ease: "easeOut" }}
+          className="pointer-events-none absolute inset-0 z-10 rounded-3xl ring-4 ring-inset ring-amber-400 bg-amber-400/10"
+        />
+      )}
+      {showing ? (
+        <div className="px-5 sm:px-8 pt-5 sm:pt-7 flex flex-col gap-3">
+          <MarqueeBulbs />
+          <motion.p
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2, delay: 1.5 }}
+            className="marquee-glow text-center font-serif text-3xl sm:text-4xl text-amber-300"
+          >
+            Tonight: {nextNight.movie!.title}
+          </motion.p>
+          <MarqueeBulbs />
+        </div>
+      ) : (
+        <div className="flex items-baseline justify-between gap-3 px-5 sm:px-8 pt-5 sm:pt-7">
+          <p className="slate text-amber-500">Now showing · <FlipText text={countdownLabel} /></p>
+          <p className="text-sm text-zinc-400">{shortDate} · {shortTime}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-[minmax(0,340px)_minmax(0,1fr)] gap-6 md:gap-10 p-4 sm:p-8 md:items-center">
         {/* Poster: the feature of the card */}

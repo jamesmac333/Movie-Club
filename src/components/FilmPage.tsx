@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Lock, PenLine, Play } from "lucide-react";
 import { MovieNight, Review, NightOverview, User, isAuthenticGatheringPhoto, isBeforeDataLoss } from "../types.ts";
 import { filmRatings } from "../clubStats.ts";
 import PaletteStrip from "./PaletteStrip.tsx";
 import ReviewSheet from "./ReviewSheet.tsx";
 import { Avatar, OverlayPage, Stars } from "./OverlayPage.tsx";
+import { FavouriteStamp, dealt, useJustRevealed } from "./Motion.tsx";
 
 interface FilmPageProps {
   night: MovieNight;
@@ -27,6 +28,9 @@ const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 // who loved it and who didn't, the reviews, and Ash's recap
 export default function FilmPage({ night, reviews, sealed, overviews, users, currentUser, canGoBack, onClose, onOpenMember, onAddReview }: FilmPageProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const reduce = useReducedMotion();
+  // Posting your review unlocks everyone else's: deal them out
+  const dealing = useJustRevealed(sealed ? [night.id] : []).has(night.id);
   const movie = night.movie!;
   const all = filmRatings(reviews, night.id);
   const { ratings, average, split } = sealed ? { ratings: [], average: null, split: null } : all;
@@ -105,17 +109,23 @@ export default function FilmPage({ night, reviews, sealed, overviews, users, cur
               )}
 
               <ul className="mt-4 flex flex-col gap-2">
-                {ratings.map((r) => (
-                  <li key={r.id}>
+                {ratings.map((r, i) => (
+                  <motion.li key={r.id} {...dealt(i, dealing, reduce)}>
                     <button type="button" onClick={() => onOpenMember(r.user)} className="w-full min-h-12 flex items-center gap-3 text-left cursor-pointer group">
                       <Avatar user={userFor(r.user)} name={r.user} className="w-9 h-9" badgeSize="sm" />
                       <span className="w-16 shrink-0 text-zinc-200 group-hover:text-amber-500 truncate">{first(r.user)}</span>
                       <span className="flex-1 h-3 rounded-full bg-zinc-800 overflow-hidden">
-                        <span className="block h-full rounded-full bg-amber-500" style={{ width: `${(r.rating / 5) * 100}%` }} />
+                        <motion.span
+                          className="block h-full rounded-full bg-amber-500"
+                          initial={{ width: reduce ? `${(r.rating / 5) * 100}%` : 0 }}
+                          whileInView={{ width: `${(r.rating / 5) * 100}%` }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.7, delay: (dealing ? 0.5 + i * 0.18 : 0.1 + i * 0.06), ease: [0.16, 1, 0.3, 1] }}
+                        />
                       </span>
                       <span className="w-10 shrink-0 text-right text-zinc-100 font-semibold">{fmt(r.rating)}</span>
                     </button>
-                  </li>
+                  </motion.li>
                 ))}
               </ul>
               {notRated.length > 0 && (
@@ -141,18 +151,18 @@ export default function FilmPage({ night, reviews, sealed, overviews, users, cur
         <section aria-labelledby="film-reviews" className="mt-10">
           <h2 id="film-reviews" className="font-serif text-3xl text-zinc-50">What everyone said</h2>
           <ul className="mt-4 flex flex-col gap-3">
-            {ratings.filter((r) => r.comment).map((r) => (
-              <li key={r.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+            {ratings.filter((r) => r.comment).map((r, i) => (
+              <motion.li key={r.id} {...dealt(i, dealing, reduce)} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
                 <div className="flex items-center justify-between gap-3">
                   <span className="flex items-center gap-2 min-w-0">
                     <Avatar user={userFor(r.user)} name={r.user} className="w-7 h-7" badgeSize="sm" />
                     <span className="font-semibold text-zinc-100 truncate">{first(r.user)}</span>
-                    {r.isStarred && <span className="text-xs text-amber-500">Ash's favourite</span>}
+                    <AnimatePresence initial={false}>{r.isStarred && <FavouriteStamp />}</AnimatePresence>
                   </span>
                   <Stars rating={r.rating} />
                 </div>
                 <p className="mt-3 text-zinc-300 leading-relaxed whitespace-pre-line">{r.comment}</p>
-              </li>
+              </motion.li>
             ))}
           </ul>
         </section>

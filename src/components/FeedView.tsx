@@ -1,8 +1,9 @@
 import React, { useState, useRef } from "react";
 import { MovieNight, Review, NightOverview, User, MOVIE_CLUB_USERS, isAuthenticGatheringPhoto, isBeforeDataLoss, DATA_LOSS_NOTE } from "../types.ts";
 import { Star, MessageSquare, Trash2, Edit3, Plus, Image as ImageIcon, Heart, Calendar, Sparkles, BookOpen, Maximize2, ChevronDown, ChevronUp, Camera, Upload, Loader2, CheckCircle2, AlertCircle, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import PaletteStrip from "./PaletteStrip.tsx";
+import { FavouriteStamp, StarRow, dealt, useJustRevealed } from "./Motion.tsx";
 import StarInput from "./StarInput.tsx";
 
 interface FeedViewProps {
@@ -164,6 +165,9 @@ export default function FeedView({
   // Collapsed state for Overviews and Reviews (both collapsed by default)
   const [expandedOverviewIds, setExpandedOverviewIds] = useState<Record<string, boolean>>({});
   const [expandedReviewIds, setExpandedReviewIds] = useState<Record<string, boolean>>({});
+  // Posting your review unlocks everyone else's: deal them out
+  const justRevealed = useJustRevealed([...(sealedNightIds || [])]);
+  const reduce = useReducedMotion();
 
   const toggleOverviewExpand = (nightId: string) => {
     setExpandedOverviewIds(prev => ({
@@ -291,36 +295,6 @@ export default function FeedView({
     });
   };
 
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex items-center gap-1.5">
-        {Array.from({ length: 5 }).map((_, idx) => {
-          const val = idx + 1;
-          const isFullyFilled = rating >= val;
-          const isHalfFilled = !isFullyFilled && rating >= val - 0.5;
-
-          return (
-            <div key={idx} className="relative select-none" style={{ width: "16px", height: "16px" }}>
-              {/* Visual star layers */}
-              <div className="absolute inset-0 z-10 pointer-events-none">
-                {/* Background empty star */}
-                <Star className="w-4 h-4 text-zinc-500" />
-                
-                {/* Foreground filled/half-filled star */}
-                {isFullyFilled ? (
-                  <Star className="w-4 h-4 text-amber-500 fill-amber-500 absolute inset-0" />
-                ) : isHalfFilled ? (
-                  <div className="absolute inset-0 w-[50%] overflow-hidden">
-                    <Star className="w-4 h-4 text-amber-500 fill-amber-500 max-w-none" />
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
 
   if (watchedNights.length === 0) {
     return (
@@ -816,7 +790,7 @@ export default function FeedView({
                                 </span>
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
-                                {renderStars(ashStarredPick.rating)}
+                                <StarRow rating={ashStarredPick.rating} />
                               </div>
                             </div>
                             {ashStarredPick.comment && (
@@ -910,12 +884,16 @@ export default function FeedView({
                               const isStarred = review.isStarred || false;
 
                               return (
-                                <motion.div 
+                                <motion.div
                                   key={review.id}
-                                  initial={{ opacity: 0, y: 15 }}
-                                  whileInView={{ opacity: 1, y: 0 }}
-                                  viewport={{ once: true }}
-                                  transition={{ duration: 0.35, delay: Math.min(rIdx * 0.05, 0.25) }}
+                                  {...(justRevealed.has(night.id)
+                                    ? dealt(rIdx, true, reduce)
+                                    : {
+                                        initial: { opacity: 0, y: 15 },
+                                        whileInView: { opacity: 1, y: 0 },
+                                        viewport: { once: true },
+                                        transition: { duration: 0.35, delay: Math.min(rIdx * 0.05, 0.25) }
+                                      })}
                                   whileHover={{ y: -2, transition: { duration: 0.15 } }}
                                   className={`border rounded-xl p-4 flex flex-col gap-3 transition-colors ${
                                     isStarred 
@@ -923,7 +901,7 @@ export default function FeedView({
                                       : "bg-zinc-900/20 border-zinc-900/60 hover:border-zinc-800"
                                   }`}
                                 >
-                                  <div className="flex items-center justify-between gap-4">
+                                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
                                     <div className="flex items-center gap-2.5">
                                       <div className="w-7 h-7 bg-zinc-800 rounded-full flex items-center justify-center font-mono text-xs font-bold text-zinc-300 uppercase">
                                         {review.user.substring(0, 2)}
@@ -936,29 +914,30 @@ export default function FeedView({
                                       </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex flex-wrap items-center justify-end gap-x-3 ml-auto">
                                       {/* Ash's Star Toggle / Favorite review badge */}
                                       {(isAsh || isStarred) && (
                                         <button
                                           type="button"
                                           disabled={!isAsh}
                                           onClick={() => handleToggleStar(review.id)}
-                                          className={`min-h-11 min-w-11 px-2.5 justify-center rounded-xl border transition-all flex items-center gap-1 text-xs font-semibold ${
+                                          className={`min-h-11 min-w-11 justify-center rounded-xl border transition-colors flex items-center ${
                                             isStarred
-                                              ? "bg-amber-500/20 border-amber-500/40 text-amber-500 hover:bg-amber-500/30"
-                                              : "bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:text-amber-500 hover:border-amber-500/30 hover:bg-zinc-900"
-                                          } ${!isAsh ? "cursor-default opacity-90" : "cursor-pointer"}`}
+                                              ? "border-transparent px-1"
+                                              : "px-2.5 bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:text-amber-500 hover:border-amber-500/30 hover:bg-zinc-900"
+                                          } ${!isAsh ? "cursor-default" : "cursor-pointer"}`}
                                           title={isAsh ? (isStarred ? "Remove Ash's favourite" : "Make this Ash's favourite") : "Ash's favourite review"}
                                         >
-                                          <Star className={`w-4 h-4 ${isStarred ? "fill-amber-500 text-amber-500" : "text-current"}`} />
-                                          {isStarred && <span>Ash's favourite</span>}
+                                          <AnimatePresence initial={false}>
+                                            {isStarred ? <FavouriteStamp /> : <Star className="w-4 h-4" />}
+                                          </AnimatePresence>
                                         </button>
                                       )}
 
                                       {isReviewEditing ? (
                                         <StarInput value={editRating} onChange={setEditRating} label="Your rating" />
                                       ) : (
-                                        renderStars(review.rating)
+                                        <StarRow rating={review.rating} />
                                       )}
                                       
                                       {canModify && !isReviewEditing && (
