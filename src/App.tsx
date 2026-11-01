@@ -21,6 +21,7 @@ import PaletteStrip from "./components/PaletteStrip.tsx";
 import HomeScreenHint from "./components/HomeScreenHint.tsx";
 import GapFillCard from "./components/GapFillCard.tsx";
 import LightsDown from "./components/LightsDown.tsx";
+import PullToRefresh from "./components/PullToRefresh.tsx";
 import AdminView from "./components/AdminView.tsx";
 import RecapPromptCard from "./components/RecapPromptCard.tsx";
 import { BestReviewNudge } from "./components/BestReviewPicks.tsx";
@@ -777,6 +778,7 @@ export default function App() {
       </header>
 
       {activeTab === "landing" && pages.length === 0 && <LightsDown nights={nights} />}
+      <PullToRefresh disabled={pages.length > 0 || showProfileSettings || !!newSelectionAlert || !!newRecapAlert || confirmSignOut} />
 
       {confirmSignOut && (
         <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="sign-out-title">
