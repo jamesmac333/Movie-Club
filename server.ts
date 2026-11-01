@@ -21,7 +21,7 @@ import { isBeforeDataLoss } from "./src/dataLoss.ts";
 import { authenticate, calendarKey, createToken, clientAddress, loginRetryMinutes, recordLoginFailure, recordLoginSuccess } from "./server/auth.ts";
 import { hashPassword, verifyPassword } from "./server/passwords.ts";
 import { buildClubCalendar } from "./server/calendar.ts";
-import { storeImage, sendImage, imageVersion, isStoredImage, isInlineImage } from "./server/images.ts";
+import { storeImage, sendImage, imageVersion, isStoredImage, isInlineImage, shrinkAvatar } from "./server/images.ts";
 
 // Public address of the site, used for links and images in club emails
 const SITE_URL = process.env.APP_URL || "https://www.movieclub.co.nz";
@@ -336,7 +336,8 @@ async function startServer() {
     }
 
     try {
-      const storedAvatar = storeImage(avatarUrl);
+      const stored = storeImage(avatarUrl);
+      const storedAvatar = await shrinkAvatar(stored).catch(() => stored);
       const updatedUser = await mutateDb((db) => {
         let user = db.users.find(u => u.username.toLowerCase() === targetLower);
         if (!user) {
@@ -1287,7 +1288,29 @@ async function startServer() {
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Movie Club Server booted and running on http://0.0.0.0:${PORT}`);
+    shrinkLargeAvatars().catch((err) => console.error("Could not shrink member photos:", err));
   });
+}
+
+// Older member photos were uploaded full size. Shrink them once so every page with photos loads quickly.
+async function shrinkLargeAvatars() {
+  for (const u of readDb().users) {
+    const before = u.avatarUrl || "";
+    let after: string;
+    try {
+      after = await shrinkAvatar(before);
+    } catch (err) {
+      console.error(`Could not shrink ${u.username}'s photo, keeping it as is:`, err);
+      continue;
+    }
+    if (after === before) continue;
+    await mutateDb((db) => {
+      const member = db.users.find((m) => m.username === u.username);
+      // Only if it hasn't changed in the meantime
+      if (member && member.avatarUrl === before) member.avatarUrl = after;
+    });
+    console.log(`Shrank ${u.username}'s photo`);
+  }
 }
 
 startServer();

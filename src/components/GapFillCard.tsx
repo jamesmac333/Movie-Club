@@ -8,6 +8,8 @@ import GapsCelebration from "./GapsCelebration.tsx";
 
 // Left open and untouched this long, the card folds itself down to a one-line reminder
 const AUTO_MINIMISE_MS = 30000;
+// Open, the card lists this many nights so the next film still shows on the first screen
+const FIRST_ROWS = 3;
 
 interface GapFillCardProps {
   nights: MovieNight[];
@@ -22,6 +24,7 @@ interface GapFillCardProps {
 export default function GapFillCard({ nights, reviews, currentUser, onAddReview }: GapFillCardProps) {
   const [sheet, setSheet] = useState<{ night: MovieNight; rating: number } | null>(null);
   const [celebrating, setCelebrating] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const hadGaps = useRef(false);
 
   // Minimised, the card is a slim reminder bar. Remembered on this phone, per member.
@@ -131,14 +134,13 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
           <motion.div className="h-full rounded-full bg-amber-500" initial={false} animate={{ width: `${percent}%` }} transition={{ duration: 0.6, ease: "easeOut" }} />
         </div>
         <p className="text-sm text-zinc-400">
-          {progress.done} of {progress.total} done. Reviews from before 14 October were lost, so tap each night to give it stars and a few words.
-          Finish them all for a badge on your photo.
+          {progress.done} of {progress.total} done. Reviews from before 14 October were lost. Tap a night to give it stars and a few words, and finish them all for a badge on your photo.
         </p>
       </div>
 
       <ul className="border-t border-amber-800">
         <AnimatePresence initial={false}>
-          {progress.remaining.map((night) => {
+          {(showAll ? progress.remaining : progress.remaining.slice(0, FIRST_ROWS)).map((night) => {
             const mine = myReview(night.id);
             const date = new Date(night.date).toLocaleDateString("en-NZ", { weekday: "short", day: "numeric", month: "short" });
             return (
@@ -175,6 +177,15 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
           })}
         </AnimatePresence>
       </ul>
+      {!showAll && progress.remaining.length > FIRST_ROWS && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="w-full min-h-12 border-t border-amber-800 text-sm font-semibold text-amber-500 hover:bg-black/20 cursor-pointer"
+        >
+          Show {progress.remaining.length - FIRST_ROWS} more
+        </button>
+      )}
 
       <AnimatePresence>
         {sheet && (

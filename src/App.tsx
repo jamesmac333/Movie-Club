@@ -254,7 +254,10 @@ export default function App() {
     fetchUsers();
   };
 
+  // Signing out asks first: a stray tap would mean typing a password back in
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const handleLogout = () => {
+    setConfirmSignOut(false);
     setPages([]);
     setCurrentUser(null);
     clearSession();
@@ -616,6 +619,10 @@ export default function App() {
     return <LoginScreen onLoginSuccess={handleLogin} />;
   }
 
+  // Your own page is on top, so the You tab is the one to light up
+  const top = pages[pages.length - 1];
+  const youOpen = top?.type === "member" && top.name.toLowerCase() === currentUser.name.toLowerCase();
+
   const meUser = members.find((u) => u.username.toLowerCase() === currentUser.username.toLowerCase());
   const myAvatar = (size: string) => (
     <WithGapBadge show={!!meUser?.hasGapBadge} size="sm">
@@ -732,7 +739,7 @@ export default function App() {
           </button>
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={() => setConfirmSignOut(true)}
             aria-label="Sign out"
             title="Sign out"
             className="w-11 h-11 rounded-xl text-zinc-400 hover:text-red-400 hover:bg-zinc-900 flex items-center justify-center cursor-pointer"
@@ -753,7 +760,7 @@ export default function App() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={() => setConfirmSignOut(true)}
               aria-label="Sign out"
               className="w-11 h-11 rounded-full text-zinc-400 hover:text-red-400 flex items-center justify-center cursor-pointer"
             >
@@ -767,6 +774,20 @@ export default function App() {
         <PaletteStrip colors={CLUB_PALETTE} className="h-1.5 mx-4 mb-3 rounded-full" />
       </header>
 
+      {confirmSignOut && (
+        <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="sign-out-title">
+          <div className="absolute inset-0 bg-black/80" onClick={() => setConfirmSignOut(false)} />
+          <div className="relative w-full md:max-w-sm bg-zinc-900 border-t md:border border-zinc-800 rounded-t-[28px] md:rounded-3xl px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] flex flex-col gap-4">
+            <h2 id="sign-out-title" className="font-serif text-3xl text-zinc-50">Sign out?</h2>
+            <p className="text-zinc-300">You'll need your password to come back in.</p>
+            <div className="flex flex-col gap-2">
+              <button type="button" onClick={handleLogout} className="min-h-12 rounded-2xl bg-red-700 hover:bg-red-600 text-ticket font-semibold cursor-pointer">Sign out</button>
+              <button type="button" onClick={() => setConfirmSignOut(false)} autoFocus className="min-h-12 rounded-2xl border border-zinc-700 text-zinc-200 font-semibold hover:bg-zinc-800 cursor-pointer">Stay signed in</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MOBILE BOTTOM TAB BAR */}
       <nav
         aria-label="Main"
@@ -774,7 +795,7 @@ export default function App() {
       >
         {navItems.map((item) => {
           const Icon = item.icon;
-          const on = activeTab === item.id;
+          const on = activeTab === item.id && !youOpen;
           return (
             <button
               key={item.id}
@@ -790,8 +811,9 @@ export default function App() {
         })}
         <button
           type="button"
-          onClick={() => openMember(currentUser.name)}
-          className="flex-1 min-h-14 flex flex-col items-center justify-center gap-1 text-[11px] font-medium text-zinc-400 cursor-pointer"
+          onClick={() => (youOpen ? undefined : openMember(currentUser.name))}
+          aria-current={youOpen ? "page" : undefined}
+          className={`flex-1 min-h-14 flex flex-col items-center justify-center gap-1 text-[11px] font-medium cursor-pointer ${youOpen ? "text-amber-500" : "text-zinc-400"}`}
         >
           <UserIcon className="w-[22px] h-[22px]" />
           You

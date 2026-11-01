@@ -207,7 +207,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
               <h3 className="font-serif font-bold text-lg text-zinc-100">
                 Profile & settings
               </h3>
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500">
+              <p className="text-xs uppercase tracking-wider text-zinc-500">
                 Your photo and password
               </p>
             </div>
@@ -246,7 +246,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                   <Camera className="w-3.5 h-3.5 text-amber-500" />
                   Profile Picture
                 </h4>
-                <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">
+                <span className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
                   {currentUser.username}
                 </span>
               </div>
@@ -278,7 +278,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                         </div>
                       )}
                     </div>
-                    <span className="text-[10px] text-zinc-400 font-medium">
+                    <span className="text-xs text-zinc-400 font-medium">
                       {avatarPreview ? "New Preview" : "Current Photo"}
                     </span>
                   </div>
@@ -310,9 +310,9 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                     />
                     <Upload className="w-5 h-5 text-amber-500 mb-1.5" />
                     <span className="text-xs font-semibold text-zinc-200">
-                      {selectedFile ? selectedFile.name : "Choose an image or drop here"}
+                      {selectedFile ? selectedFile.name : "Tap to choose a photo"}
                     </span>
-                    <span className="text-[10px] text-zinc-500 mt-1 font-mono uppercase tracking-wider">
+                    <span className="text-xs text-zinc-500 mt-1 font-mono uppercase tracking-wider">
                       Supports JPG, PNG, WebP & GIF
                     </span>
                     <button
@@ -365,7 +365,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                           {selectedFile?.name || "Photo ready to apply"}
                         </div>
                         {selectedFile && (
-                          <div className="text-[10px] text-zinc-400 font-mono">
+                          <div className="text-xs text-zinc-400 font-mono">
                             {(selectedFile.size / 1024).toFixed(1)} KB • Ready to save
                           </div>
                         )}
@@ -429,7 +429,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
             <div className="border-t border-zinc-900 pt-6">
               <form onSubmit={handleSelfReset} className="space-y-4">
                 <div className="p-3.5 bg-zinc-900/20 border border-zinc-900/60 rounded-xl">
-                  <span className="text-[10px] uppercase tracking-wider text-zinc-500 block">Logged In As</span>
+                  <span className="text-xs uppercase tracking-wider text-zinc-500 block">Signed in as</span>
                   <span className="text-sm font-semibold text-zinc-100">{currentUser.name}</span>
                   <span className="text-xs text-zinc-400 block mt-0.5">Username: <span className="font-mono text-amber-500">{currentUser.username}</span></span>
                 </div>

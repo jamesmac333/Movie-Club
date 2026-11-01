@@ -55,15 +55,19 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Login failed");
+        const data = await response.json().catch(() => ({}));
+        const who = members.find((m) => m.username === username)?.username || "you";
+        // Members never type a username, so speak in terms of the photo they tapped
+        if (response.status === 401) throw new Error(`That password isn't right for ${who}. Check it and try again, or ask James to reset it.`);
+        if (response.status === 429) throw new Error("Too many tries. Wait a few minutes, then try again.");
+        throw new Error(data.error || "Couldn't sign you in. Please try again.");
       }
 
       const data = await response.json();
       if (data.token) setToken(data.token);
       onLoginSuccess(data.user);
     } catch (err: any) {
-      setError(err.message || "Invalid password or connection error.");
+      setError(err?.message && err.name !== "TypeError" ? err.message : "Couldn't reach Movie Club. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -117,12 +121,15 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         </fieldset>
 
         <div className="flex flex-col gap-2">
+          {/* Hidden, so iPhone password AutoFill knows whose password this is */}
+          <input type="text" name="username" autoComplete="username" value={username} readOnly hidden aria-hidden="true" />
           <label htmlFor="password" className="slate text-zinc-400">
             {selected ? `Password for ${selected.username}` : "Password"}
           </label>
           <input
             id="password"
             type="password"
+            name="password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

@@ -147,7 +147,7 @@ export default function FilmPage({ night, reviews, sealed, overviews, users, cur
                   <span className="flex items-center gap-2 min-w-0">
                     <Avatar user={userFor(r.user)} name={r.user} className="w-7 h-7" badgeSize="sm" />
                     <span className="font-semibold text-zinc-100 truncate">{first(r.user)}</span>
-                    {r.isStarred && <span className="text-xs text-amber-500">Ash's pick</span>}
+                    {r.isStarred && <span className="text-xs text-amber-500">Ash's favourite</span>}
                   </span>
                   <Stars rating={r.rating} />
                 </div>

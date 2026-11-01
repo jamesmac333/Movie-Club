@@ -255,10 +255,10 @@ export default function RecapAlertModal({
           <p className="mt-4 text-base sm:text-[17px] leading-relaxed text-zinc-200 whitespace-pre-wrap">{overview.content}</p>
         </div>
 
-        {/* Ash's pick of the reviews */}
+        {/* Ash's favourite review */}
         {topReview && (
           <figure className="mx-5 sm:mx-8 mt-6 p-5 rounded-2xl bg-amber-950 border border-amber-800">
-            <figcaption className="slate text-amber-500">{topReview.isStarred ? "Ash's pick of the reviews" : "Top review"}</figcaption>
+            <figcaption className="slate text-amber-500">{topReview.isStarred ? "Ash's favourite review" : "Top review"}</figcaption>
             <blockquote className="mt-3 font-serif text-lg leading-relaxed text-zinc-100">“{topReview.comment}”</blockquote>
             <p className="mt-3 text-sm text-zinc-300">{topReview.user.split(" ")[0]} · ★ {topReview.rating}</p>
           </figure>
