@@ -247,14 +247,14 @@ export default function AdminMembersPanel({ currentUser, users, onUserUpdate }: 
           <span>{errorMsg}</span>
         </div>
       )}
-      <div className="bg-amber-500/5 border border-amber-500/10 rounded-lg p-3 text-amber-500/80 text-[11px] leading-relaxed">
-        As a Movie Club Administrator, you can modify any member's profile picture or override their password instantly.
+      <div className="bg-amber-500/5 border border-amber-500/10 rounded-lg p-3 text-amber-500/80 text-xs leading-relaxed">
+        Change any member's photo, or set a new password for someone who's forgotten theirs.
       </div>
 
       {/* Shared Member Selector */}
       <div className="bg-zinc-900/20 border border-zinc-900 rounded-xl p-4 space-y-2">
-        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider">
-          Target Club Member
+        <label className="block text-sm font-semibold text-zinc-300">
+          Member
         </label>
         <select
           value={selectedTarget}
@@ -269,11 +269,11 @@ export default function AdminMembersPanel({ currentUser, users, onUserUpdate }: 
         </select>
       </div>
 
-      {/* Override Profile Picture */}
+      {/* Member's photo */}
       <div className="bg-zinc-900/10 border border-zinc-800/80 rounded-xl p-4 sm:p-5 space-y-4">
-        <h4 className="text-xs uppercase tracking-widest text-zinc-400 font-bold border-b border-zinc-800/60 pb-2 flex items-center gap-2">
+        <h4 className="font-serif text-xl text-zinc-50 border-b border-zinc-800/60 pb-2 flex items-center gap-2">
           <Camera className="w-3.5 h-3.5 text-amber-500" />
-          Override Profile Picture
+          Photo
         </h4>
 
         <form onSubmit={handleTargetAvatarUpload} className="space-y-4">
@@ -305,7 +305,7 @@ export default function AdminMembersPanel({ currentUser, users, onUserUpdate }: 
                   </div>
                 )}
               </div>
-              <span className="text-[10px] text-zinc-400 font-medium">
+              <span className="text-xs text-zinc-400 font-medium">
                 {targetAvatarPreview ? "New Preview" : "Current Photo"}
               </span>
             </div>
@@ -337,10 +337,10 @@ export default function AdminMembersPanel({ currentUser, users, onUserUpdate }: 
               />
               <Upload className="w-5 h-5 text-amber-500 mb-1.5" />
               <span className="text-xs font-semibold text-zinc-200">
-                {targetSelectedFile ? targetSelectedFile.name : "Choose profile picture or drop here"}
+                {targetSelectedFile ? targetSelectedFile.name : "Tap to choose a photo"}
               </span>
-              <span className="text-[10px] text-zinc-500 mt-1 font-mono uppercase tracking-wider">
-                Override for {users.find(u => u.username === selectedTarget)?.name || selectedTarget}
+              <span className="text-sm text-zinc-400 mt-1">
+                For {users.find(u => u.username === selectedTarget)?.name || selectedTarget}
               </span>
               <button
                 type="button"
@@ -386,13 +386,13 @@ export default function AdminMembersPanel({ currentUser, users, onUserUpdate }: 
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
                     <Check className="w-3.5 h-3.5" />
-                    <span>New Photo Selected for {users.find(u => u.username === selectedTarget)?.name || selectedTarget}</span>
+                    <span>New photo for {users.find(u => u.username === selectedTarget)?.name.split(" ")[0] || selectedTarget}</span>
                   </div>
                   <div className="text-xs font-medium text-zinc-200 truncate">
                     {targetSelectedFile?.name || "Photo ready to apply"}
                   </div>
                   {targetSelectedFile && (
-                    <div className="text-[10px] text-zinc-400 font-mono">
+                    <div className="text-xs text-zinc-400 font-mono">
                       {(targetSelectedFile.size / 1024).toFixed(1)} KB • Ready to save
                     </div>
                   )}
@@ -409,7 +409,7 @@ export default function AdminMembersPanel({ currentUser, users, onUserUpdate }: 
                     setTargetAvatarSuccess("");
                   }}
                   disabled={targetAvatarLoading}
-                  className="px-3.5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-bold uppercase rounded-lg border border-zinc-800 transition-colors cursor-pointer"
+                  className="px-3.5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 min-h-11 text-sm font-semibold rounded-xl border border-zinc-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -417,17 +417,17 @@ export default function AdminMembersPanel({ currentUser, users, onUserUpdate }: 
                   type="button"
                   onClick={handleTargetAvatarUpload}
                   disabled={targetAvatarLoading}
-                  className="flex-1 sm:flex-initial px-5 py-2.5 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-ticket text-xs font-black uppercase tracking-wider rounded-lg shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="flex-1 sm:flex-initial px-5 py-2.5 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-ticket min-h-11 text-sm font-semibold rounded-xl shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   {targetAvatarLoading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
-                      <span>Saving Member Picture...</span>
+                      <span>Saving…</span>
                     </>
                   ) : (
                     <>
                       <Check className="w-4 h-4 stroke-[3]" />
-                      <span>Save Member Profile Picture</span>
+                      <span>Save photo</span>
                     </>
                   )}
                 </button>
@@ -437,39 +437,39 @@ export default function AdminMembersPanel({ currentUser, users, onUserUpdate }: 
             <div className="flex items-center justify-between p-3 bg-zinc-950/40 border border-zinc-900 rounded-xl">
               <div className="text-xs text-zinc-400 flex items-center gap-2">
                 <Camera className="w-4 h-4 text-zinc-500" />
-                <span>Select a picture to override profile photo for {users.find(u => u.username === selectedTarget)?.name || selectedTarget}</span>
+                <span>Choose a new photo for {users.find(u => u.username === selectedTarget)?.name.split(" ")[0] || selectedTarget}</span>
               </div>
               <button
                 type="button"
                 disabled
-                className="px-4 py-2 bg-zinc-900 text-zinc-500 border border-zinc-800/60 rounded-lg text-xs font-bold uppercase tracking-wider cursor-not-allowed opacity-60 flex items-center gap-1.5"
+                className="px-4 py-2 bg-zinc-900 text-zinc-500 border border-zinc-800/60 min-h-11 rounded-xl text-sm font-semibold cursor-not-allowed opacity-60 flex items-center gap-1.5"
               >
                 <Check className="w-3.5 h-3.5" />
-                Save Member Picture
+                Save photo
               </button>
             </div>
           )}
         </form>
       </div>
 
-      {/* Override Password */}
+      {/* New password */}
       <div className="bg-zinc-900/10 border border-zinc-800/80 rounded-xl p-4 sm:p-5 space-y-4">
-        <h4 className="text-xs uppercase tracking-widest text-zinc-400 font-bold border-b border-zinc-800/60 pb-2 flex items-center gap-2">
+        <h4 className="font-serif text-xl text-zinc-50 border-b border-zinc-800/60 pb-2 flex items-center gap-2">
           <Lock className="w-3.5 h-3.5 text-amber-500" />
-          Override Password
+          Password
         </h4>
 
         <form onSubmit={handleAdminReset} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
-              New Password
+            <label className="block text-sm font-semibold text-zinc-300 mb-2">
+              New password
             </label>
             <div className="relative">
               <input
                 type={showAdminPass ? "text" : "password"}
                 value={adminNewPassword}
                 onChange={(e) => setAdminNewPassword(e.target.value)}
-                placeholder="Enter new password for selected member"
+                placeholder="New password for this member"
                 className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-lg px-4 py-3 pr-10 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all text-base md:text-sm font-mono"
               />
               <button
@@ -488,7 +488,7 @@ export default function AdminMembersPanel({ currentUser, users, onUserUpdate }: 
             className="w-full py-3 bg-zinc-100 hover:bg-zinc-200 disabled:opacity-50 text-zinc-950 font-bold rounded-lg text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
           >
             <UserCog className="w-4 h-4" />
-            {loading ? "Overriding Password..." : "Set Member Password"}
+            {loading ? "Saving…" : "Set password"}
           </button>
         </form>
       </div>
@@ -496,30 +496,30 @@ export default function AdminMembersPanel({ currentUser, users, onUserUpdate }: 
       {/* Database Storage & Automatic Backups */}
       <div className="bg-zinc-900/10 border border-zinc-800/80 rounded-xl p-4 sm:p-5 space-y-4">
         <div className="flex items-center justify-between border-b border-zinc-800/60 pb-2">
-          <h4 className="text-xs uppercase tracking-widest text-zinc-400 font-bold flex items-center gap-2">
+          <h4 className="font-serif text-xl text-zinc-50 flex items-center gap-2">
             <Database className="w-3.5 h-3.5 text-amber-500" />
-            Database Storage & Automatic Backups
+            Backups
           </h4>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Auto-Backup Active
+            Backed up
           </span>
         </div>
 
         <div className="text-xs text-zinc-400 leading-relaxed space-y-2">
           <p>
-            All member profile photos, movie nights, reviews, ratings, and the email history are stored together in your unified database (<span className="font-mono text-zinc-300">server-db.json</span>).
+            Every night, review, recap, photo and club email is saved together, with a backup copy kept on every save.
           </p>
           <p>
-            An automatic backup copy (<span className="font-mono text-zinc-300">server-db.json.bak</span>) is created synchronously on every single save, alongside rolling historical snapshots. In the event of an unexpected interruption, the server automatically recovers from the backup.
+            Download a copy to keep somewhere safe.
           </p>
         </div>
 
-        <div className="bg-zinc-950/60 border border-zinc-900 rounded-lg p-3 text-[11px] font-mono text-zinc-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="bg-zinc-950/60 border border-zinc-900 rounded-lg p-3 text-xs font-mono text-zinc-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div className="space-y-0.5">
             <div className="text-zinc-300 font-semibold flex items-center gap-1.5">
               <HardDrive className="w-3.5 h-3.5 text-amber-500" />
-              <span>Database File Path</span>
+              <span>Club data</span>
             </div>
             <div className="text-zinc-500 truncate max-w-xs sm:max-w-md">
               {backupStats?.primaryDbFile || "server-db.json"}
@@ -536,24 +536,24 @@ export default function AdminMembersPanel({ currentUser, users, onUserUpdate }: 
           <button
             type="button"
             onClick={handleDownloadBackup}
-            className="w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-500/60 font-bold rounded-lg text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            className="w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-500/60 min-h-11 font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
           >
             <Download className="w-4 h-4" />
-            Download Live Database (.json)
+            Download a copy
           </button>
           {backupStats?.hasBackup && (
             <button
               type="button"
               onClick={handleDownloadBak}
-              className="w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 hover:border-zinc-500 font-bold rounded-lg text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              className="w-full sm:w-auto px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 hover:border-zinc-500 min-h-11 font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              Download Auto-Backup (.bak)
+              Download the backup copy
             </button>
           )}
         </div>
-        <span className="block text-[10px] text-zinc-500">
-          Exports complete JSON copies of all movie nights, member avatars, reviews, recaps, and the email history.
+        <span className="block text-xs text-zinc-500">
+          Includes every night, review, recap and club email.
         </span>
       </div>
     </div>

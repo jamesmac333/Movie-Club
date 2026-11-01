@@ -341,10 +341,13 @@ export default function FeedView({
             Recaps, photos and everyone's reviews
           </p>
           {watchedNights.some((n) => isBeforeDataLoss(n.date)) && (
-            <div className="mt-4 flex items-start gap-2.5 p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/20 text-amber-200/90 text-xs leading-relaxed max-w-3xl">
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <span>{DATA_LOSS_NOTE}</span>
-            </div>
+            <details className="mt-3 max-w-3xl text-sm text-zinc-400">
+              <summary className="min-h-11 inline-flex items-center gap-2 cursor-pointer text-amber-200/90">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                Why some older reviews are missing
+              </summary>
+              <p className="mt-1 leading-relaxed">{DATA_LOSS_NOTE}</p>
+            </details>
           )}
         </div>
 
@@ -353,20 +356,18 @@ export default function FeedView({
           <button
             type="button"
             onClick={toggleAllOverviews}
-            className="text-[11px] font-mono px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
-            title="Expand or collapse all night overviews"
+            className="min-h-11 text-sm font-medium px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
           >
             {allOverviewsExpanded ? <ChevronUp className="w-3.5 h-3.5 text-amber-400" /> : <ChevronDown className="w-3.5 h-3.5 text-amber-400" />}
-            <span>{allOverviewsExpanded ? "Collapse Overviews" : "Expand All Overviews"}</span>
+            <span>{allOverviewsExpanded ? "Close all recaps" : "Open all recaps"}</span>
           </button>
           <button
             type="button"
             onClick={toggleAllReviews}
-            className="text-[11px] font-mono px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
-            title="Expand or collapse all member reviews"
+            className="min-h-11 text-sm font-medium px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
           >
             {allReviewsExpanded ? <ChevronUp className="w-3.5 h-3.5 text-amber-400" /> : <ChevronDown className="w-3.5 h-3.5 text-amber-400" />}
-            <span>{allReviewsExpanded ? "Collapse Reviews" : "Expand All Reviews"}</span>
+            <span>{allReviewsExpanded ? "Hide all reviews" : "Show all reviews"}</span>
           </button>
         </div>
       </div>
@@ -404,20 +405,20 @@ export default function FeedView({
               {/* The film's colours, sampled from its poster */}
               <PaletteStrip posterUrl={night.movie!.posterUrl} className="h-2.5" />
               {/* Header metadata ribbon */}
-              <div className="bg-[#080808]/50 border-b border-zinc-900/60 px-6 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-zinc-400">
+              <div className="bg-[#080808]/50 border-b border-zinc-900/60 px-6 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm text-zinc-400">
                 <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1 text-zinc-300">
                     <Calendar className="w-4 h-4 text-amber-500/80" />
                     {formatNZTDateOnly(night.date)}
                   </span>
                   <span className="text-zinc-400">•</span>
-                  <span>Selector: <strong className="text-zinc-200">{night.selector}</strong></span>
+                  <span><strong className="text-zinc-200 font-semibold">{night.selector.split(" ")[0]}</strong> {new Date(night.date).getTime() < Date.now() ? "hosted" : "hosts"}</span>
                 </div>
                 
                 {avgRating && (
-                  <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 px-2.5 py-1 rounded-lg">
-                    <Star className="w-3.5 h-3.5 fill-amber-500" />
-                    <span>Club Rating: {avgRating} / 5.0</span>
+                  <div className="flex items-center gap-1 text-amber-500">
+                    <Star className="w-4 h-4 fill-amber-500" aria-hidden="true" />
+                    <span>{avgRating} <span className="text-zinc-400">from {nightReviews.length} {nightReviews.length === 1 ? "review" : "reviews"}</span></span>
                   </div>
                 )}
               </div>
@@ -436,7 +437,6 @@ export default function FeedView({
                     />
                   )}
                   <div className="space-y-1.5 min-w-0 pb-1">
-                    <span className="slate text-zinc-400">The film</span>
                     <h3 className="text-2xl sm:text-4xl font-serif text-zinc-50 leading-tight break-words">
                       {night.movie!.title}
                     </h3>
@@ -457,17 +457,16 @@ export default function FeedView({
                   <div className="space-y-3 bg-amber-950 text-zinc-100 border border-amber-800 rounded-2xl p-5 sm:p-6 shadow-md transition-colors">
                     <div className="space-y-1">
                       <div className="flex items-center justify-between gap-4 flex-wrap">
-                        <span className="text-xs font-mono text-amber-500 font-bold tracking-widest uppercase">The Next Day Overview by Ash</span>
+                        <span className="slate text-amber-500">Recap by {(overview.author || "Ash").split(" ")[0]}</span>
                         <div className="flex items-center gap-2 flex-wrap">
                           {onOpenRecapModal && (
                             <button
                               type="button"
                               onClick={() => onOpenRecapModal(overview, night)}
-                              className="p-1.5 text-amber-500 hover:text-amber-950 bg-amber-900/70 hover:bg-amber-800 rounded-lg border border-amber-300 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
-                              title="Read in Pop-up Window"
+                              className="min-h-11 px-3 text-amber-500 bg-amber-900/70 hover:bg-amber-800 rounded-xl border border-amber-800 transition-all cursor-pointer flex items-center gap-1.5 text-sm font-semibold"
                             >
-                              <BookOpen className="w-3.5 h-3.5 text-amber-500" />
-                              <span>Pop-up Window</span>
+                              <BookOpen className="w-4 h-4 text-amber-500" />
+                              <span>Open</span>
                             </button>
                           )}
                           {(isAdmin || isAsh) && (
@@ -475,42 +474,39 @@ export default function FeedView({
                               type="button"
                               onClick={() => handlePhotoUploadTrigger(overview.id)}
                               disabled={uploadingPhotoId === overview.id}
-                              className="p-1.5 text-amber-500 hover:text-amber-950 bg-amber-900/40 hover:bg-amber-900/70 rounded-lg border border-amber-800 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
-                              title={isAuthenticGatheringPhoto(overview.imageUrl) ? "Upload / Replace Gathering Photo" : "+ Add Gathering Photo"}
+                              className="min-h-11 px-3 text-amber-500 bg-amber-900/40 hover:bg-amber-900/70 rounded-xl border border-amber-800 transition-all cursor-pointer flex items-center gap-1.5 text-sm font-semibold"
                             >
                               {uploadingPhotoId === overview.id ? (
                                 <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin" />
                               ) : (
                                 <Camera className="w-3.5 h-3.5 text-amber-500" />
                               )}
-                              <span>{isAuthenticGatheringPhoto(overview.imageUrl) ? "Replace Photo" : "+ Add Photo"}</span>
+                              <span>{isAuthenticGatheringPhoto(overview.imageUrl) ? "Change photo" : "Add photo"}</span>
                             </button>
                           )}
                           {(isAdmin || isAsh) && (
                             <button
                               type="button"
                               onClick={async () => {
-                                if (confirm("Are you sure you want to delete this overview recap?")) {
+                                if (confirm("Delete this recap? This can't be undone.")) {
                                   if (onDeleteOverview) {
                                     await onDeleteOverview(overview.id);
                                   }
                                 }
                               }}
-                              className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-semibold"
-                              title="Delete Overview Recap"
+                              className="min-h-11 px-3 text-zinc-400 hover:text-red-400 hover:bg-zinc-900 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 text-sm font-semibold"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span>Delete Overview</span>
+                              <Trash2 className="w-4 h-4" />
+                              <span>Delete</span>
                             </button>
                           )}
                         </div>
                       </div>
 
-                      {/* Overview Title: Clicking toggles expand/collapse */}
+                      {/* Recap title: tapping opens or closes the recap */}
                       <h4 
                         onClick={() => toggleOverviewExpand(night.id)}
                         className="text-xl sm:text-2xl font-serif font-bold text-zinc-100 tracking-wide hover:text-amber-500 transition-colors cursor-pointer flex items-center gap-2 group/title"
-                        title={isOverviewExpanded ? "Click to collapse overview" : "Click to expand full overview"}
                       >
                         <span>{overview.title}</span>
                         <span className="text-zinc-400 group-hover/title:text-amber-500 transition-colors">
@@ -542,17 +538,17 @@ export default function FeedView({
                             e.stopPropagation();
                             toggleOverviewExpand(night.id);
                           }}
-                          className="text-amber-500 hover:text-amber-950 text-xs font-mono font-bold flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-amber-900/70 hover:bg-amber-800 border border-amber-300 transition-all cursor-pointer"
+                          className="min-h-11 -ml-1 px-1 text-amber-500 hover:text-amber-300 text-sm font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
                         >
                           {isOverviewExpanded ? (
                             <>
                               <ChevronUp className="w-3.5 h-3.5" />
-                              <span>Collapse Overview</span>
+                              <span>Show less</span>
                             </>
                           ) : (
                             <>
                               <ChevronDown className="w-3.5 h-3.5" />
-                              <span>Read Full Overview</span>
+                              <span>Read the full recap</span>
                             </>
                           )}
                         </button>
@@ -563,17 +559,17 @@ export default function FeedView({
                               e.stopPropagation();
                               toggleOverviewExpand(night.id);
                             }}
-                            className="text-[11px] font-mono text-zinc-500 group-hover/ov:text-zinc-500 flex items-center gap-1.5 cursor-pointer transition-colors"
+                            className="text-sm text-zinc-400 flex items-center gap-1.5 cursor-pointer transition-colors"
                           >
                             {isAuthenticGatheringPhoto(overview.imageUrl) ? (
                               <>
                                 <ImageIcon className="w-3.5 h-3.5 text-amber-600" />
-                                <span>Photo memory attached (click to view)</span>
+                                <span>Has a photo from the night</span>
                               </>
                             ) : (
                               <>
                                 <Camera className="w-3.5 h-3.5 text-zinc-400" />
-                                <span>No gathering photo attached</span>
+                                <span>No photo yet</span>
                               </>
                             )}
                           </span>
@@ -605,23 +601,16 @@ export default function FeedView({
                                     className="group-hover:scale-[1.01] transition-transform duration-300"
                                     referrerPolicy="no-referrer"
                                   />
-                                  <div className="absolute bottom-4 left-4 bg-black/80 backdrop-blur-md text-zinc-200 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs font-mono flex items-center gap-2 shadow-lg">
-                                    <Camera className="w-4 h-4 text-amber-400" />
-                                    <span>Gathering Memory • Captured by Ash</span>
-                                  </div>
                                   {onOpenRecapModal && (
-                                    <div className="absolute top-4 right-4 bg-black/75 backdrop-blur-md text-amber-400 border border-amber-500/30 rounded px-2.5 py-1 text-[11px] font-mono opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-lg">
-                                      <Maximize2 className="w-3 h-3" />
-                                      <span>Expand Recap</span>
+                                    <div className="absolute top-3 right-3 bg-black/75 backdrop-blur-md text-zinc-100 rounded-full w-9 h-9 flex items-center justify-center" aria-hidden="true">
+                                      <Maximize2 className="w-4 h-4" />
                                     </div>
                                   )}
                                 </div>
 
                                 {(isAdmin || isAsh) && (
                                   <div className="flex items-center justify-between gap-3 px-1 pt-1 flex-wrap">
-                                    <span className="text-[11px] text-zinc-500 font-mono">
-                                      Real photos are stored securely with all club records.
-                                    </span>
+                                    <span className="text-sm text-zinc-400">Photo from the night</span>
                                     <div className="flex items-center gap-2">
                                       <button
                                         type="button"
@@ -630,10 +619,10 @@ export default function FeedView({
                                           handlePhotoUploadTrigger(overview.id);
                                         }}
                                         disabled={uploadingPhotoId === overview.id}
-                                        className="text-xs font-mono text-amber-500 hover:text-amber-950 font-semibold px-2.5 py-1 rounded-lg bg-amber-900/40 hover:bg-amber-900/70 border border-amber-800 transition-all flex items-center gap-1.5 cursor-pointer"
+                                        className="min-h-11 text-sm text-amber-500 font-semibold px-3 rounded-xl bg-amber-900/40 hover:bg-amber-900/70 border border-amber-800 transition-all flex items-center gap-1.5 cursor-pointer"
                                       >
-                                        <Camera className="w-3.5 h-3.5 text-amber-500" />
-                                        <span>Replace Photo</span>
+                                        <Camera className="w-4 h-4 text-amber-500" />
+                                        <span>Change photo</span>
                                       </button>
                                       <button
                                         type="button"
@@ -642,10 +631,10 @@ export default function FeedView({
                                           handleRemovePhoto(overview.id);
                                         }}
                                         disabled={uploadingPhotoId === overview.id}
-                                        className="text-xs font-mono text-zinc-500 hover:text-red-700 font-medium px-2.5 py-1 rounded-lg hover:bg-red-50 border border-transparent hover:border-red-200 transition-all flex items-center gap-1 cursor-pointer"
+                                        className="min-h-11 text-sm text-zinc-400 hover:text-red-400 font-semibold px-3 rounded-xl hover:bg-zinc-900 transition-all flex items-center gap-1 cursor-pointer"
                                       >
-                                        <Trash2 className="w-3 h-3" />
-                                        <span>Remove Photo</span>
+                                        <Trash2 className="w-4 h-4" />
+                                        <span>Remove</span>
                                       </button>
                                     </div>
                                   </div>
@@ -657,9 +646,9 @@ export default function FeedView({
                                   <Camera className="w-5 h-5" />
                                 </div>
                                 <div>
-                                  <h6 className="text-sm font-serif font-bold text-zinc-100">No Gathering Photo Attached Yet</h6>
-                                  <p className="text-xs text-zinc-400 max-w-md mx-auto mt-0.5">
-                                    Ash documents our group memories and reactions the day after every session.
+                                  <h6 className="font-serif text-lg text-zinc-100">No photo from the night yet</h6>
+                                  <p className="text-sm text-zinc-400 max-w-md mx-auto mt-0.5">
+                                    Ash adds a photo from each night with her recap.
                                   </p>
                                 </div>
                                 {(isAdmin || isAsh) && (
@@ -671,14 +660,14 @@ export default function FeedView({
                                         handlePhotoUploadTrigger(overview.id);
                                       }}
                                       disabled={uploadingPhotoId === overview.id}
-                                      className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-mono font-bold shadow-md shadow-amber-600/20 transition-all cursor-pointer"
+                                      className="min-h-11 inline-flex items-center gap-2 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-semibold transition-all cursor-pointer"
                                     >
                                       {uploadingPhotoId === overview.id ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                       ) : (
                                         <Upload className="w-4 h-4" />
                                       )}
-                                      <span>+ Upload Gathering Photo</span>
+                                      <span>Add a photo</span>
                                     </button>
                                   </div>
                                 )}
@@ -692,11 +681,9 @@ export default function FeedView({
                 ) : (
                   <div className="bg-zinc-900/10 border border-dashed border-zinc-900 rounded-2xl p-6 text-center space-y-2">
                     <ImageIcon className="w-8 h-8 text-zinc-500 mx-auto" />
-                    <p className="text-sm font-serif text-zinc-500 italic">Ash Macintosh is preparing the night overview and gather image for this event...</p>
+                    <p className="text-sm text-zinc-400">Ash's recap of this night is on its way.</p>
                     {(isAdmin || isAsh) && (
-                      <p className="text-xs text-amber-600 font-mono">
-                        *Hint: As an Admin / Recap Author, you can publish this night's overview and photo in the "Recaps & Photos" tab.
-                      </p>
+                      <p className="text-sm text-amber-500">You can write it in the Admin tab.</p>
                     )}
                   </div>
                 )}
@@ -708,13 +695,12 @@ export default function FeedView({
                       <button
                         type="button"
                         onClick={() => toggleReviewsExpand(night.id)}
-                        className="flex items-center gap-2 group text-left cursor-pointer select-none"
+                        className="min-h-11 flex items-center gap-2 group text-left cursor-pointer select-none"
                       >
-                        <h5 className="text-sm font-mono font-bold tracking-wider uppercase text-zinc-400 group-hover:text-zinc-200 flex items-center gap-2 transition-colors">
-                          <MessageSquare className="w-4 h-4 text-zinc-500 group-hover:text-amber-500 transition-colors" />
-                          <span>Member Reviews ({allNightReviews.length})</span>
+                        <h5 className="font-serif text-2xl text-zinc-50 group-hover:text-amber-500 flex items-center gap-2 transition-colors">
+                          <span>Reviews <span className="text-lg text-zinc-400">· {allNightReviews.length}</span></span>
                           {nightReviews.length > 0 && (
-                            <span className="p-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 group-hover:text-amber-400 group-hover:border-zinc-700 transition-all inline-flex items-center">
+                            <span className="text-zinc-400 group-hover:text-amber-400 transition-all inline-flex items-center">
                               {isReviewsExpanded ? (
                                 <ChevronUp className="w-3.5 h-3.5" />
                               ) : (
@@ -725,11 +711,6 @@ export default function FeedView({
                         </h5>
                       </button>
 
-                      {nightReviews.length > 0 && !isReviewsExpanded && avgRating && (
-                        <span className="text-[11px] font-mono text-zinc-500 hidden sm:inline-flex items-center gap-1">
-                          • Avg: <strong className="text-amber-400">{avgRating}★</strong>
-                        </span>
-                      )}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -737,17 +718,17 @@ export default function FeedView({
                         <button
                           type="button"
                           onClick={() => toggleReviewsExpand(night.id)}
-                          className="text-xs text-zinc-400 hover:text-zinc-200 font-mono py-1 px-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-all cursor-pointer flex items-center gap-1.5"
+                          className="min-h-11 text-sm font-medium text-zinc-300 hover:text-zinc-100 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-all cursor-pointer flex items-center gap-1.5"
                         >
                           {isReviewsExpanded ? (
                             <>
                               <ChevronUp className="w-3.5 h-3.5" />
-                              <span>Hide Reviews</span>
+                              <span>Hide</span>
                             </>
                           ) : (
                             <>
                               <ChevronDown className="w-3.5 h-3.5" />
-                              <span>Show Reviews ({nightReviews.length})</span>
+                              <span>Show</span>
                             </>
                           )}
                         </button>
@@ -793,20 +774,20 @@ export default function FeedView({
                     return (
                       <div 
                         onClick={() => toggleReviewsExpand(night.id)}
-                        className="mt-2 bg-zinc-900/35 hover:bg-zinc-900/70 border border-zinc-900 hover:border-zinc-800 rounded-xl p-3 sm:px-4 sm:py-3 text-xs text-zinc-400 cursor-pointer transition-all group space-y-2.5"
+                        className="mt-2 bg-zinc-900/35 hover:bg-zinc-900/70 border border-zinc-800 rounded-xl p-3 sm:px-4 sm:py-3 text-sm text-zinc-400 cursor-pointer transition-all group space-y-2.5"
                       >
                         <div className="flex items-center justify-between">
                           <span className="flex items-center gap-2 truncate">
-                            <span className="text-zinc-500 font-mono">{nightReviews.length} review{nightReviews.length > 1 ? "s" : ""} recorded</span>
+                            <span>{nightReviews.length} review{nightReviews.length > 1 ? "s" : ""}</span>
                             {ashStarredPick && (
-                              <span className="text-amber-400 font-mono text-[10px] bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded flex items-center gap-1 font-semibold">
-                                <Star className="w-2.5 h-2.5 fill-amber-400" />
-                                Ash's Best Review Pick
+                              <span className="text-amber-400 text-xs bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded flex items-center gap-1 font-semibold">
+                                <Star className="w-3 h-3 fill-amber-400" />
+                                Ash's favourite
                               </span>
                             )}
                           </span>
-                          <span className="text-amber-500/80 group-hover:text-amber-400 font-mono text-[11px] flex items-center gap-1 shrink-0 ml-2">
-                            <span>{ashStarredPick ? "View all reviews" : "Click to view reviews"}</span>
+                          <span className="text-amber-500 group-hover:text-amber-400 font-semibold flex items-center gap-1 shrink-0 ml-2">
+                            <span>{ashStarredPick ? "See all" : "Show reviews"}</span>
                             <ChevronDown className="w-3 h-3 transition-transform group-hover:translate-y-0.5" />
                           </span>
                         </div>
@@ -823,15 +804,15 @@ export default function FeedView({
                                     className="w-5 h-5 rounded-full object-cover border border-amber-500/40 shrink-0"
                                   />
                                 ) : (
-                                  <div className="w-5 h-5 bg-zinc-800 rounded-full flex items-center justify-center font-mono text-[10px] font-bold text-amber-400 uppercase shrink-0">
+                                  <div className="w-5 h-5 bg-zinc-800 rounded-full flex items-center justify-center font-mono text-xs font-bold text-amber-400 uppercase shrink-0">
                                     {ashStarredPick.user.substring(0, 2)}
                                   </div>
                                 )}
-                                <span className="font-semibold text-zinc-200 text-xs truncate">
-                                  {ashStarredPick.user}
+                                <span className="font-semibold text-zinc-200 text-sm truncate">
+                                  {ashStarredPick.user.split(" ")[0]}
                                 </span>
-                                <span className="text-[10px] font-mono text-zinc-500 hidden sm:inline">
-                                  • {formatNZTDateOnly(ashStarredPick.createdAt)}
+                                <span className="text-xs text-zinc-500 hidden sm:inline">
+                                  · {formatNZTDateOnly(ashStarredPick.createdAt)}
                                 </span>
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
@@ -839,7 +820,7 @@ export default function FeedView({
                               </div>
                             </div>
                             {ashStarredPick.comment && (
-                              <p className="text-xs text-zinc-300 font-serif italic line-clamp-2 leading-relaxed pl-1 border-l-2 border-amber-500/50">
+                              <p className="text-sm text-zinc-300 line-clamp-3 leading-relaxed pl-2 border-l-2 border-amber-500/50">
                                 "{ashStarredPick.comment}"
                               </p>
                             )}
@@ -867,28 +848,25 @@ export default function FeedView({
                             className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-5 space-y-3"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-mono font-semibold text-zinc-300">
-                                Reviewing as: <strong className="text-zinc-100">{currentUser?.name}</strong>
-                              </span>
+                              <span className="text-sm font-semibold text-zinc-200">Your review</span>
                               <div className="flex items-center gap-2">
-                                <span className="text-xs text-zinc-400 font-mono">Rating:</span>
                                 <StarInput value={newRating} onChange={setNewRating} label="Your rating" />
-                                <span className="text-xs text-amber-500 font-mono font-bold">{newRating.toFixed(1)}</span>
+                                <span className="text-sm text-amber-500 font-semibold">{newRating.toFixed(1)}</span>
                               </div>
                             </div>
 
                             <textarea
-                              placeholder="What did you think of this film? Write your review..."
+                              placeholder="What did you think?"
                               value={newComment}
                               onChange={(e) => setNewComment(e.target.value)}
                               rows={6}
                               className="w-full min-h-[150px] sm:min-h-[170px] bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-xl px-4 py-3.5 text-base placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/80 font-sans leading-relaxed resize-y transition-all"
                             />
 
-                            {reviewError && <p className="text-xs text-red-400">{reviewError}</p>}
+                            {reviewError && <p role="alert" className="text-sm text-red-400">{reviewError}</p>}
 
                             <div className="flex items-center justify-between pt-1">
-                              <span className="text-[11px] text-zinc-500 font-mono">
+                              <span className="text-xs text-zinc-500 font-mono">
                                 {newComment.trim().length > 0 ? `${newComment.trim().length} characters` : ""}
                               </span>
                               <div className="flex items-center gap-2">
@@ -898,7 +876,7 @@ export default function FeedView({
                                     setActiveReviewFormId(null);
                                     setReviewError("");
                                   }}
-                                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3.5 py-2 rounded-lg font-medium transition-colors cursor-pointer"
+                                  className="min-h-11 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm px-4 rounded-xl font-semibold transition-colors cursor-pointer"
                                 >
                                   Cancel
                                 </button>
@@ -906,9 +884,9 @@ export default function FeedView({
                                   type="button"
                                   onClick={() => handlePostReviewSubmit(night.id)}
                                   disabled={submittingReview}
-                                  className="bg-red-700 hover:bg-red-600 text-ticket text-xs font-bold px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                  className="min-h-11 bg-red-700 hover:bg-red-600 text-ticket text-sm font-semibold px-4 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                                 >
-                                  {submittingReview ? "Posting..." : "Submit Review"}
+                                  {submittingReview ? "Posting…" : "Post review"}
                                 </button>
                               </div>
                             </div>
@@ -917,10 +895,10 @@ export default function FeedView({
 
                         {/* Existing Reviews List */}
                         {nightReviews.length === 0 ? (
-                          sealed ? null : <p className="text-xs text-zinc-400 italic py-2">
+                          sealed ? null : <p className="text-sm text-zinc-400 py-2">
                             {isBeforeDataLoss(night.date)
-                              ? "The original reviews for this night were lost when Google AI Studio wiped the club database on 14 October 2026. If you remember yours, click Add Review to post it again."
-                              : "No reviews written for this movie yet. Click Add Review to start!"}
+                              ? "The original reviews for this night were lost when Google AI Studio wiped the club database on 14 October 2026. If you remember yours, tap Add yours to post it again."
+                              : "No reviews yet. Tap Add yours to start."}
                           </p>
                         ) : (
                           <div className="space-y-4">
@@ -950,11 +928,11 @@ export default function FeedView({
                                       <div className="w-7 h-7 bg-zinc-800 rounded-full flex items-center justify-center font-mono text-xs font-bold text-zinc-300 uppercase">
                                         {review.user.substring(0, 2)}
                                       </div>
-                                      <div className="text-xs">
-                                        <span className="font-semibold text-zinc-200 block flex items-center gap-1.5">
-                                          {review.user}
+                                      <div className="text-sm">
+                                        <span className="font-semibold text-zinc-200 block">
+                                          {review.user.split(" ")[0]}
                                         </span>
-                                        <span className="text-zinc-500 text-[10px] font-mono">{formatNZTDateOnly(review.createdAt)}</span>
+                                        <span className="text-zinc-500 text-xs">{formatNZTDateOnly(review.createdAt)}</span>
                                       </div>
                                     </div>
 
@@ -965,15 +943,15 @@ export default function FeedView({
                                           type="button"
                                           disabled={!isAsh}
                                           onClick={() => handleToggleStar(review.id)}
-                                          className={`p-1.5 rounded-lg border transition-all flex items-center gap-1 text-[9px] font-mono font-bold uppercase tracking-wider ${
+                                          className={`min-h-11 min-w-11 px-2.5 justify-center rounded-xl border transition-all flex items-center gap-1 text-xs font-semibold ${
                                             isStarred
                                               ? "bg-amber-500/20 border-amber-500/40 text-amber-500 hover:bg-amber-500/30"
                                               : "bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:text-amber-500 hover:border-amber-500/30 hover:bg-zinc-900"
                                           } ${!isAsh ? "cursor-default opacity-90" : "cursor-pointer"}`}
-                                          title={isAsh ? (isStarred ? "Unstar Review" : "Star as Ash's Favorite") : "Ash's Favorite Review"}
+                                          title={isAsh ? (isStarred ? "Remove Ash's favourite" : "Make this Ash's favourite") : "Ash's favourite review"}
                                         >
-                                          <Star className={`w-3.5 h-3.5 ${isStarred ? "fill-amber-500 text-amber-500" : "text-current"}`} />
-                                          {isStarred && <span>Ash's Pick</span>}
+                                          <Star className={`w-4 h-4 ${isStarred ? "fill-amber-500 text-amber-500" : "text-current"}`} />
+                                          {isStarred && <span>Ash's favourite</span>}
                                         </button>
                                       )}
 
@@ -988,18 +966,18 @@ export default function FeedView({
                                           <button
                                             type="button"
                                             onClick={() => handleEditReviewClick(review)}
-                                            className="text-zinc-500 hover:text-amber-500 p-1 rounded hover:bg-zinc-900/80 transition-all cursor-pointer"
-                                            title="Edit Review"
+                                            className="w-11 h-11 flex items-center justify-center text-zinc-400 hover:text-amber-500 rounded-xl hover:bg-zinc-900/80 transition-all cursor-pointer"
+                                            aria-label="Edit review"
                                           >
-                                            <Edit3 className="w-3.5 h-3.5" />
+                                            <Edit3 className="w-4 h-4" />
                                           </button>
                                           <button
                                             type="button"
                                             onClick={() => handleDeleteReviewClick(review.id)}
-                                            className="text-zinc-500 hover:text-red-400 p-1 rounded hover:bg-zinc-900/80 transition-all cursor-pointer"
-                                            title="Delete Review"
+                                            className="w-11 h-11 flex items-center justify-center text-zinc-400 hover:text-red-400 rounded-xl hover:bg-zinc-900/80 transition-all cursor-pointer"
+                                            aria-label="Delete review"
                                           >
-                                            <Trash2 className="w-3.5 h-3.5" />
+                                            <Trash2 className="w-4 h-4" />
                                           </button>
                                         </div>
                                       )}
@@ -1016,14 +994,14 @@ export default function FeedView({
                                         placeholder="Edit your review..."
                                       />
                                       <div className="flex items-center justify-between pt-1">
-                                        <span className="text-[11px] text-zinc-500 font-mono">
+                                        <span className="text-xs text-zinc-500 font-mono">
                                           {editComment.trim().length > 0 ? `${editComment.trim().length} characters` : ""}
                                         </span>
                                         <div className="flex items-center gap-2">
                                           <button
                                             type="button"
                                             onClick={() => setEditingReviewId(null)}
-                                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3.5 py-2 rounded-lg font-medium transition-colors cursor-pointer"
+                                            className="min-h-11 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm px-4 rounded-xl font-semibold transition-colors cursor-pointer"
                                           >
                                             Cancel
                                           </button>
@@ -1031,15 +1009,15 @@ export default function FeedView({
                                             type="button"
                                             onClick={() => handleSaveEditReview(review.id)}
                                             disabled={updatingReview}
-                                            className="bg-red-700 hover:bg-red-600 text-ticket text-xs font-bold px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                            className="min-h-11 bg-red-700 hover:bg-red-600 text-ticket text-sm font-semibold px-4 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                                           >
-                                            {updatingReview ? "Saving..." : "Save Changes"}
+                                            {updatingReview ? "Saving…" : "Save"}
                                           </button>
                                         </div>
                                       </div>
                                     </div>
                                   ) : review.comment ? (
-                                    <p className="text-zinc-300 text-sm font-sans pl-1">
+                                    <p className="text-zinc-300 text-sm leading-relaxed whitespace-pre-line break-words">
                                       {review.comment}
                                     </p>
                                   ) : null}

@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import type { Response } from "express";
+import sharp from "sharp";
 
 // Photos are stored as files in an "images" folder next to the database (in the
 // mounted storage bucket on the live site) instead of as base64 inside server-db.json.
@@ -43,6 +44,20 @@ export function storeImage(value: string): string {
   return PREFIX + name;
 }
 
+// Member photos only ever show as small circles, so anything bigger than this is shrunk
+const AVATAR_MAX_BYTES = 120 * 1024;
+const AVATAR_SIZE = 320;
+
+// Returns a reference to a small square copy of a stored member photo, or the same
+// reference if it's already small. The original file is left where it is.
+export async function shrinkAvatar(value: string): Promise<string> {
+  if (!isStoredImage(value)) return value;
+  const file = path.join(imagesDir, path.basename(value.slice(PREFIX.length)));
+  if (!fs.existsSync(file) || fs.statSync(file).size <= AVATAR_MAX_BYTES) return value;
+  const data = await sharp(file).rotate().resize(AVATAR_SIZE, AVATAR_SIZE, { fit: "cover" }).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
+  return storeImage(`data:image/jpeg;base64,${data.toString("base64")}`);
+}
+
 // Short fingerprint used in ?v= so browsers can cache an image until it changes
 export function imageVersion(value: string): string {
   if (isStoredImage(value)) return value.slice(PREFIX.length, PREFIX.length + 12);
@@ -60,7 +75,8 @@ export function sendImage(res: Response, value: string, cacheControl: string): b
       return true;
     }
     res.setHeader("Content-Type", MIME[path.extname(name).slice(1)] || "application/octet-stream");
-    res.sendFile(file);
+    // Keep the Cache-Control set above (sendFile would otherwise replace it with max-age=0)
+    res.sendFile(file, { cacheControl: false });
     return true;
   }
   const match = value.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);

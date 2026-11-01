@@ -235,24 +235,22 @@ export default function OverviewForm({ nights, currentUser, onPostOverview, over
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Night selector */}
         <div>
-          <label className="block text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 mb-2">
-            Select Movie Night
+          <label className="block text-sm font-semibold text-zinc-300 mb-2">
+            Which night?
           </label>
           <select
             value={selectedNightId}
             onChange={(e) => setSelectedNightId(e.target.value)}
             className="w-full bg-zinc-900 border border-zinc-850 text-zinc-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-amber-500 text-base md:text-sm font-sans"
           >
-            <option value="">-- Choose a movie night to add or replace photo/recap --</option>
+            <option value="">Choose a night</option>
             {reviewableNights.map((night, idx) => {
               const ov = overviews.find(o => o.movieNightId === night.id);
               const hasPhoto = ov && isAuthenticGatheringPhoto(ov.imageUrl);
-              const tag = ov 
-                ? (hasPhoto ? "✓ Has Photo" : "⚠️ Needs Photo") 
-                : "📝 Unwritten";
+              const tag = ov ? (hasPhoto ? "done" : "needs a photo") : "not written yet";
               return (
                 <option key={night.id} value={night.id}>
-                  Night #{idx + 1} ({new Date(night.date).toLocaleDateString("en-NZ", { day: "numeric", month: "short" })}) - {night.selector} - "{night.movie?.title}" [{tag}]
+                  {new Date(night.date).toLocaleDateString("en-NZ", { day: "numeric", month: "short" })} · {night.movie?.title} · {tag}
                 </option>
               );
             })}
@@ -267,20 +265,20 @@ export default function OverviewForm({ nights, currentUser, onPostOverview, over
                 Editing existing recap for <strong>{reviewableNights.find(n => n.id === selectedNightId)?.movie?.title}</strong>
               </span>
             </div>
-            <span className="font-mono text-[10px] bg-amber-500/20 px-2.5 py-0.5 rounded text-amber-300 font-semibold shrink-0">
-              {imageBlob ? "Photo Attached" : "Needs Photo"}
+            <span className="text-xs bg-amber-500/20 px-2.5 py-0.5 rounded text-amber-300 font-semibold shrink-0">
+              {imageBlob ? "Has a photo" : "Needs a photo"}
             </span>
           </div>
         )}
 
         {/* Recap Headline */}
         <div>
-          <label className="block text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 mb-2">
-            Recap Headline / Title
+          <label className="block text-sm font-semibold text-zinc-300 mb-2">
+            Headline
           </label>
           <input
             type="text"
-            placeholder="e.g., Inception Night: Dream Layers & Popcorn Overload"
+            placeholder="e.g. Dream layers and too much popcorn"
             value={headline}
             onChange={(e) => setHeadline(e.target.value)}
             className="w-full bg-zinc-900 border border-zinc-850 text-zinc-100 rounded-xl px-4 py-3 text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 font-sans"
@@ -289,22 +287,22 @@ export default function OverviewForm({ nights, currentUser, onPostOverview, over
 
         {/* Narrative recap */}
         <div>
-          <label className="block text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 mb-2">
-            Narrative Recap & Stories
+          <label className="block text-sm font-semibold text-zinc-300 mb-2">
+            The recap
           </label>
           <textarea
             rows={5}
-            placeholder="How did the night go? Write a cozy or funny recap about the movie reactions, debates, food brought, who fell asleep, etc..."
+            placeholder="How did the night go? Reactions, debates, the food, who fell asleep…"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="w-full bg-zinc-900 border border-zinc-850 text-zinc-100 rounded-xl px-4 py-3 text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 font-sans leading-relaxed"
           />
         </div>
 
-        {/* Drag and Drop Image selection */}
+        {/* Photo from the night */}
         <div>
-          <label className="block text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 mb-2">
-            Upload Friends Photo (Memory Image)
+          <label className="block text-sm font-semibold text-zinc-300 mb-2">
+            Photo from the night
           </label>
 
           {imageBlob ? (
@@ -312,9 +310,9 @@ export default function OverviewForm({ nights, currentUser, onPostOverview, over
             <div className="relative border border-zinc-800 rounded-2xl overflow-hidden bg-zinc-900 group">
               <img src={imageBlob} alt="Preview" className="w-full max-h-72 object-cover" />
               <div className="p-4 bg-zinc-950 border-t border-zinc-900 flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2 text-xs font-mono text-zinc-300">
+                <div className="flex items-center gap-2 text-sm text-zinc-300">
                   <Camera className="w-4 h-4 text-amber-400" />
-                  <span>Gathering photo selected</span>
+                  <span>Photo added</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -328,24 +326,24 @@ export default function OverviewForm({ nights, currentUser, onPostOverview, over
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="min-h-11 px-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
                   >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Replace Photo</span>
+                    <Upload className="w-4 h-4" />
+                    <span>Change photo</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setImageBlob("")}
-                    className="px-3 py-1.5 bg-zinc-900 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-900/40 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="min-h-11 px-3 bg-zinc-900 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-900/40 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Remove Photo</span>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Remove</span>
                   </button>
                 </div>
               </div>
             </div>
           ) : (
-            // Drag Drop box
+            // Tap to choose a photo (or drop one in on a computer)
             <div
               onDragEnter={handleDrag}
               onDragOver={handleDrag}
@@ -374,15 +372,15 @@ export default function OverviewForm({ nights, currentUser, onPostOverview, over
                 <Upload className="w-6 h-6 text-amber-500" />
               </div>
               <p className="text-sm font-semibold text-zinc-200">
-                Drag and drop your friends photo here
+                Add a photo from the night
               </p>
-              <p className="text-xs text-zinc-500 mt-1">
-                Or click to browse files from your computer (auto-compressed safely)
+              <p className="text-sm text-zinc-400 mt-1">
+                Tap to choose one from your photos. It's shrunk to a sensible size for you.
               </p>
               <div className="mt-3">
-                <span className="inline-flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold">
-                  <Camera className="w-3.5 h-3.5" />
-                  + Select Gathering Photo
+                <span className="min-h-11 inline-flex items-center gap-1.5 text-sm px-4 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold">
+                  <Camera className="w-4 h-4" />
+                  Choose photo
                 </span>
               </div>
             </div>
@@ -390,14 +388,14 @@ export default function OverviewForm({ nights, currentUser, onPostOverview, over
         </div>
 
         {error && (
-          <div className="flex items-start gap-2 text-xs text-red-400 bg-red-950/20 border border-red-900/30 p-3 rounded-xl">
+          <div role="alert" className="flex items-start gap-2 text-sm text-red-400 bg-red-950/20 border border-red-900/30 p-3 rounded-xl">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="flex items-start gap-2 text-xs text-emerald-400 bg-emerald-950/20 border border-emerald-900/30 p-3 rounded-xl">
+          <div className="flex items-start gap-2 text-sm text-emerald-400 bg-emerald-950/20 border border-emerald-900/30 p-3 rounded-xl">
             <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{success}</span>
           </div>
@@ -412,12 +410,12 @@ export default function OverviewForm({ nights, currentUser, onPostOverview, over
             {loading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                {isEditingExisting ? "Saving Changes & Photo..." : "Publishing Overview..."}
+                {isEditingExisting ? "Saving…" : "Posting…"}
               </>
             ) : (
               <>
                 <Camera className="w-4 h-4" />
-                {isEditingExisting ? "Save & Update Recap / Photo" : "Publish Movie Night Recap"}
+                {isEditingExisting ? "Save changes" : "Post the recap"}
               </>
             )}
           </button>

@@ -189,7 +189,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
         <div className="space-y-1">
           <h4 className="font-serif font-bold text-zinc-100 text-sm flex items-center gap-2">
             Automatic club emails
-            <span className="text-[10px] font-mono bg-amber-500 text-zinc-950 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+            <span className="text-xs font-mono bg-amber-500 text-zinc-950 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
               Live
             </span>
           </h4>
@@ -198,7 +198,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
           </p>
           <ul className="text-xs text-zinc-300 space-y-1 list-disc list-inside pt-1">
             <li>
-              <strong className="text-amber-400">A recap is posted:</strong> the full recap with the photo from the night, the film and Ash's pick of the reviews.
+              <strong className="text-amber-400">A recap is posted:</strong> the full recap with the photo from the night, the film and Ash's favourite review.
             </li>
             <li>
               <strong className="text-amber-400">The next film is picked:</strong> the poster, director, running time and date, so nobody needs to check the site.
@@ -231,7 +231,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
               Mailing list ({recipients.length})
             </h4>
           </div>
-          <span className="text-[10px] font-mono text-zinc-500">
+          <span className="text-xs font-mono text-zinc-500">
             Admins: James & Ash
           </span>
         </div>
@@ -288,7 +288,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
                       <span className="font-mono text-zinc-400 font-normal">({rec.email})</span>
                     </span>
                     {rec.addedAt && (
-                      <span className="text-[10px] text-zinc-500 font-mono block">
+                      <span className="text-xs text-zinc-500 font-mono block">
                         Added {formatDate(rec.addedAt)}
                       </span>
                     )}
@@ -351,7 +351,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
           <button
             type="button"
             onClick={fetchEdmData}
-            className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300 flex items-center gap-1 cursor-pointer"
+            className="text-xs font-mono text-zinc-500 hover:text-zinc-300 flex items-center gap-1 cursor-pointer"
           >
             <RefreshCw className="w-3 h-3" />
             Refresh
@@ -395,7 +395,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
                         <span className="font-semibold text-zinc-200 min-w-0 break-words [overflow-wrap:anywhere]">
                           {log.subject}
                         </span>
-                        <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold uppercase ${
+                        <span className={`text-xs font-mono px-1.5 py-0.2 rounded font-bold uppercase ${
                           log.status === "sent" 
                             ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/40" 
                             : log.status === "simulated"
@@ -405,7 +405,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
                           {log.status === "simulated" ? "Not sent (test mode)" : log.status}
                         </span>
                       </div>
-                      <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                      <div className="text-xs text-zinc-500 font-mono mt-0.5">
                         {formatDate(log.sentAt)} • {log.recipients.length} recipient(s)
                       </div>
                     </div>
@@ -418,7 +418,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
                         setPreviewHtml(log.htmlContent || null);
                         setPreviewTitle(log.subject);
                       }}
-                      className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-[10px] font-mono uppercase rounded-lg border border-zinc-800 flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+                      className="min-h-11 px-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-mono uppercase rounded-lg border border-zinc-800 flex items-center gap-1 cursor-pointer transition-colors shrink-0"
                     >
                       <Eye className="w-3 h-3" />
                       View email
@@ -443,7 +443,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
           >
             <div className="p-4 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-mono text-amber-500 uppercase tracking-widest font-bold">
+                <span className="text-xs font-mono text-amber-500 uppercase tracking-widest font-bold">
                   Email preview
                 </span>
                 <h4 className="font-bold text-zinc-100 text-sm truncate max-w-md">

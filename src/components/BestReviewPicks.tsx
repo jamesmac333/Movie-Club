@@ -26,7 +26,7 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
-// Every member's review of one night, with a button to make one of them Ash's pick
+// Every member's review of one night, with a button to make one of them Ash's favourite
 function PickSheet({ status, members, onToggleStar, onClose }: { status: Status; members: User[]; onToggleStar: (reviewId: string) => Promise<void>; onClose: () => void }) {
   const [saving, setSaving] = useState("");
   const [error, setError] = useState("");
@@ -147,7 +147,7 @@ export default function BestReviewPicks({ nights, reviews, members, onToggleStar
           <Award className="w-6 h-6 text-amber-500" aria-hidden="true" />
           Best reviews
         </h2>
-        <p className="text-sm text-zinc-400">Once everyone has reviewed a night, pick the best review. It shows as Ash's pick in Memories and on the film's page.</p>
+        <p className="text-sm text-zinc-400">Once everyone has reviewed a night, pick the best review. It shows as Ash's favourite in Memories and on the film's page.</p>
       </div>
 
       {ready.length > 0 && (

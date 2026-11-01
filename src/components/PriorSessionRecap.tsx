@@ -3,6 +3,7 @@ import { MovieNight, Review, NightOverview, User, isAuthenticGatheringPhoto, isB
 import { Calendar, Star, MessageSquare, Image as ImageIcon, Film, Heart, BookOpen, Maximize2, Camera, Upload, Trash2, Loader2, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import PaletteStrip from "./PaletteStrip.tsx";
+import { Avatar } from "./OverlayPage.tsx";
 
 interface PriorSessionRecapProps {
   nights: MovieNight[];
@@ -14,6 +15,8 @@ interface PriorSessionRecapProps {
   onUpdateOverviewImage?: (overviewId: string, imageUrl: string) => Promise<void>;
   onDeleteOverviewImage?: (overviewId: string) => Promise<void>;
   onOpenFilm?: (nightId: string) => void;
+  // Members, for the photos next to each review
+  users?: User[];
 }
 
 export default function PriorSessionRecap({
@@ -25,11 +28,20 @@ export default function PriorSessionRecap({
   onOpenRecapModal,
   onUpdateOverviewImage,
   onDeleteOverviewImage,
-  onOpenFilm
+  onOpenFilm,
+  users = []
 }: PriorSessionRecapProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [feedback, setFeedback] = useState<string>("");
+  // Long reviews show a few lines until opened
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   const isAsh = currentUser?.username?.toLowerCase() === "ash" || currentUser?.isAsh === true;
   const isAdmin = currentUser?.username?.toLowerCase() === "james" || currentUser?.isAdmin === true;
@@ -208,25 +220,23 @@ export default function PriorSessionRecap({
       className="space-y-6"
     >
       {/* Title & Badge */}
-      <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
-        <div className="space-y-0.5">
-          <span className="text-[10px] font-mono text-amber-500 uppercase tracking-widest block font-bold">Prior Event Spotlight</span>
-          <h3 className="text-2xl font-serif text-zinc-100 font-bold tracking-tight">Last Session Recap</h3>
-        </div>
-        
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-serif text-3xl text-zinc-50">Last time</h2>
         {avgRating && (
-          <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 px-3 py-1.5 rounded-xl text-xs font-mono">
-            <Star className="w-3.5 h-3.5 fill-amber-500" />
-            <span>Score: {avgRating} / 5.0</span>
-          </div>
+          <p className="flex items-center gap-1 text-sm text-amber-500 shrink-0">
+            <Star className="w-4 h-4 fill-amber-500" aria-hidden="true" />
+            <span>
+              {avgRating} <span className="text-zinc-400">from {nightReviews.length} {nightReviews.length === 1 ? "review" : "reviews"}</span>
+            </span>
+          </p>
         )}
       </div>
 
       {/* Main Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl p-6 sm:p-8 transition-all hover:border-zinc-800">
+      <div className="flex flex-col gap-8 bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl p-6 sm:p-8 transition-all hover:border-zinc-800">
         
         {/* Left/Middle: Film details and recap */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="space-y-6">
           
           {/* Film banner widget */}
           <div className="flex gap-4 items-end">
@@ -239,14 +249,14 @@ export default function PriorSessionRecap({
               />
             )}
             <div className="space-y-1 min-w-0 pb-1">
-              <span className="slate text-zinc-400 block">Last time · {formatNZTDate(priorNight.date)}</span>
-              <h4 className="text-2xl font-serif text-zinc-50 break-words">{priorNight.movie!.title}</h4>
+              <span className="slate text-zinc-400 block">{formatNZTDate(priorNight.date)}</span>
+              <h3 className="text-2xl font-serif text-zinc-50 break-words">{priorNight.movie!.title}</h3>
               <p className="text-sm text-zinc-400">{priorNight.selector.split(" ")[0]}'s pick · {priorNight.movie!.year}</p>
-                    {onOpenFilm && (
-                      <button type="button" onClick={() => onOpenFilm(priorNight.id)} className="min-h-11 -ml-1 px-1 text-sm font-semibold text-amber-500 hover:text-amber-400 inline-flex items-center gap-1 cursor-pointer">
-                        Film page <ChevronRight className="w-4 h-4" />
-                      </button>
-                    )}
+              {onOpenFilm && (
+                <button type="button" onClick={() => onOpenFilm(priorNight.id)} className="min-h-11 -ml-1 px-1 text-sm font-semibold text-amber-500 hover:text-amber-400 inline-flex items-center gap-1 cursor-pointer">
+                  Film page <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
           <PaletteStrip posterUrl={priorNight.movie!.posterUrl} className="h-2 rounded" />
@@ -256,7 +266,7 @@ export default function PriorSessionRecap({
             <div className="space-y-3 bg-amber-950 text-zinc-100 border border-amber-800 rounded-2xl p-5 sm:p-6 shadow-md">
               <div className="flex items-start justify-between gap-3 flex-wrap border-b border-amber-800 pb-2.5">
                 <div className="space-y-0.5">
-                  <span className="text-[10px] font-mono text-amber-500 font-bold uppercase tracking-wider block">Recap by {overview.author || "Ash Macintosh"}</span>
+                  <span className="slate text-amber-500 block">Recap by {(overview.author || "Ash").split(" ")[0]}</span>
                   <h5 className="text-lg font-serif font-bold text-zinc-100">{overview.title}</h5>
                 </div>
               </div>
@@ -275,7 +285,7 @@ export default function PriorSessionRecap({
             </div>
           ) : (
             <div className="p-5 bg-zinc-900/10 border border-dashed border-zinc-900 rounded-2xl text-center">
-              <p className="text-xs text-zinc-500 font-serif italic">Ash Macintosh is preparing the final memory recap of this session...</p>
+              <p className="text-sm text-zinc-400">Ash's recap of this night is on its way.</p>
             </div>
           )}
 
@@ -294,40 +304,35 @@ export default function PriorSessionRecap({
                       className="group-hover:scale-[1.01] transition-transform duration-300"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md text-zinc-300 border border-zinc-800 rounded px-2.5 py-1 text-[10px] font-mono flex items-center gap-1.5">
-                      <Camera className="w-3 h-3 text-amber-500" />
-                      Gathering Memory • Documented by Ash
-                    </div>
                     {onOpenRecapModal && (
-                      <div className="absolute top-3 right-3 bg-black/75 backdrop-blur-md text-amber-400 border border-amber-500/30 rounded px-2 py-0.5 text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-lg">
-                        <Maximize2 className="w-3 h-3" />
-                        <span>Pop-up</span>
+                      <div className="absolute top-3 right-3 bg-black/75 backdrop-blur-md text-zinc-100 rounded-full w-9 h-9 flex items-center justify-center" aria-hidden="true">
+                        <Maximize2 className="w-4 h-4" />
                       </div>
                     )}
                   </div>
 
                   {canManagePhotos && (
                     <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
-                      <span className="text-[11px] text-zinc-500 font-mono">
-                        {feedback || "Original gathering photo attached"}
+                      <span className="text-sm text-zinc-400">
+                        {feedback || "Photo from the night"}
                       </span>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={uploading}
-                          className="text-xs font-mono text-amber-500 hover:text-amber-950 font-semibold px-2.5 py-1 rounded-lg bg-amber-900/40 hover:bg-amber-900/70 border border-amber-800 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                          className="min-h-11 text-sm text-amber-500 font-semibold px-3 rounded-xl bg-amber-900/40 hover:bg-amber-900/70 border border-amber-800 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                         >
-                          {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3 text-amber-500" />}
-                          <span>Change Photo</span>
+                          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4 text-amber-500" />}
+                          <span>Change photo</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleRemovePhoto(overview.id)}
                           disabled={uploading}
-                          className="text-xs font-mono text-zinc-500 hover:text-red-700 px-2 py-1 rounded-lg hover:bg-red-50 border border-transparent hover:border-red-200 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                          className="min-h-11 text-sm text-zinc-400 hover:text-red-400 px-3 rounded-xl hover:bg-zinc-900 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-4 h-4" />
                           <span>Remove</span>
                         </button>
                       </div>
@@ -336,9 +341,9 @@ export default function PriorSessionRecap({
                 </div>
               ) : (
                 <div className="bg-[#080808] border border-dashed border-zinc-800/80 rounded-2xl p-5 text-center space-y-2">
-                  <div className="flex items-center justify-center gap-2 text-zinc-400 text-xs font-mono">
+                  <div className="flex items-center justify-center gap-2 text-zinc-400 text-sm">
                     <Camera className="w-4 h-4 text-amber-500" />
-                    <span>No friends gathering photo attached to this recap yet</span>
+                    <span>No photo from the night yet</span>
                   </div>
                   {canManagePhotos && (
                     <div className="pt-1">
@@ -346,10 +351,10 @@ export default function PriorSessionRecap({
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
-                        className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-mono font-bold shadow-md shadow-amber-600/20 transition-all cursor-pointer disabled:opacity-50"
+                        className="min-h-11 inline-flex items-center gap-2 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-semibold transition-all cursor-pointer disabled:opacity-50"
                       >
-                        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                        <span>+ Upload Gathering Photo</span>
+                        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        <span>Add a photo</span>
                       </button>
                     </div>
                   )}
@@ -369,53 +374,67 @@ export default function PriorSessionRecap({
         </div>
 
         {/* Right side: All reviews list */}
-        <div className="lg:col-span-5 flex flex-col h-full border-t lg:border-t-0 lg:border-l border-zinc-900 pt-6 lg:pt-0 lg:pl-8">
-          <h5 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 mb-4">
-            <MessageSquare className="w-4 h-4 text-zinc-500" />
-            Member Reviews ({sealed ? sealedCount : nightReviews.length})
-          </h5>
+        <div className="flex flex-col border-t border-zinc-800 pt-6">
+          <h3 className="font-serif text-2xl text-zinc-50 mb-4">
+            Reviews <span className="text-zinc-400 text-lg">· {sealed ? sealedCount : nightReviews.length}</span>
+          </h3>
 
           {nightReviews.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#080808] border border-zinc-900 rounded-2xl text-center space-y-1.5 my-auto">
               <Heart className="w-5 h-5 text-zinc-200" />
               {sealed ? (
                 <>
-                  <p className="text-xs text-zinc-500 font-sans italic">
+                  <p className="text-sm text-zinc-300">
                     {sealedCount === 0 ? "No reviews yet." : `${sealedCount} review${sealedCount === 1 ? " is" : "s are"} in.`}
                   </p>
-                  <p className="text-[10px] text-zinc-400">Post yours to see what everyone else thought.</p>
+                  <p className="text-sm text-zinc-400">Post yours to see what everyone else thought.</p>
                 </>
               ) : isBeforeDataLoss(priorNight.date) ? (
                 <>
-                  <p className="text-xs text-zinc-500 font-sans italic">The original reviews for this night were lost.</p>
-                  <p className="text-[10px] text-zinc-400">Google AI Studio wiped the club database on 14 October 2026. If you remember yours, add it again in the "Memories" tab.</p>
+                  <p className="text-sm text-zinc-300">The original reviews for this night were lost.</p>
+                  <p className="text-sm text-zinc-400">Google AI Studio wiped the club database on 14 October 2026. If you remember yours, add it again in Memories.</p>
                 </>
               ) : (
                 <>
-                  <p className="text-xs text-zinc-500 font-sans italic">No member reviews submitted yet.</p>
-                  <p className="text-[10px] text-zinc-400">Reviewers can submit their memories in the "Memories" tab!</p>
+                  <p className="text-sm text-zinc-300">No reviews yet.</p>
+                  <p className="text-sm text-zinc-400">Add yours in Memories.</p>
                 </>
               )}
             </div>
           ) : (
-            <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
-              {nightReviews.map((review) => (
-                <div 
-                  key={review.id} 
-                  className="bg-[#080808]/80 border border-zinc-900 p-4 rounded-xl space-y-2 hover:border-zinc-800/80 transition-colors"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-zinc-200">{review.user}</span>
-                    {renderStars(review.rating)}
-                  </div>
-                  {review.comment && (
-                    <p className="text-zinc-400 text-xs leading-relaxed font-sans font-light">
-                      "{review.comment}"
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
+            <ul className="flex flex-col divide-y divide-zinc-800">
+              {nightReviews.map((review) => {
+                const member = users.find((u) => u.name.toLowerCase() === review.user.toLowerCase());
+                const isLong = (review.comment?.length || 0) > 180;
+                const open = expanded.has(review.id);
+                return (
+                  <li key={review.id} className="py-4 first:pt-0 last:pb-0 flex gap-3">
+                    <Avatar user={member} name={review.user} className="w-10 h-10" badgeSize="sm" />
+                    <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <span className="font-semibold text-zinc-100">{review.user.split(" ")[0]}</span>
+                        <span className="flex items-center gap-2">
+                          {review.isStarred && <span className="text-xs font-semibold text-amber-500">Ash's favourite</span>}
+                          {renderStars(review.rating)}
+                        </span>
+                      </div>
+                      {review.comment && (
+                        <>
+                          <p className={`text-sm text-zinc-300 leading-relaxed whitespace-pre-line break-words ${isLong && !open ? "line-clamp-4" : ""}`}>
+                            {review.comment}
+                          </p>
+                          {isLong && (
+                            <button type="button" onClick={() => toggleExpanded(review.id)} className="self-start min-h-11 -my-2 text-sm font-semibold text-amber-500 hover:text-amber-400 cursor-pointer">
+                              {open ? "Show less" : "Read more"}
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
 

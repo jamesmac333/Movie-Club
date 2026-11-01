@@ -187,7 +187,7 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
 
   const pick = topReview
     ? `<tr><td style="padding: 26px 32px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #2e1b12; border: 1px solid #5a3a2b; border-radius: 12px;"><tr><td style="padding: 20px 22px;">
-        ${slate(topReview.isStarred ? "Ash's pick of the reviews" : "Top review")}
+        ${slate(topReview.isStarred ? "Ash's favourite review" : "Top review")}
         <p style="margin: 12px 0 0; font-family: ${SERIF}; font-style: italic; font-size: 17px; line-height: 1.6; color: #ede3d1;">&ldquo;${topReview.comment}&rdquo;</p>
         <p style="margin: 12px 0 0; font-family: ${SANS}; font-size: 14px; color: #d8cdb8;">${topReview.user.split(" ")[0]} · &#9733; ${topReview.rating}</p>
       </td></tr></table></td></tr>`
