@@ -911,6 +911,7 @@ export default function App() {
                       onUpdateOverviewImage={handleUpdateOverviewImage}
                       onDeleteOverviewImage={handleDeleteOverviewImage}
                       onOpenFilm={openFilm}
+                      users={members}
                     />
                     </div>
 

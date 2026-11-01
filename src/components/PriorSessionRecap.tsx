@@ -3,6 +3,7 @@ import { MovieNight, Review, NightOverview, User, isAuthenticGatheringPhoto, isB
 import { Calendar, Star, MessageSquare, Image as ImageIcon, Film, Heart, BookOpen, Maximize2, Camera, Upload, Trash2, Loader2, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import PaletteStrip from "./PaletteStrip.tsx";
+import { Avatar } from "./OverlayPage.tsx";
 
 interface PriorSessionRecapProps {
   nights: MovieNight[];
@@ -14,6 +15,8 @@ interface PriorSessionRecapProps {
   onUpdateOverviewImage?: (overviewId: string, imageUrl: string) => Promise<void>;
   onDeleteOverviewImage?: (overviewId: string) => Promise<void>;
   onOpenFilm?: (nightId: string) => void;
+  // Members, for the photos next to each review
+  users?: User[];
 }
 
 export default function PriorSessionRecap({
@@ -25,11 +28,20 @@ export default function PriorSessionRecap({
   onOpenRecapModal,
   onUpdateOverviewImage,
   onDeleteOverviewImage,
-  onOpenFilm
+  onOpenFilm,
+  users = []
 }: PriorSessionRecapProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [feedback, setFeedback] = useState<string>("");
+  // Long reviews show a few lines until opened
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   const isAsh = currentUser?.username?.toLowerCase() === "ash" || currentUser?.isAsh === true;
   const isAdmin = currentUser?.username?.toLowerCase() === "james" || currentUser?.isAdmin === true;
@@ -223,10 +235,10 @@ export default function PriorSessionRecap({
       </div>
 
       {/* Main Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl p-6 sm:p-8 transition-all hover:border-zinc-800">
+      <div className="flex flex-col gap-8 bg-[#0c0c0c] border border-zinc-900/60 rounded-3xl p-6 sm:p-8 transition-all hover:border-zinc-800">
         
         {/* Left/Middle: Film details and recap */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="space-y-6">
           
           {/* Film banner widget */}
           <div className="flex gap-4 items-end">
@@ -369,7 +381,7 @@ export default function PriorSessionRecap({
         </div>
 
         {/* Right side: All reviews list */}
-        <div className="lg:col-span-5 flex flex-col h-full border-t lg:border-t-0 lg:border-l border-zinc-900 pt-6 lg:pt-0 lg:pl-8">
+        <div className="flex flex-col border-t border-zinc-800 pt-6">
           <h5 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 mb-4">
             <MessageSquare className="w-4 h-4 text-zinc-500" />
             Member Reviews ({sealed ? sealedCount : nightReviews.length})
@@ -398,24 +410,39 @@ export default function PriorSessionRecap({
               )}
             </div>
           ) : (
-            <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
-              {nightReviews.map((review) => (
-                <div 
-                  key={review.id} 
-                  className="bg-[#080808]/80 border border-zinc-900 p-4 rounded-xl space-y-2 hover:border-zinc-800/80 transition-colors"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-zinc-200">{review.user}</span>
-                    {renderStars(review.rating)}
-                  </div>
-                  {review.comment && (
-                    <p className="text-zinc-400 text-xs leading-relaxed font-sans font-light">
-                      "{review.comment}"
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
+            <ul className="flex flex-col divide-y divide-zinc-800">
+              {nightReviews.map((review) => {
+                const member = users.find((u) => u.name.toLowerCase() === review.user.toLowerCase());
+                const isLong = (review.comment?.length || 0) > 180;
+                const open = expanded.has(review.id);
+                return (
+                  <li key={review.id} className="py-4 first:pt-0 last:pb-0 flex gap-3">
+                    <Avatar user={member} name={review.user} className="w-10 h-10" badgeSize="sm" />
+                    <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <span className="font-semibold text-zinc-100">{review.user.split(" ")[0]}</span>
+                        <span className="flex items-center gap-2">
+                          {review.isStarred && <span className="text-xs font-semibold text-amber-500">Ash's pick</span>}
+                          {renderStars(review.rating)}
+                        </span>
+                      </div>
+                      {review.comment && (
+                        <>
+                          <p className={`text-sm text-zinc-300 leading-relaxed whitespace-pre-line break-words ${isLong && !open ? "line-clamp-4" : ""}`}>
+                            {review.comment}
+                          </p>
+                          {isLong && (
+                            <button type="button" onClick={() => toggleExpanded(review.id)} className="self-start min-h-11 -my-2 text-sm font-semibold text-amber-500 hover:text-amber-400 cursor-pointer">
+                              {open ? "Show less" : "Read more"}
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
 
