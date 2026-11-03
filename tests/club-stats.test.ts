@@ -65,6 +65,7 @@ test("Fill in the gaps counts a lost night as done once it has stars and words",
   assert.equal(p.done, 1); // stars without words isn't finished yet
   assert.deepEqual(p.remaining.map((n) => n.id), ["b", "c"]);
   assert.equal(p.complete, false);
+  assert.equal(p.photoLocked, true);
 
   const finished = gapFillProgress(
     lostNights,
@@ -74,6 +75,7 @@ test("Fill in the gaps counts a lost night as done once it has stars and words",
   );
   assert.equal(finished.done, 3);
   assert.equal(finished.complete, true);
+  assert.equal(finished.photoLocked, false);
 });
 
 test("the house lights go down on Home from 7 pm on the night, for four hours", () => {

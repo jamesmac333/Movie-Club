@@ -104,7 +104,9 @@ export default function GapsCelebration({ firstName, filmCount, onClose }: { fir
         <p className="text-zinc-300">
           Thanks, {firstName}. All {filmCount} lost nights have your rating and review again, so the club's history is back in one piece.
         </p>
-        <p className="text-sm text-amber-500">This badge now sits on your profile photo.</p>
+        <p className="text-sm text-amber-500">
+          Your profile picture is unlocked: change it any time in your settings. And this badge now sits on it.
+        </p>
         <button
           type="button"
           onClick={onClose}

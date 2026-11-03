@@ -93,7 +93,14 @@ export function gapFillProgress<N extends NightLike, R extends ReviewLike & { co
   const isDone = (n: N) =>
     reviews.some((r) => r.movieNightId === n.id && sameName(r.user, memberName) && !!r.comment?.trim());
   const remaining = lost.filter((n) => !isDone(n));
-  return { total: lost.length, done: lost.length - remaining.length, remaining, complete: lost.length > 0 && remaining.length === 0 };
+  return {
+    total: lost.length,
+    done: lost.length - remaining.length,
+    remaining,
+    complete: lost.length > 0 && remaining.length === 0,
+    // The reward for finishing: until then, the member can't change their own profile photo
+    photoLocked: remaining.length > 0
+  };
 }
 
 const RECAP_WINDOW_DAYS = 7;

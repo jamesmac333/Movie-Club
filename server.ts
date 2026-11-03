@@ -17,7 +17,8 @@ import {
   getDbFilePath
 } from "./server/db.ts";
 import { fetchMovieMetadata } from "./server/gemini.ts";
-import { isBeforeDataLoss } from "./src/dataLoss.ts";
+import { isBeforeDataLoss, DATA_LOSS_DATE } from "./src/dataLoss.ts";
+import { gapFillProgress } from "./src/clubStats.ts";
 import { authenticate, calendarKey, createToken, clientAddress, loginRetryMinutes, recordLoginFailure, recordLoginSuccess } from "./server/auth.ts";
 import { hashPassword, verifyPassword } from "./server/passwords.ts";
 import { buildClubCalendar } from "./server/calendar.ts";
@@ -333,6 +334,15 @@ async function startServer() {
 
     if (!isSelf && !isAdmin) {
       return res.status(403).json({ error: "Unauthorized. You can only update your own profile picture, or administrators can update any member." });
+    }
+
+    // A new photo of your own is the reward for finishing Fill in the gaps
+    if (isSelf) {
+      const db = readDb();
+      const me = db.users.find((u) => u.username.toLowerCase() === targetLower);
+      if (me && gapFillProgress(db.nights, db.reviews, me.name, DATA_LOSS_DATE).photoLocked) {
+        return res.status(403).json({ error: "Finish Fill in the gaps to unlock a new profile picture.", code: "PHOTO_LOCKED" });
+      }
     }
 
     try {

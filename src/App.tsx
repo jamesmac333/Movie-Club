@@ -646,6 +646,10 @@ export default function App() {
             onClose={() => setShowProfileSettings(false)} 
             users={clubUsers}
             onUserUpdate={fetchUsers}
+            gapsLeft={(() => {
+              const gaps = gapFillProgress(nights, reviews, currentUser.name, DATA_LOSS_DATE);
+              return gaps.photoLocked ? gaps.remaining.length : 0;
+            })()}
           />
         )}
         {newSelectionAlert && (
