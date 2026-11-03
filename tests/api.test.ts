@@ -95,8 +95,25 @@ test("repeated wrong passwords are blocked", async () => {
   assert.equal(blocked.status, 429);
 });
 
+test("a member's own photo stays locked until they've filled in the gaps", async () => {
+  const madison = await login("Madison");
+  const locked = await fetch(`${BASE}/api/users/Madison/avatar`, { ...json({ avatarUrl: fakePhoto(0.2) }, madison), method: "PUT" });
+  assert.equal(locked.status, 403);
+  assert.equal((await locked.json()).code, "PHOTO_LOCKED");
+
+  // Admins can still set someone else's photo
+  const ash = await login("Ash");
+  const byAdmin = await fetch(`${BASE}/api/users/Tom/avatar`, { ...json({ avatarUrl: fakePhoto(0.2) }, ash), method: "PUT" });
+  assert.equal(byAdmin.status, 200);
+});
+
 test("profile photos are stored as files and cached by browsers", async () => {
   const madison = await login("Madison");
+  // Both lost nights reviewed with words, so Madison's photo is unlocked
+  for (const night of ["night-1", "night-2"]) {
+    const saved = await fetch(`${BASE}/api/reviews`, json({ movieNightId: night, user: "Madison Hill", rating: 4, comment: "Loved it." }, madison));
+    assert.equal(saved.status, 200);
+  }
   const upload = await fetch(`${BASE}/api/users/Madison/avatar`, { ...json({ avatarUrl: fakePhoto(0.2) }, madison), method: "PUT" });
   assert.equal(upload.status, 200);
   const users = await (await fetch(`${BASE}/api/users`)).json();

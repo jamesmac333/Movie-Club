@@ -8,9 +8,11 @@ interface UserProfileModalProps {
   onClose: () => void;
   users?: User[];
   onUserUpdate?: () => void;
+  // Lost nights still to review. Your photo stays locked until it's 0 (the reward for Fill in the gaps).
+  gapsLeft?: number;
 }
 
-export default function UserProfileModal({ currentUser, onClose, users = MOVIE_CLUB_USERS, onUserUpdate }: UserProfileModalProps) {
+export default function UserProfileModal({ currentUser, onClose, users = MOVIE_CLUB_USERS, onUserUpdate, gapsLeft = 0 }: UserProfileModalProps) {
   const personalFileInputRef = useRef<HTMLInputElement>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -251,6 +253,26 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                 </span>
               </div>
 
+              {gapsLeft > 0 ? (
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-zinc-700 bg-zinc-900 flex items-center justify-center shrink-0 relative">
+                    {currentAvatarUrl ? (
+                      <img src={currentAvatarUrl} alt="Current Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      <span className="text-2xl font-bold text-amber-500 uppercase">{currentUser.name.substring(0, 2)}</span>
+                    )}
+                    <span className="absolute inset-0 bg-black/45 flex items-center justify-center">
+                      <Lock className="w-6 h-6 text-amber-400" aria-hidden="true" />
+                    </span>
+                  </div>
+                  <div className="min-w-0 space-y-1">
+                    <p className="font-serif text-lg text-zinc-50 leading-snug">Locked until you fill in the gaps</p>
+                    <p className="text-sm text-zinc-400">
+                      Review the last {gapsLeft === 1 ? "lost night" : `${gapsLeft} lost nights`} in Fill in the gaps on Home, and you can change your picture.
+                    </p>
+                  </div>
+                </div>
+              ) : (
               <form onSubmit={handleAvatarUpload} className="space-y-4">
                 <div className="flex flex-col sm:flex-row items-center gap-5">
                   {/* Current or Preview Image */}
@@ -423,6 +445,7 @@ export default function UserProfileModal({ currentUser, onClose, users = MOVIE_C
                   </div>
                 )}
               </form>
+              )}
             </div>
 
             {/* Account details and Password reset section */}

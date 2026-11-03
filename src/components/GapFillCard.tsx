@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, Lock } from "lucide-react";
 import { MovieNight, Review, User, DATA_LOSS_DATE } from "../types.ts";
 import { gapFillProgress } from "../clubStats.ts";
 import ReviewSheet from "./ReviewSheet.tsx";
@@ -20,7 +20,7 @@ interface GapFillCardProps {
 
 // Reviews from before the data loss were wiped. This is a task each member chips away at:
 // every lost night needs a rating and a few words. Finished nights drop off,
-// and finishing the lot sets off fireworks and earns a badge on the member's photo.
+// and finishing the lot sets off fireworks, earns a badge on the member's photo and unlocks changing it.
 export default function GapFillCard({ nights, reviews, currentUser, onAddReview }: GapFillCardProps) {
   const [sheet, setSheet] = useState<{ night: MovieNight; rating: number } | null>(null);
   const [celebrating, setCelebrating] = useState(false);
@@ -73,8 +73,9 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
   if (progress.total === 0 || progress.complete) return celebration;
 
   if (minimised) {
+    // A slow amber glow so the folded-away to-do still catches the eye
     return (
-      <section aria-labelledby="gap-fill" className="bg-amber-950 border border-amber-800 rounded-2xl overflow-hidden">
+      <section aria-labelledby="gap-fill" className="todo-glow bg-amber-950 border border-amber-800 rounded-2xl overflow-hidden">
         <button
           type="button"
           aria-expanded={false}
@@ -82,9 +83,10 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
           className="w-full min-h-14 px-4 py-3 flex items-center gap-3 text-left cursor-pointer"
         >
           <span className="min-w-0 flex-1 flex flex-col gap-1.5">
-            <span className="flex items-baseline justify-between gap-2">
-              <h2 id="gap-fill" className="font-serif text-xl text-zinc-50">Fill in the gaps</h2>
+            <span className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+              <h2 id="gap-fill" className="font-serif text-xl text-zinc-50"><span className="text-amber-500">To-do:</span> Fill in the gaps</h2>
               <span className="text-sm text-zinc-400 shrink-0">
+                <Lock className="inline w-3.5 h-3.5 -mt-0.5 mr-1 text-amber-500" aria-label="Unlocks your profile picture" />
                 {progress.remaining.length} left · <span className="font-semibold text-amber-500">{percent}%</span>
               </span>
             </span>
@@ -109,7 +111,7 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
     >
       <div className="px-5 pt-5 pb-4 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="gap-fill" className="font-serif text-3xl text-zinc-50">Fill in the gaps</h2>
+          <h2 id="gap-fill" className="font-serif text-2xl sm:text-3xl text-zinc-50"><span className="text-amber-500">To-do:</span> <span className="whitespace-nowrap">Fill in the gaps</span></h2>
           <span className="flex items-center gap-1 shrink-0">
             <span className="font-serif text-3xl text-amber-500">{percent}%</span>
             <button
@@ -134,8 +136,20 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
           <motion.div className="h-full rounded-full bg-amber-500" initial={false} animate={{ width: `${percent}%` }} transition={{ duration: 0.6, ease: "easeOut" }} />
         </div>
         <p className="text-sm text-zinc-400">
-          {progress.done} of {progress.total} done. Reviews from before 14 October were lost. Tap a night to give it stars and a few words, and finish them all for a badge on your photo.
+          {progress.done} of {progress.total} done. Reviews from before 14 October were lost. Tap a night to give it stars and a few words.
         </p>
+        {/* The prize, front and centre: profile pictures have been locked, and finishing unlocks yours */}
+        <div className="flex items-center gap-3 rounded-2xl border border-amber-500/60 bg-black/25 px-4 py-3">
+          <span className="w-11 h-11 rounded-full bg-amber-500 text-zinc-950 flex items-center justify-center shrink-0">
+            <Lock className="w-5 h-5" aria-hidden="true" />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-serif text-lg text-zinc-50 leading-snug">The prize: a new profile picture</span>
+            <span className="block text-sm text-zinc-300">
+              Your photo stays locked until every gap is filled. Finish them all to change it, and earn a badge on it too.
+            </span>
+          </span>
+        </div>
       </div>
 
       <ul className="border-t border-amber-800">
