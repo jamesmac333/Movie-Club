@@ -167,7 +167,7 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
       initial={{ opacity: 0, y: 25 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
-      className="relative bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden mb-12 [--ticket-notch:var(--color-zinc-950)]"
+      className="relative bg-zinc-900 paper-grain border border-zinc-800 rounded-3xl overflow-hidden mb-12 [--ticket-notch:var(--color-zinc-950)]"
     >
       {caught > 0 && (
         <motion.div
