@@ -73,8 +73,9 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
   if (progress.total === 0 || progress.complete) return celebration;
 
   if (minimised) {
+    // A slow amber glow so the folded-away to-do still catches the eye
     return (
-      <section aria-labelledby="gap-fill" className="bg-amber-950 border border-amber-800 rounded-2xl overflow-hidden">
+      <section aria-labelledby="gap-fill" className="todo-glow bg-amber-950 border border-amber-800 rounded-2xl overflow-hidden">
         <button
           type="button"
           aria-expanded={false}
@@ -82,8 +83,8 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
           className="w-full min-h-14 px-4 py-3 flex items-center gap-3 text-left cursor-pointer"
         >
           <span className="min-w-0 flex-1 flex flex-col gap-1.5">
-            <span className="flex items-baseline justify-between gap-2">
-              <h2 id="gap-fill" className="font-serif text-xl text-zinc-50">Fill in the gaps</h2>
+            <span className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+              <h2 id="gap-fill" className="font-serif text-xl text-zinc-50"><span className="text-amber-500">To-do:</span> Fill in the gaps</h2>
               <span className="text-sm text-zinc-400 shrink-0">
                 {progress.remaining.length} left · <span className="font-semibold text-amber-500">{percent}%</span>
               </span>
@@ -109,7 +110,7 @@ export default function GapFillCard({ nights, reviews, currentUser, onAddReview 
     >
       <div className="px-5 pt-5 pb-4 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="gap-fill" className="font-serif text-3xl text-zinc-50">Fill in the gaps</h2>
+          <h2 id="gap-fill" className="font-serif text-2xl sm:text-3xl text-zinc-50"><span className="text-amber-500">To-do:</span> <span className="whitespace-nowrap">Fill in the gaps</span></h2>
           <span className="flex items-center gap-1 shrink-0">
             <span className="font-serif text-3xl text-amber-500">{percent}%</span>
             <button
