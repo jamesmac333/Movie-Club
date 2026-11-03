@@ -914,53 +914,11 @@ export default function FeedView({
                                       </div>
                                     </div>
 
-                                    <div className="flex flex-wrap items-center justify-end gap-x-3 ml-auto">
-                                      {/* Ash's Star Toggle / Favorite review badge */}
-                                      {(isAsh || isStarred) && (
-                                        <button
-                                          type="button"
-                                          disabled={!isAsh}
-                                          onClick={() => handleToggleStar(review.id)}
-                                          className={`min-h-11 min-w-11 justify-center rounded-xl border transition-colors flex items-center ${
-                                            isStarred
-                                              ? "border-transparent px-1"
-                                              : "px-2.5 bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:text-amber-500 hover:border-amber-500/30 hover:bg-zinc-900"
-                                          } ${!isAsh ? "cursor-default" : "cursor-pointer"}`}
-                                          title={isAsh ? (isStarred ? "Remove Ash's favourite" : "Make this Ash's favourite") : "Ash's favourite review"}
-                                        >
-                                          <AnimatePresence initial={false}>
-                                            {isStarred ? <FavouriteStamp /> : <Star className="w-4 h-4" />}
-                                          </AnimatePresence>
-                                        </button>
-                                      )}
-
-                                      {isReviewEditing ? (
-                                        <StarInput value={editRating} onChange={setEditRating} label="Your rating" />
-                                      ) : (
-                                        <StarRow rating={review.rating} />
-                                      )}
-                                      
-                                      {canModify && !isReviewEditing && (
-                                        <div className="flex items-center gap-1 shrink-0">
-                                          <button
-                                            type="button"
-                                            onClick={() => handleEditReviewClick(review)}
-                                            className="w-11 h-11 flex items-center justify-center text-zinc-400 hover:text-amber-500 rounded-xl hover:bg-zinc-900/80 transition-all cursor-pointer"
-                                            aria-label="Edit review"
-                                          >
-                                            <Edit3 className="w-4 h-4" />
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => handleDeleteReviewClick(review.id)}
-                                            className="w-11 h-11 flex items-center justify-center text-zinc-400 hover:text-red-400 rounded-xl hover:bg-zinc-900/80 transition-all cursor-pointer"
-                                            aria-label="Delete review"
-                                          >
-                                            <Trash2 className="w-4 h-4" />
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
+                                    {isReviewEditing ? (
+                                      <StarInput value={editRating} onChange={setEditRating} label="Your rating" />
+                                    ) : (
+                                      <StarRow rating={review.rating} />
+                                    )}
                                   </div>
 
                                   {isReviewEditing ? (
@@ -1000,6 +958,50 @@ export default function FeedView({
                                       {review.comment}
                                     </p>
                                   ) : null}
+
+                                  {/* Ash's favourite on the left, your edit and delete buttons on the right, under the review */}
+                                  {(isAsh || isStarred || (canModify && !isReviewEditing)) && (
+                                    <div className="flex items-center justify-between gap-3 -my-1 -mr-2">
+                                      {(isAsh || isStarred) && (
+                                        <button
+                                          type="button"
+                                          disabled={!isAsh}
+                                          onClick={() => handleToggleStar(review.id)}
+                                          className={`min-h-11 min-w-11 justify-center rounded-xl border transition-colors flex items-center ${
+                                            isStarred
+                                              ? "border-transparent px-1"
+                                              : "px-2.5 bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:text-amber-500 hover:border-amber-500/30 hover:bg-zinc-900"
+                                          } ${!isAsh ? "cursor-default" : "cursor-pointer"}`}
+                                          title={isAsh ? (isStarred ? "Remove Ash's favourite" : "Make this Ash's favourite") : "Ash's favourite review"}
+                                        >
+                                          <AnimatePresence initial={false}>
+                                            {isStarred ? <FavouriteStamp /> : <Star className="w-4 h-4" />}
+                                          </AnimatePresence>
+                                        </button>
+                                      )}
+
+                                      {canModify && !isReviewEditing && (
+                                        <div className="flex items-center gap-1 shrink-0 ml-auto">
+                                          <button
+                                            type="button"
+                                            onClick={() => handleEditReviewClick(review)}
+                                            className="w-11 h-11 flex items-center justify-center text-zinc-400 hover:text-amber-500 rounded-xl hover:bg-zinc-900/80 transition-all cursor-pointer"
+                                            aria-label="Edit review"
+                                          >
+                                            <Edit3 className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeleteReviewClick(review.id)}
+                                            className="w-11 h-11 flex items-center justify-center text-zinc-400 hover:text-red-400 rounded-xl hover:bg-zinc-900/80 transition-all cursor-pointer"
+                                            aria-label="Delete review"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </motion.div>
                               );
                             })}
