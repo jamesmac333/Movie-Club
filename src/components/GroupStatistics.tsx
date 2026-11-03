@@ -108,7 +108,8 @@ export default function GroupStatistics({ nights, reviews, users = [], onOpenMem
     >
       <PaletteStrip colors={CLUB_PALETTE} className="absolute top-0 inset-x-0 h-1.5" />
       <h2 id="club-stats" className="font-serif text-3xl text-zinc-50">Club stats</h2>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Two across: on desktop this sits in the half-width column under Coming up */}
+      <div className="grid grid-cols-2 gap-3">
         {stats.map(({ value, label, icon: Icon }) => (
           <div key={label} className="bg-slate-deep border border-slate-line rounded-2xl p-4 sm:p-5 flex flex-col gap-2 min-w-0">
             <Icon className="w-5 h-5 text-amber-500" aria-hidden="true" />

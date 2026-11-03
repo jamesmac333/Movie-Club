@@ -911,9 +911,11 @@ export default function App() {
                       onResetMovie={handleResetMovie}
                       users={clubUsers}
                     />
-                    {/* Coming up and last time, side by side on wide screens */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-8 items-start">
-                    <CalendarView 
+                    {/* Coming up and last time side by side on wide screens, with club stats filling
+                        the space under Coming up. On a phone they stack in that order. */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-[auto_1fr] gap-10 lg:gap-8 items-start">
+                    <div className="min-w-0 lg:col-start-1 lg:row-start-1">
+                    <CalendarView
                       nights={nights}
                       currentUser={currentUser}
                       onUpdateDate={handleUpdateDate}
@@ -929,7 +931,9 @@ export default function App() {
                       title="Next 3 Upcoming Sessions"
                       subtitle="Upcoming scheduled cinema sessions in chronological order • 7:00 PM NZT"
                     />
-                    <PriorSessionRecap 
+                    </div>
+                    <div className="min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-2">
+                    <PriorSessionRecap
                       nights={nights} 
                       reviews={reviews} 
                       sealedNightIds={sealedNightIds}
@@ -942,9 +946,10 @@ export default function App() {
                       users={members}
                     />
                     </div>
-
-                    {/* Group Statistics Dashboard */}
+                    <div className="min-w-0 lg:col-start-1 lg:row-start-2">
                     <GroupStatistics nights={nights} reviews={openReviews} users={members} onOpenMember={openMember} />
+                    </div>
+                    </div>
 
                     <p className="text-sm leading-relaxed text-zinc-500 max-w-2xl">
                       Every second Friday at 7 pm. Hosting rotates through all six of us, the host picks the film, and Ash writes the recap the next day.
