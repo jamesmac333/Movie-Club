@@ -5,6 +5,7 @@ import { Lock, PenLine, Play } from "lucide-react";
 import { MovieNight, Review, NightOverview, User, isAuthenticGatheringPhoto, isBeforeDataLoss } from "../types.ts";
 import { filmRatings } from "../clubStats.ts";
 import PaletteStrip from "./PaletteStrip.tsx";
+import ThemeBadge from "./ThemeBadge.tsx";
 import ReviewSheet from "./ReviewSheet.tsx";
 import { Avatar, OverlayPage, Stars } from "./OverlayPage.tsx";
 import { FavouriteStamp, dealt, useJustRevealed } from "./Motion.tsx";
@@ -20,13 +21,16 @@ interface FilmPageProps {
   onClose: () => void;
   onOpenMember: (name: string) => void;
   onAddReview: (movieNightId: string, user: string, rating: number, comment: string) => Promise<void>;
+  // The rotation theme this pick had to fit
+  themeName?: string;
+  themeNumber?: number;
 }
 
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
 // Everything about one club night's film in one place: everyone's ratings side by side,
 // who loved it and who didn't, the reviews, and Ash's recap
-export default function FilmPage({ night, reviews, sealed, overviews, users, currentUser, canGoBack, onClose, onOpenMember, onAddReview }: FilmPageProps) {
+export default function FilmPage({ night, reviews, sealed, overviews, users, currentUser, canGoBack, onClose, onOpenMember, onAddReview, themeName, themeNumber }: FilmPageProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const reduce = useReducedMotion();
   // Posting your review unlocks everyone else's: deal them out
@@ -57,6 +61,7 @@ export default function FilmPage({ night, reviews, sealed, overviews, users, cur
           <h1 className="font-serif text-3xl sm:text-5xl leading-tight text-zinc-50 break-words">{movie.title}</h1>
           {facts && <p className="text-sm text-zinc-400">{facts}</p>}
           {movie.director && <p className="slate text-zinc-300">A film by {movie.director}</p>}
+          {themeName && <ThemeBadge name={themeName} number={themeNumber} className="self-start mt-1" />}
         </div>
       </header>
 

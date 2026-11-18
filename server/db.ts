@@ -1,9 +1,10 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { MovieNight, Review, NightOverview, User, EdmRecipient, EdmLog } from "../src/types.ts";
+import { MovieNight, Review, NightOverview, User, EdmRecipient, EdmLog, Theme, ThemeSuggestion, RotationTheme, ThemeSpin } from "../src/types.ts";
 import { migratePlainPasswords } from "./passwords.ts";
 import { configureImageStore, moveInlineImagesToFiles } from "./images.ts";
+import { STARTER_THEMES } from "./starterThemes.ts";
 
 function getDbFile(): string {
   if (process.env.DB_PATH) {
@@ -78,6 +79,10 @@ export interface DatabaseSchema {
   users: UserWithPassword[];
   edmRecipients?: EdmRecipient[];
   edmLogs?: EdmLog[];
+  themes?: Theme[];
+  themeSuggestions?: ThemeSuggestion[];
+  rotationThemes?: RotationTheme[];
+  themeSpin?: ThemeSpin | null;
 }
 
 // Clean launch initial data: starting rotation with Max Smith first
@@ -397,6 +402,13 @@ function loadDbFromDisk(): DatabaseSchema {
     ];
   }
   if (!Array.isArray(parsed.edmLogs)) parsed.edmLogs = [];
+
+  // First start with rotation themes: add the club's starter list once
+  if (parsed.themes === undefined) {
+    const now = new Date().toISOString();
+    parsed.themes = STARTER_THEMES.map((t, i) => ({ id: `theme-starter-${i + 1}`, ...t, status: "available" as const, createdAt: now }));
+    saveDbToDiskAtomic(parsed);
+  }
 
   // Clean up any historical logs where full uncompressed base64 photos were saved
   let edmLogsCleaned = false;

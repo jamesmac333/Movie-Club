@@ -30,7 +30,9 @@ export function makeSampleDb() {
       { id: "ov-1", movieNightId: "night-2", title: "Recap", content: "A night to remember.", imageUrl: "", author: "Ash Macintosh", createdAt: "2026-10-14T00:00:00.000Z" }
     ],
     edmRecipients: [{ email: "test@example.test", name: "Test", addedAt: "2026-10-01T00:00:00.000Z" }],
-    edmLogs: [] as unknown[]
+    edmLogs: [] as unknown[],
+    // An empty list, so the starter themes aren't added
+    themes: [] as unknown[]
   };
 }
 

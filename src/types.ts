@@ -24,6 +24,58 @@ export interface MovieNight {
   selector: string; // e.g., 'James Macintosh'
   movie: MovieMetadata | null; // null if not chosen yet
   status: 'scheduled' | 'watched' | 'skipped';
+  // Set when an admin sends a pick back because it doesn't fit the rotation's theme; cleared on the next pick
+  sentBack?: { title: string; note?: string; by: string; at: string };
+}
+
+// A rotation theme. Available ones are on the wheel; used ones have been won by a rotation.
+export interface Theme {
+  id: string;
+  name: string;
+  description: string;
+  status: "available" | "used";
+  createdAt: string;
+  suggestedBy?: string;
+  // Deleted after being used: kept so past rotations still show it, but left out of the admin list
+  hidden?: boolean;
+}
+
+export interface ThemeSuggestion {
+  id: string;
+  name: string;
+  description: string;
+  suggestedBy: string;
+  createdAt: string;
+}
+
+// The theme a rotation won, keyed by the night that starts it (Max's night)
+export interface RotationTheme {
+  startNightId: string;
+  themeId: string;
+  // Fixed when the theme is locked in: Rotation 1 is the first themed one, and how many nights it covers
+  number?: number;
+  length?: number;
+  lockedAt: string;
+  lockedBy: string;
+}
+
+// What the site shows everyone: a rotation's theme with its wording
+export interface PublicRotationTheme {
+  startNightId: string;
+  themeId: string;
+  number: number;
+  length: number;
+  name: string;
+  description: string;
+  lockedAt: string;
+}
+
+// A spin waiting to be locked in or vetoed
+export interface ThemeSpin {
+  startNightId: string;
+  themeId: string;
+  vetoed: boolean;
+  startedAt: string;
 }
 
 export interface Review {
@@ -75,7 +127,7 @@ export interface EdmRecipient {
 
 export interface EdmLog {
   id: string;
-  type: "overview" | "movie_selection" | "test";
+  type: "overview" | "movie_selection" | "test" | "theme";
   subject: string;
   sentAt: string;
   recipients: string[];

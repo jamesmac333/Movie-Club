@@ -23,6 +23,8 @@ import { authenticate, calendarKey, createToken, clientAddress, loginRetryMinute
 import { hashPassword, verifyPassword } from "./server/passwords.ts";
 import { buildClubCalendar } from "./server/calendar.ts";
 import { storeImage, sendImage, imageVersion, isStoredImage, isInlineImage, shrinkAvatar } from "./server/images.ts";
+import { registerThemeRoutes, publicRotationThemes } from "./server/themes.ts";
+import { themeForNight } from "./src/rotationThemes.ts";
 
 // Public address of the site, used for links and images in club emails
 const SITE_URL = process.env.APP_URL || "https://www.movieclub.co.nz";
@@ -541,7 +543,8 @@ async function startServer() {
         if (nightIndex === -1) return null;
 
         db.nights[nightIndex].movie = metadata;
-        
+        delete db.nights[nightIndex].sentBack;
+
         // If date is in the past compared to current time, mark it watched, else scheduled
         const nightDate = new Date(db.nights[nightIndex].date);
         const now = new Date();
@@ -555,10 +558,12 @@ async function startServer() {
       }
 
       // Fire and forget EDM for movie selection: notify club recipients
+      const latest = readDb();
+      const theme = themeForNight(latest.nights, updatedNight.id, publicRotationThemes(latest));
       sendEdm({
         type: "movie_selection",
         subject: `The Curtain Rises: ${metadata.title} selected by ${night.selector}`,
-        html: generateMovieSelectedEmailHtml(updatedNight),
+        html: generateMovieSelectedEmailHtml(updatedNight, theme?.name),
         previewText: `${night.selector} has chosen "${metadata.title}" for Movie Night on ${formatNZTDate(updatedNight.date)}!`
       }).catch((edmErr) => {
         console.error("Async EDM dispatch error on movie selection:", edmErr);
@@ -1274,6 +1279,9 @@ async function startServer() {
       res.status(500).json({ error: error?.message || "Couldn't send the test email" });
     }
   });
+
+  // Rotation themes, the wheel, theme suggestions and sending picks back
+  registerThemeRoutes(app);
 
   // Catch unmatched API routes and return structured JSON (prevents HTML error leakage)
   app.all("/api/*", (req, res) => {

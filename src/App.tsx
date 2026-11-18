@@ -29,6 +29,11 @@ import FilmPage from "./components/FilmPage.tsx";
 import MemberPage from "./components/MemberPage.tsx";
 import OfflineNotice from "./components/OfflineNotice.tsx";
 import { CLUB_PALETTE } from "./palette.ts";
+import { PublicRotationTheme } from "./types.ts";
+import { themeForNight } from "./rotationThemes.ts";
+import ThemeWheel from "./components/ThemeWheel.tsx";
+import SpinReminderCard from "./components/SpinReminderCard.tsx";
+import ThemeSuggestCard, { ThemeSuggestSheet } from "./components/ThemeSuggestCard.tsx";
 
 export default function App() {
   const [nights, setNights] = useState<MovieNight[]>([]);
@@ -39,6 +44,22 @@ export default function App() {
   const [showProfileSettings, setShowProfileSettings] = useState<boolean>(false);
   const [newSelectionAlert, setNewSelectionAlert] = useState<MovieNight | null>(null);
   const [newRecapAlert, setNewRecapAlert] = useState<{ overview: NightOverview; night: MovieNight } | null>(null);
+  const [rotationThemes, setRotationThemes] = useState<PublicRotationTheme[]>([]);
+  const [wheelOpen, setWheelOpen] = useState(false);
+  const [themesRefreshKey, setThemesRefreshKey] = useState(0);
+  // The theme email links to /?suggest=theme, which opens the suggestion form
+  const [suggestOpen, setSuggestOpen] = useState(() => new URLSearchParams(window.location.search).get("suggest") === "theme");
+  const closeSuggest = useCallback(() => {
+    setSuggestOpen(false);
+    if (window.location.search) window.history.replaceState(null, "", window.location.pathname);
+  }, []);
+  // Admins: theme suggestions waiting, for the badge on the Admin tab and the card on Home
+  const [themeSummary, setThemeSummary] = useState<{ suggestions: number; onWheel: number } | null>(null);
+  const [openThemes, setOpenThemes] = useState(false);
+  const closeWheel = useCallback(() => {
+    setWheelOpen(false);
+    setThemesRefreshKey((k) => k + 1);
+  }, []);
 
   // Recent nights whose reviews stay hidden until the current member has posted theirs
   const sealedNightIds = useMemo(() => getSealedNightIds(nights, reviews, currentUser?.name), [nights, reviews, currentUser]);
@@ -136,7 +157,8 @@ export default function App() {
       const [nightsRes, reviewsRes, overviewsRes] = await Promise.all([
         fetch("/api/nights"),
         fetch("/api/reviews"),
-        fetch("/api/overviews")
+        fetch("/api/overviews"),
+        fetchRotationThemes()
       ]);
 
       // Nights are the core application data
@@ -176,12 +198,21 @@ export default function App() {
     }
   };
 
+  // Each rotation's theme; a failure here never stops the rest of the site loading
+  const fetchRotationThemes = async () => {
+    try {
+      const res = await fetch("/api/rotation-themes");
+      if (res.ok) setRotationThemes(await res.json());
+    } catch {}
+  };
+
   const fetchSilentData = async () => {
     try {
       const [nightsRes, reviewsRes, overviewsRes] = await Promise.all([
         fetch("/api/nights"),
         fetch("/api/reviews"),
-        fetch("/api/overviews")
+        fetch("/api/overviews"),
+        fetchRotationThemes()
       ]);
 
       if (nightsRes.ok) {
@@ -303,6 +334,20 @@ export default function App() {
       throw new Error(errData.error || "Failed to reset movie choice");
     }
 
+    await fetchInitialData();
+  };
+
+  // API Call: Admin sends a pick back because it doesn't fit the theme (called from NextMovieHero)
+  const handleSendBack = async (id: string, note: string) => {
+    const response = await fetch(`/api/nights/${id}/send-back`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note })
+    });
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || "Couldn't send the pick back");
+    }
     await fetchInitialData();
   };
 
@@ -583,6 +628,18 @@ export default function App() {
 
   const isAsh = currentUser?.username?.toLowerCase() === "ash" || currentUser?.isAsh === true;
   const isAdmin = currentUser?.username?.toLowerCase() === "james" || currentUser?.isAdmin === true;
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setThemeSummary(null);
+      return;
+    }
+    const load = () => fetch("/api/admin/themes/summary").then((r) => (r.ok ? r.json() : null)).then((s) => s && setThemeSummary(s)).catch(() => {});
+    load();
+    const timer = setInterval(load, 30000);
+    return () => clearInterval(timer);
+  }, [isAdmin, themesRefreshKey, activeTab]);
+  const suggestionsWaiting = themeSummary?.suggestions || 0;
   const canManageRecaps = isAsh || isAdmin;
 
   const { scrollYProgress } = useScroll();
@@ -614,7 +671,7 @@ export default function App() {
     { id: "landing", label: "Home", icon: Home },
     { id: "calendar", label: "Schedule", icon: Calendar },
     { id: "feed", label: "Memories", icon: Heart },
-    ...(canManageRecaps ? [{ id: "admin", label: "Admin", icon: ShieldCheck }] : [])
+    ...(canManageRecaps ? [{ id: "admin", label: "Admin", icon: ShieldCheck, count: isAdmin ? suggestionsWaiting : 0 }] : [])
   ];
 
   if (!currentUser) {
@@ -658,6 +715,8 @@ export default function App() {
             onAcknowledge={handleAcknowledgeSelection}
           />
         )}
+        {wheelOpen && isAdmin && <ThemeWheel nights={nights} onClose={closeWheel} onChanged={fetchSilentData} />}
+        {suggestOpen && <ThemeSuggestSheet onClose={closeSuggest} />}
         {newRecapAlert && (
           <RecapAlertModal
             overview={newRecapAlert.overview}
@@ -690,6 +749,8 @@ export default function App() {
                 onClose={closePage}
                 onOpenMember={openMember}
                 onAddReview={handleAddReview}
+                themeName={themeForNight(nights, night.id, rotationThemes)?.name}
+                themeNumber={themeForNight(nights, night.id, rotationThemes)?.number}
               />
             );
           }
@@ -732,6 +793,7 @@ export default function App() {
                 }`}
               >
                 {item.label}
+                {"count" in item && item.count ? <span className="ml-1.5 inline-flex min-w-5 h-5 px-1.5 rounded-full bg-amber-500 text-zinc-950 text-xs font-bold items-center justify-center" aria-label={`${item.count} waiting`}>{item.count}</span> : null}
               </button>
             ))}
           </nav>
@@ -782,7 +844,7 @@ export default function App() {
       </header>
 
       {activeTab === "landing" && pages.length === 0 && <LightsDown nights={nights} />}
-      <PullToRefresh disabled={pages.length > 0 || showProfileSettings || !!newSelectionAlert || !!newRecapAlert || confirmSignOut} />
+      <PullToRefresh disabled={pages.length > 0 || showProfileSettings || wheelOpen || suggestOpen || !!newSelectionAlert || !!newRecapAlert || confirmSignOut} />
 
       {confirmSignOut && (
         <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="sign-out-title">
@@ -814,7 +876,10 @@ export default function App() {
               aria-current={on ? "page" : undefined}
               className={`flex-1 min-h-14 flex flex-col items-center justify-center gap-1 text-[11px] font-medium cursor-pointer ${on ? "text-amber-500" : "text-zinc-400"}`}
             >
-              <Icon className="w-[22px] h-[22px]" />
+              <span className="relative">
+                <Icon className="w-[22px] h-[22px]" />
+                {"count" in item && item.count ? <span className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-1 rounded-full bg-amber-500 text-zinc-950 text-[10px] font-bold flex items-center justify-center" aria-label={`${item.count} waiting`}>{item.count}</span> : null}
+              </span>
               {item.label}
             </button>
           );
@@ -872,6 +937,19 @@ export default function App() {
                     {/* Things to do: kept together, and empty ones take no space */}
                     <div className="space-y-4 empty:hidden !mb-6">
                       <HomeScreenHint />
+                      {isAdmin && <SpinReminderCard nights={nights} rotationThemes={rotationThemes} onOpenWheel={() => setWheelOpen(true)} />}
+                      {isAdmin && suggestionsWaiting > 0 && (
+                        <section aria-labelledby="suggestions-waiting" className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                          <div className="flex-1 min-w-0">
+                            <p className="slate text-amber-500">For the admins</p>
+                            <h2 id="suggestions-waiting" className="font-serif text-2xl text-zinc-50">{suggestionsWaiting} theme suggestion{suggestionsWaiting === 1 ? "" : "s"} waiting</h2>
+                            <p className="text-sm text-zinc-400">Add them to the wheel, tweak them, or decline them.</p>
+                          </div>
+                          <button type="button" onClick={() => { setOpenThemes(true); setActiveTab("admin"); window.scrollTo({ top: 0 }); }} className="min-h-12 px-5 rounded-2xl border border-amber-500/40 text-amber-500 hover:bg-amber-500/10 font-semibold cursor-pointer">
+                            Review suggestions
+                          </button>
+                        </section>
+                      )}
                       <GapFillCard
                         nights={nights}
                         reviews={reviews}
@@ -911,8 +989,10 @@ export default function App() {
                     <NextMovieHero 
                       nights={nights} 
                       currentUser={currentUser} 
-                      onChooseMovie={handleChooseMovie} 
+                      onChooseMovie={handleChooseMovie}
                       onResetMovie={handleResetMovie}
+                      onSendBack={handleSendBack}
+                      rotationThemes={rotationThemes}
                       users={clubUsers}
                     />
                     {/* Coming up and last time side by side on wide screens, with club stats filling
@@ -932,6 +1012,7 @@ export default function App() {
                       futureOnly={true}
                       limit={3}
                       onViewFullSchedule={() => setActiveTab("calendar")}
+                      rotationThemes={rotationThemes}
                       title="Next 3 Upcoming Sessions"
                       subtitle="Upcoming scheduled cinema sessions in chronological order • 7:00 PM NZT"
                     />
@@ -955,8 +1036,10 @@ export default function App() {
                     </div>
                     </div>
 
+                    <ThemeSuggestCard onOpen={() => setSuggestOpen(true)} />
+
                     <p className="text-sm leading-relaxed text-zinc-500 max-w-2xl">
-                      Every second Friday at 7 pm. Hosting rotates through all six of us, the host picks the film, and Ash writes the recap the next day.
+                      Every second Friday at 7 pm. Hosting rotates through all six of us, the host picks a film that fits the rotation's theme, and Ash writes the recap the next day.
                     </p>
                   </div>
                 )}
@@ -973,6 +1056,7 @@ export default function App() {
                     overviews={overviews}
                     onOpenRecapModal={(overview, night) => setNewRecapAlert({ overview, night })}
                     futureOnly={false}
+                    rotationThemes={rotationThemes}
                   />
                 )}
 
@@ -1012,6 +1096,11 @@ export default function App() {
                     onToggleStarReview={handleToggleStarReview}
                     showBestReviews={showBestReviews}
                     onShownBestReviews={() => setShowBestReviews(false)}
+                    onOpenWheel={() => setWheelOpen(true)}
+                    onThemesChanged={() => { fetchSilentData(); setThemesRefreshKey((k) => k + 1); }}
+                    themesRefreshKey={themesRefreshKey}
+                    openThemes={openThemes}
+                    onOpenedThemes={() => setOpenThemes(false)}
                   />
                 )}
               </motion.div>

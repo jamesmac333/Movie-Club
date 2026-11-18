@@ -120,6 +120,7 @@ const PUBLIC_ROUTES: Array<[string, RegExp]> = [
   ["GET", /^\/api\/nights$/],
   ["GET", /^\/api\/reviews$/],
   ["GET", /^\/api\/overviews$/],
+  ["GET", /^\/api\/rotation-themes$/],
   ["GET", /^\/api\/overviews\/[^/]+\/image$/],
   ["GET", /^\/api\/calendar\/[^/]+\.ics$/],
 ];

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ChevronDown, Mail, RefreshCw, ShieldCheck, Users } from "lucide-react";
+import { ChevronDown, Disc3, Mail, RefreshCw, ShieldCheck, Users } from "lucide-react";
+import ThemeAdminPanel from "./ThemeAdminPanel.tsx";
 import { MovieNight, NightOverview, Review, User, ROTATION_MEMBERS } from "../types.ts";
 import OverviewForm from "./OverviewForm.tsx";
 import GapTracker from "./GapTracker.tsx";
@@ -25,13 +26,24 @@ interface AdminViewProps {
   onToggleStarReview: (reviewId: string) => Promise<void>;
   showBestReviews?: boolean;
   onShownBestReviews?: () => void;
+  onOpenWheel: () => void;
+  onThemesChanged: () => void;
+  // Bumped when the wheel closes, so the theme list reloads
+  themesRefreshKey?: number;
+  // Open the Themes section straight away (from the suggestions card on Home)
+  openThemes?: boolean;
+  onOpenedThemes?: () => void;
 }
 
 // A section that stays folded until it's needed, so the recap writer stays at the top
-function Fold({ id, title, subtitle, icon: Icon, children }: { id: string; title: string; subtitle: string; icon: typeof Users; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+function Fold({ id, title, subtitle, icon: Icon, children, defaultOpen = false }: { id: string; title: string; subtitle: string; icon: typeof Users; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const ref = React.useRef<HTMLElement>(null);
+  React.useEffect(() => {
+    if (defaultOpen) ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
   return (
-    <section aria-labelledby={`${id}-heading`} className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
+    <section ref={ref} aria-labelledby={`${id}-heading`} className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
       <h2 id={`${id}-heading`}>
         <button
           type="button"
@@ -106,7 +118,12 @@ function RotationPanel({ onRealignRotation }: { onRealignRotation: () => Promise
 }
 
 // Everything only Ash and James can do, in one place. Per-night controls stay on the nights themselves.
-export default function AdminView({ currentUser, nights, reviews, overviews, members, onPostOverview, onUpdateOverviewImage, onRealignRotation, onUserUpdate, onOpenMember, recapNightId, isAsh, onToggleStarReview, showBestReviews, onShownBestReviews }: AdminViewProps) {
+export default function AdminView({ currentUser, nights, reviews, overviews, members, onPostOverview, onUpdateOverviewImage, onRealignRotation, onUserUpdate, onOpenMember, recapNightId, isAsh, onToggleStarReview, showBestReviews, onShownBestReviews, onOpenWheel, onThemesChanged, themesRefreshKey, openThemes, onOpenedThemes }: AdminViewProps) {
+  // Remember the request to open Themes for this visit, then clear it
+  const [themesOpen] = useState(!!openThemes);
+  React.useEffect(() => {
+    if (openThemes) onOpenedThemes?.();
+  }, []);
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -122,6 +139,10 @@ export default function AdminView({ currentUser, nights, reviews, overviews, mem
       <GapTracker nights={nights} reviews={reviews} members={members} onOpenMember={onOpenMember} />
 
       {isAsh && <BestReviewPicks nights={nights} reviews={reviews} members={members} onToggleStar={onToggleStarReview} scrollIntoView={showBestReviews} onScrolled={onShownBestReviews} />}
+
+      <Fold id="admin-themes" title="Themes" subtitle="The wheel, the theme list and members' suggestions" icon={Disc3} defaultOpen={themesOpen}>
+        <ThemeAdminPanel nights={nights} onOpenWheel={onOpenWheel} onChanged={onThemesChanged} refreshKey={themesRefreshKey} />
+      </Fold>
 
       <Fold id="admin-members" title="Members" subtitle="Photos, password resets and backups" icon={Users}>
         <AdminMembersPanel currentUser={currentUser} users={members} onUserUpdate={onUserUpdate} />

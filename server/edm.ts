@@ -103,9 +103,9 @@ function strip(colors: string[], width: number, height: number): string {
     .join("")}</tr></table>`;
 }
 
-function button(label: string): string {
+function button(label: string, href = SITE()): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td style="border-radius: 12px; background-color: #8e1c15;">
-    <a href="${SITE()}" style="display: inline-block; padding: 16px 30px; font-family: ${SANS}; font-size: 16px; font-weight: bold; color: #f4e6cc; text-decoration: none; border-radius: 12px;">${label}</a>
+    <a href="${href}" style="display: inline-block; padding: 16px 30px; font-family: ${SANS}; font-size: 16px; font-weight: bold; color: #f4e6cc; text-decoration: none; border-radius: 12px;">${label}</a>
   </td></tr></table>`;
 }
 
@@ -210,8 +210,9 @@ export function generateNightOverviewEmailHtml(overview: NightOverview, night: M
 /**
  * Film chosen email: the poster as the hero, with a ticket for the night
  */
-export function generateMovieSelectedEmailHtml(night: MovieNight): string {
+export function generateMovieSelectedEmailHtml(night: MovieNight, themeName?: string): string {
   night = escapeNight(night);
+  const theme = themeName ? escapeHtml(themeName) : "";
   const movie = night.movie!;
   const host = night.selector.split(" ")[0];
   const plot = movie.overview ? (movie.overview.length > 240 ? movie.overview.slice(0, 240) + "&hellip;" : movie.overview) : "";
@@ -225,6 +226,7 @@ export function generateMovieSelectedEmailHtml(night: MovieNight): string {
     <tr><td align="center" style="padding: 22px 36px 0; font-family: ${SANS};">
       <p style="margin: 0; font-family: ${SERIF}; font-style: italic; font-size: 38px; color: #ede3d1;">${movie.title}</p>
       <p style="margin: 8px 0 0; font-size: 15px; color: #afaf98;">${movieMeta(movie)}</p>
+      ${theme ? `<p style="margin: 12px 0 0;">${slate(`Theme: ${theme}`)}</p>` : ""}
       ${movie.director ? `<p style="margin: 10px 0 0;">${slate(`A film by ${movie.director}`, "#cdc4b0")}</p>` : ""}
       ${plot ? `<p style="margin: 18px 0 0; font-size: 15px; line-height: 1.6; color: #d8cdb8;">${plot}</p>` : ""}
     </td></tr>
@@ -245,6 +247,38 @@ export function generateMovieSelectedEmailHtml(night: MovieNight): string {
     <tr><td align="center" style="padding: 30px 28px 34px;">${button("Open Movie Club")}</td></tr>`;
 
   return emailShell(`The Curtain Rises: ${movie.title}`, `${host} picked ${movie.title} for ${shortDate(night.date)}`, body);
+}
+
+/**
+ * Theme email: the wheel's result for the next rotation, who picks when, and a nudge to suggest more themes
+ */
+export function generateThemeLockedEmailHtml(theme: { name: string; description: string }, rotationNumber: number, nights: MovieNight[]): string {
+  const name = escapeHtml(theme.name);
+  const description = escapeHtml(theme.description || "");
+  const rows = nights
+    .map((n) => `<tr>
+        <td style="padding: 8px 0; font-family: ${SANS}; font-size: 15px; color: #ede3d1; border-bottom: 1px solid #34433f;">${escapeHtml(n.selector.split(" ")[0])}</td>
+        <td align="right" style="padding: 8px 0; font-family: ${SANS}; font-size: 15px; color: #afaf98; border-bottom: 1px solid #34433f;">${shortDate(n.date)}</td>
+      </tr>`)
+    .join("");
+
+  const body = `
+    <tr><td align="center" style="padding: 26px 32px 0;">
+      ${slate(`Rotation ${rotationNumber} theme`)}
+      <h1 style="margin: 14px 0 0; font-family: ${SERIF}; font-style: italic; font-weight: normal; font-size: 44px; line-height: 1.1; color: #ede3d1;">${name}</h1>
+      ${description ? `<p style="margin: 16px 0 0; font-family: ${SERIF}; font-size: 17px; line-height: 1.6; color: #d8cdb8; white-space: pre-wrap;">${description}</p>` : ""}
+      <p style="margin: 18px 0 0; font-family: ${SANS}; font-size: 15px; line-height: 1.6; color: #e3be8a;">Every pick this rotation has to fit the theme.</p>
+    </td></tr>
+    ${rows ? `<tr><td style="padding: 24px 36px 0;">
+      ${slate("Who picks when", "#afaf98")}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;">${rows}</table>
+    </td></tr>` : ""}
+    <tr><td align="center" style="padding: 28px 32px 0;">
+      <p style="margin: 0; font-family: ${SANS}; font-size: 15px; line-height: 1.6; color: #d8cdb8;">Got an idea for a future theme? Suggest it on the site and the admins will add it to the wheel.</p>
+    </td></tr>
+    <tr><td align="center" style="padding: 22px 28px 34px;">${button("Suggest a theme", `${SITE()}/?suggest=theme`)}</td></tr>`;
+
+  return emailShell(`Rotation ${rotationNumber} theme: ${name}`, `Every pick in Rotation ${rotationNumber} has to fit "${name}"`, body);
 }
 
 /**
@@ -273,7 +307,7 @@ export async function sendEdm({
   html,
   previewText
 }: {
-  type: "overview" | "movie_selection" | "test";
+  type: EdmLog["type"];
   subject: string;
   html: string;
   previewText?: string;
