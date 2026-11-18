@@ -21,7 +21,8 @@ async function main() {
       members: d.users.length,
       largestEmailLog: Math.max(0, ...(d.edmLogs || []).map((l) => (l.htmlContent || "").length)),
       avatars: d.users.map((u) => u.avatarUrl || ""),
-      reviewsOnDisk: onDisk ? onDisk.reviews.length : null
+      reviewsOnDisk: onDisk ? onDisk.reviews.length : null,
+      themesOnDisk: onDisk && Array.isArray(onDisk.themes) ? onDisk.themes.map((t: { name: string }) => t.name) : null
     }));
   } catch (err) {
     console.log(JSON.stringify({ ok: false, error: String((err as Error).message) }));

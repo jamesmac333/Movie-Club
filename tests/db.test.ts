@@ -83,3 +83,15 @@ test("photos stored inside the database are moved out to image files", () => {
   assert.ok(fs.existsSync(path.join(dir, "images", result.avatars[0].slice(4))));
   assert.ok(fs.statSync(file).size < 50_000, "database no longer contains the photo");
 });
+
+test("the starter themes are added once, and never again after admins have changed the list", () => {
+  const fresh = makeSampleDb() as Record<string, unknown>;
+  delete fresh.themes;
+  const { file } = setup({ "server-db.json": JSON.stringify(fresh) });
+  const first = run(file, "read");
+  assert.equal(first.themesOnDisk.length, 22);
+  assert.equal(first.themesOnDisk[0], "Creature Feature");
+
+  const { file: emptied } = setup({ "server-db.json": JSON.stringify({ ...makeSampleDb(), themes: [] }) });
+  assert.deepEqual(run(emptied, "read").themesOnDisk, []);
+});

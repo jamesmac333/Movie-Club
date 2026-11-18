@@ -15,7 +15,8 @@ import {
   Users, 
   Film, 
   BookOpen, 
-  CheckCircle2, 
+  CheckCircle2,
+  Disc3,
   ShieldCheck 
 } from "lucide-react";
 
@@ -368,6 +369,7 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
               const isOverview = log.type === "overview";
               const isMovie = log.type === "movie_selection";
               const isTest = log.type === "test";
+              const isTheme = log.type === "theme";
 
               return (
                 <div
@@ -378,12 +380,16 @@ export default function EdmAdminManager({ currentUser }: EdmAdminManagerProps) {
                     <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 sm:mt-0 ${
                       isOverview 
                         ? "bg-amber-500/10 text-amber-400" 
+                        : isTheme
+                        ? "bg-amber-500/10 text-amber-300"
                         : isMovie 
                         ? "bg-purple-500/10 text-purple-400" 
                         : "bg-emerald-500/10 text-emerald-400"
                     }`}>
                       {isOverview ? (
                         <BookOpen className="w-3.5 h-3.5" />
+                      ) : isTheme ? (
+                        <Disc3 className="w-3.5 h-3.5" />
                       ) : isMovie ? (
                         <Film className="w-3.5 h-3.5" />
                       ) : (

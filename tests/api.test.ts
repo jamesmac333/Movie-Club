@@ -136,3 +136,114 @@ test("a recap with a large photo saves without bloating the database", async () 
   await new Promise((r) => setTimeout(r, 500)); // email log is written in the background
   assert.ok(fs.statSync(dbFile).size < 200_000, "photo is not stored inside the database");
 });
+
+const authed = (token: string) => ({ headers: { Authorization: `Bearer ${token}` } });
+const send = (method: string, body: unknown, token: string) => ({ ...json(body, token), method });
+
+test("only admins can manage themes and spin the wheel", async () => {
+  const tom = await login("Tom");
+  assert.equal((await fetch(`${BASE}/api/admin/themes`, authed(tom))).status, 403);
+  assert.equal((await fetch(`${BASE}/api/admin/themes`, json({ name: "Sneaky" }, tom))).status, 403);
+  assert.equal((await fetch(`${BASE}/api/admin/themes/spin`, json({}, tom))).status, 403);
+});
+
+test("members suggest themes and admins add them with their own wording", async () => {
+  const tom = await login("Tom");
+  const james = await login("James");
+  assert.equal((await fetch(`${BASE}/api/theme-suggestions`, json({ name: "Heists", description: "Robberies and cons" }, tom))).status, 200);
+  assert.equal((await fetch(`${BASE}/api/theme-suggestions`, json({ name: "heists" }, tom))).status, 409, "duplicates are refused");
+  const mine = await (await fetch(`${BASE}/api/theme-suggestions/mine`, authed(tom))).json();
+  assert.equal(mine.length, 1);
+
+  const state = await (await fetch(`${BASE}/api/admin/themes`, authed(james))).json();
+  const res = await fetch(`${BASE}/api/admin/theme-suggestions/${state.suggestions[0].id}/accept`, json({ name: "Heists & Cons", description: "Robberies and cons" }, james));
+  const after = await res.json();
+  assert.equal(res.status, 200);
+  assert.equal(after.suggestions.length, 0);
+  assert.equal(after.themes[0].name, "Heists & Cons");
+  assert.equal(after.themes[0].suggestedBy, "Tom Sakai");
+});
+
+test("the wheel: one veto, then the next spin is final and the theme never comes round again", async () => {
+  const james = await login("James");
+  for (const name of ["Space", "Musicals", "Debuts"]) {
+    assert.equal((await fetch(`${BASE}/api/admin/themes`, json({ name }, james))).status, 200);
+  }
+
+  // Ash's night is next and this rotation has no theme, so it's offered first, then the next Max rotation
+  const before = await (await fetch(`${BASE}/api/admin/themes`, authed(james))).json();
+  assert.equal(before.startOptions.length, 2);
+  assert.equal(before.startOptions[0].startNightId, "night-3");
+  assert.equal(before.startOptions[0].partial, true);
+  assert.equal(before.startOptions[1].partial, false, "a Max night starts a whole rotation");
+  assert.equal((await fetch(`${BASE}/api/admin/themes/spin`, json({ startNightId: "night-1" }, james))).status, 409, "a past night can't start a theme");
+
+  const first = await (await fetch(`${BASE}/api/admin/themes/spin`, json({ startNightId: before.startOptions[1].startNightId }, james))).json();
+  assert.equal(first.final, false);
+  assert.equal(first.wheel.length, 4);
+  assert.equal((await fetch(`${BASE}/api/admin/themes/spin`, json({}, james))).status, 409, "can't re-roll without deciding");
+
+  assert.equal((await fetch(`${BASE}/api/admin/themes/spin/veto`, json({ removeForGood: true }, james))).status, 200);
+  assert.equal((await fetch(`${BASE}/api/admin/themes/spin/veto`, json({}, james))).status, 409, "only one veto");
+
+  const second = await (await fetch(`${BASE}/api/admin/themes/spin`, json({}, james))).json();
+  assert.equal(second.final, true);
+  assert.equal(second.wheel.length, 3);
+  assert.notEqual(second.winner.id, first.winner.id);
+  assert.ok(!second.themes.some((t: { id: string }) => t.id === first.winner.id), "vetoed for good");
+  assert.equal(second.themes.find((t: { id: string }) => t.id === second.winner.id).status, "used");
+
+  const publicThemes = await (await fetch(`${BASE}/api/rotation-themes`)).json();
+  assert.equal(publicThemes.length, 1);
+  assert.equal(publicThemes[0].number, 1, "the first themed rotation is Rotation 1");
+  assert.equal(publicThemes[0].length, 6);
+  assert.equal(publicThemes[0].name, second.winner.name);
+  const nights = await (await fetch(`${BASE}/api/nights`)).json();
+  assert.match(nights.find((n: { id: string }) => n.id === publicThemes[0].startNightId).selector, /^Max/);
+
+  // Ash's night can still be spun for, and the used theme isn't on the wheel
+  const state = await (await fetch(`${BASE}/api/admin/themes`, authed(james))).json();
+  assert.deepEqual(state.startOptions.map((o: { startNightId: string }) => o.startNightId), ["night-3"]);
+  // A spin pressed by mistake can be cancelled, and the veto comes back
+  const oops = await (await fetch(`${BASE}/api/admin/themes/spin`, json({}, james))).json();
+  assert.equal(oops.final, false);
+  const cancelled = await (await fetch(`${BASE}/api/admin/themes/spin/cancel`, json({}, james))).json();
+  assert.equal(cancelled.spin, null);
+  assert.equal((await fetch(`${BASE}/api/admin/themes/spin/cancel`, json({}, james))).status, 409);
+
+  const third = await (await fetch(`${BASE}/api/admin/themes/spin`, json({}, james))).json();
+  assert.ok(!third.wheel.some((t: { id: string }) => t.id === second.winner.id));
+  assert.equal(third.spin.startNightId, "night-3");
+  assert.equal(third.spin.vetoed, false);
+  assert.equal((await fetch(`${BASE}/api/admin/themes/spin/lock`, json({}, james))).status, 200);
+  const after = await (await fetch(`${BASE}/api/rotation-themes`)).json();
+  assert.equal(after.length, 2);
+  const ash = after.find((t: { startNightId: string }) => t.startNightId === "night-3");
+  assert.equal(ash.number, 2);
+  assert.equal(ash.length, 5, "the rest of the rotation, Ash to James");
+});
+
+test("an admin can send a pick back to the host", async () => {
+  const tom = await login("Tom");
+  const ash = await login("Ash");
+  assert.equal((await fetch(`${BASE}/api/nights/night-1/send-back`, json({ note: "x" }, tom))).status, 403);
+  // A night that has already happened keeps its pick
+  assert.equal((await fetch(`${BASE}/api/nights/night-1/send-back`, json({ note: "x" }, ash))).status, 409);
+  const reopen = await fetch(`${BASE}/api/nights/night-1/status`, { ...json({ status: "scheduled", requester: "Ash" }, ash), method: "PUT" });
+  assert.equal(reopen.status, 200);
+  const res = await fetch(`${BASE}/api/nights/night-1/send-back`, json({ note: "Not a heist" }, ash));
+  assert.equal(res.status, 200);
+  const { night } = await res.json();
+  assert.equal(night.movie, null);
+  assert.equal(night.sentBack.title, "Parasite");
+  assert.equal(night.sentBack.note, "Not a heist");
+});
+
+test("admins see how many theme suggestions are waiting", async () => {
+  const madison = await login("Madison");
+  const james = await login("James");
+  assert.equal((await fetch(`${BASE}/api/admin/themes/summary`, authed(madison))).status, 403);
+  assert.equal((await fetch(`${BASE}/api/theme-suggestions`, json({ name: "Road trips" }, madison))).status, 200);
+  const summary = await (await fetch(`${BASE}/api/admin/themes/summary`, authed(james))).json();
+  assert.equal(summary.suggestions, 1);
+});

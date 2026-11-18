@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import AddToCalendarButton from "./AddToCalendarButton.tsx";
-import { MovieNight, User, NightOverview, MOVIE_CLUB_USERS, ROTATION_MEMBERS, HOST_ROTATION } from "../types.ts";
+import { MovieNight, User, NightOverview, MOVIE_CLUB_USERS, ROTATION_MEMBERS, HOST_ROTATION, PublicRotationTheme } from "../types.ts";
+import { groupIntoRotations, themeForNight } from "../rotationThemes.ts";
+import ThemeBadge from "./ThemeBadge.tsx";
 import { 
   Calendar, 
   Edit, 
@@ -16,7 +18,8 @@ import {
   Users,
   RefreshCw,
   Check,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { showingNow } from "../clubStats.ts";
@@ -36,6 +39,7 @@ interface CalendarViewProps {
   onViewFullSchedule?: () => void;
   title?: string;
   subtitle?: string;
+  rotationThemes?: PublicRotationTheme[];
 }
 
 export default function CalendarView({ 
@@ -52,8 +56,10 @@ export default function CalendarView({
   limit,
   onViewFullSchedule,
   title,
-  subtitle
+  subtitle,
+  rotationThemes = []
 }: CalendarViewProps) {
+  const themeOf = (night: MovieNight) => themeForNight(nights, night.id, rotationThemes);
   const [editingNightId, setEditingNightId] = useState<string | null>(null);
   const [editDate, setEditDate] = useState("");
   const [error, setError] = useState("");
@@ -170,6 +176,18 @@ export default function CalendarView({
 
   const displayNights = limit ? rawDisplayNights.slice(0, limit) : rawDisplayNights;
 
+  // The full schedule is shown in rotation blocks, each headed with its theme (or "No theme")
+  const rotations = groupIntoRotations(sortedNights, rotationThemes);
+  const previousIds = new Set(previousNights.map((n) => n.id));
+  const upcomingGroups = rotations
+    .map((g) => ({ ...g, shown: g.nights.filter((n) => !previousIds.has(n.id)) }))
+    .filter((g) => g.shown.length > 0);
+  // Past nights: newest rotation first, newest night first, as before
+  const pastGroups = rotations
+    .map((g) => ({ ...g, shown: g.nights.filter((n) => previousIds.has(n.id)).reverse() }))
+    .filter((g) => g.shown.length > 0)
+    .reverse();
+
   // Home page: a compact "Coming up" list; editing lives on the full Schedule tab
   if (limit !== undefined) {
     // The next night already has the big card above, so the list starts from the one after
@@ -199,6 +217,7 @@ export default function CalendarView({
                 <div className="flex-1 min-w-0">
                   <p className="text-[15px] font-medium text-zinc-100 truncate">{night.selector.split(" ")[0]} hosts</p>
                   <p className="text-sm text-zinc-400 truncate">{night.movie?.title || "Not chosen yet"}</p>
+                  {themeOf(night) && <ThemeBadge name={themeOf(night)!.name} number={themeOf(night)!.number} className="mt-1.5" />}
                 </div>
                 {host?.avatarUrl ? (
                   <img src={host.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
@@ -583,6 +602,42 @@ export default function CalendarView({
     );
   };
 
+  const shortDay = (d: string) => new Date(d).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: new Date(d).getFullYear() !== new Date().getFullYear() ? "numeric" : undefined });
+
+  // One rotation: a header with its theme (or none), then its nights
+  const renderRotation = (group: (typeof rotations)[number] & { shown: MovieNight[] }, isPreviousList: boolean) => {
+    const theme = group.theme;
+    const stillToCome = group.nights.some((n) => !previousIds.has(n.id));
+    // Part of this rotation is in the other list (it's the one under way now)
+    const split = group.shown.length < group.nights.length;
+    return (
+      <section
+        key={`${group.start.id}-${isPreviousList ? "past" : "next"}`}
+        aria-label={theme ? `Rotation ${theme.number}: ${theme.name}` : `Rotation from ${shortDay(group.start.date)}, no theme`}
+        className={`rounded-3xl border p-3 sm:p-4 space-y-3 ${theme ? "border-amber-500/40 bg-amber-500/[0.03]" : "border-zinc-800/80"}`}
+      >
+        <header className="px-1 sm:px-2 pt-1 flex flex-col gap-1">
+          {theme ? (
+            <>
+              <p className="slate text-amber-500 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4" aria-hidden="true" />
+                Rotation {theme.number}{split ? (isPreviousList ? " · so far" : " · continued") : ""}
+              </p>
+              <h3 className="font-serif text-2xl text-zinc-50 break-words">{theme.name}</h3>
+              {theme.description && <p className="text-sm text-zinc-400 whitespace-pre-wrap">{theme.description}</p>}
+            </>
+          ) : (
+            <>
+              <p className="slate text-zinc-500">Rotation from {shortDay(group.start.date)}{split ? (isPreviousList ? " · so far" : " · continued") : ""}</p>
+              <h3 className={`font-serif text-2xl ${stillToCome ? "text-zinc-200" : "text-zinc-400"}`}>{stillToCome ? "Theme still to be spun" : "No theme"}</h3>
+            </>
+          )}
+        </header>
+        {group.shown.map((night, idx) => renderNightCard(night, idx, isPreviousList))}
+      </section>
+    );
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 30 }}
@@ -653,7 +708,7 @@ export default function CalendarView({
                 transition={{ duration: 0.35, ease: "easeInOut" }}
                 className="overflow-hidden space-y-4 pt-5 pb-3 border-b border-zinc-800/80"
               >
-                {previousNights.map((night, idx) => renderNightCard(night, idx, true))}
+                {pastGroups.map((g) => renderRotation(g, true))}
               </motion.div>
             )}
           </AnimatePresence>
@@ -671,7 +726,9 @@ export default function CalendarView({
             No nights scheduled yet.
           </div>
         ) : (
-          displayNights.map((night, index) => renderNightCard(night, index, false))
+          futureOnly
+            ? displayNights.map((night, index) => renderNightCard(night, index, false))
+            : upcomingGroups.map((g) => renderRotation(g, false))
         )}
 
         {/* View Full Schedule CTA when limited */}

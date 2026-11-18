@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { MovieNight, User, MOVIE_CLUB_USERS } from "../types.ts";
-import { Film, Clock, Search, Calendar, Sparkles, AlertCircle, RefreshCw, RotateCcw, Play, ExternalLink, Share2 } from "lucide-react";
+import { MovieNight, User, MOVIE_CLUB_USERS, PublicRotationTheme } from "../types.ts";
+import { Film, Clock, Search, Calendar, Sparkles, AlertCircle, RefreshCw, RotateCcw, Play, ExternalLink, Share2, Undo2 } from "lucide-react";
+import { themeForNight } from "../rotationThemes.ts";
+import ThemeBadge from "./ThemeBadge.tsx";
 import { motion } from "motion/react";
 import PaletteStrip from "./PaletteStrip.tsx";
 import { FlipText } from "./Motion.tsx";
@@ -14,10 +16,15 @@ interface NextMovieHeroProps {
   currentUser: User | null;
   onChooseMovie: (id: string, title: string, selector: string) => Promise<void>;
   onResetMovie: (id: string) => Promise<void>;
+  onSendBack?: (id: string, note: string) => Promise<void>;
+  rotationThemes?: PublicRotationTheme[];
   users?: User[];
 }
 
-export default function NextMovieHero({ nights, currentUser, onChooseMovie, onResetMovie, users = MOVIE_CLUB_USERS }: NextMovieHeroProps) {
+export default function NextMovieHero({ nights, currentUser, onChooseMovie, onResetMovie, onSendBack, rotationThemes = [], users = MOVIE_CLUB_USERS }: NextMovieHeroProps) {
+  const [sendingBack, setSendingBack] = useState(false);
+  const [sendBackNote, setSendBackNote] = useState("");
+  const [sendBackBusy, setSendBackBusy] = useState(false);
   const [movieInput, setMovieInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingReset, setLoadingReset] = useState(false);
@@ -134,6 +141,23 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
     }
   };
 
+  const handleSendBack = async () => {
+    if (!onSendBack) return;
+    setError("");
+    setSuccess("");
+    setSendBackBusy(true);
+    try {
+      await onSendBack(nextNight.id, sendBackNote.trim());
+      setSendingBack(false);
+      setSendBackNote("");
+      setSuccess(`Sent back. ${nextNight.selector.split(" ")[0]} will see it next time they open the site.`);
+    } catch (e: any) {
+      setError(e.message || "Couldn't send the pick back.");
+    } finally {
+      setSendBackBusy(false);
+    }
+  };
+
   if (!nextNight) {
     return (
       <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-10 text-center">
@@ -144,6 +168,8 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
   }
 
   const hasMovie = nextNight.movie !== null;
+  const theme = themeForNight(nights, nextNight.id, rotationThemes);
+  const sentBack = !hasMovie && nextNight.sentBack && (isNextSelector || isAdmin) ? nextNight.sentBack : null;
 
   const eventDate = new Date(nextNight.date);
   const shortDate = eventDate.toLocaleDateString("en-NZ", { weekday: "short", day: "numeric", month: "short" });
@@ -237,6 +263,7 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
               <p className="text-sm sm:text-base text-zinc-400">
                 {[nextNight.movie!.year, nextNight.movie!.rating, nextNight.movie!.runtime ? `${Math.floor(nextNight.movie!.runtime / 60)}h ${nextNight.movie!.runtime % 60}m` : null, nextNight.movie!.genre].filter(Boolean).join(" · ")}
               </p>
+              {theme && <ThemeBadge name={theme.name} number={theme.number} className="self-start" />}
               {nextNight.movie!.director && <p className="slate text-zinc-300">A film by {nextNight.movie!.director}</p>}
               {nextNight.movie!.overview && (
                 <>
@@ -251,10 +278,30 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
           ) : (
             <>
               <h1 className="font-serif text-4xl sm:text-5xl leading-tight text-zinc-50">It's {hostFirstName}'s turn to pick</h1>
-              <p className="text-sm sm:text-base leading-relaxed text-zinc-400 max-w-lg">
-                Hosting rotates every fortnight. Once {hostFirstName} chooses, the poster, plot and running time appear here.
-              </p>
+              {theme ? (
+                <div className="bg-amber-500/10 border border-amber-500/40 rounded-2xl p-4 max-w-xl flex flex-col gap-1">
+                  <p className="slate text-amber-500 flex items-center gap-1.5"><Sparkles className="w-4 h-4" aria-hidden="true" />Rotation {theme.number} theme</p>
+                  <p className="font-serif text-3xl sm:text-4xl leading-tight text-amber-200 break-words">{theme.name}</p>
+                  {theme.description && <p className="text-sm sm:text-base text-zinc-300 whitespace-pre-wrap">{theme.description}</p>}
+                  <p className="text-sm text-zinc-400 mt-1">{isNextSelector ? "Your pick has to fit it." : `${hostFirstName}'s pick has to fit it.`}</p>
+                </div>
+              ) : (
+                <p className="text-sm sm:text-base leading-relaxed text-zinc-400 max-w-lg">
+                  Hosting rotates every fortnight. Once {hostFirstName} chooses, the poster, plot and running time appear here.
+                </p>
+              )}
             </>
+          )}
+
+          {sentBack && (
+            <div role="status" className="bg-red-950/40 border border-red-800 rounded-2xl p-4 max-w-xl flex gap-3">
+              <Undo2 className="w-5 h-5 text-red-300 shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="text-sm text-zinc-200">
+                <p><span className="font-semibold">{sentBack.by.split(" ")[0]}</span> sent back <span className="font-semibold">{sentBack.title}</span> because it doesn't fit the theme.</p>
+                {sentBack.note && <p className="mt-1 text-zinc-300">"{sentBack.note}"</p>}
+                <p className="mt-1 text-zinc-400">{isNextSelector ? "Pick another film that fits." : `${hostFirstName} needs to pick another.`}</p>
+              </div>
+            </div>
           )}
 
           <div className="flex items-center gap-3">
@@ -333,7 +380,37 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
               {loadingReset ? "Clearing…" : confirmReset ? "Tap again to clear the pick" : "Change the pick"}
             </button>
           )}
+          {hasMovie && isAdmin && theme && onSendBack && !sendingBack && (
+            <button
+              type="button"
+              onClick={() => setSendingBack(true)}
+              className="min-h-12 px-4 rounded-2xl text-sm font-medium flex items-center gap-2 text-zinc-400 hover:text-red-300 cursor-pointer"
+            >
+              <Undo2 className="w-4 h-4" />
+              Doesn't fit the theme
+            </button>
+          )}
         </div>
+        {sendingBack && (
+          <div className="bg-zinc-950/60 border border-red-900 rounded-2xl p-4 flex flex-col gap-3 max-w-xl">
+            <p className="text-sm text-zinc-200">Send <span className="font-semibold">{nextNight.movie?.title}</span> back to {hostFirstName}? It's cleared and they're asked to pick another film that fits "{theme?.name}".</p>
+            <label htmlFor="send-back-note" className="sr-only">Note for {hostFirstName}</label>
+            <input
+              id="send-back-note"
+              value={sendBackNote}
+              onChange={(e) => setSendBackNote(e.target.value)}
+              maxLength={300}
+              placeholder={`Note for ${hostFirstName} (optional)`}
+              className="h-12 bg-zinc-950 border border-zinc-700 rounded-xl px-4 text-base text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+            <div className="flex gap-2">
+              <button type="button" onClick={handleSendBack} disabled={sendBackBusy} className="flex-1 min-h-12 rounded-xl bg-red-700 hover:bg-red-600 disabled:opacity-60 text-ticket font-semibold cursor-pointer">
+                {sendBackBusy ? "Sending back…" : "Send it back"}
+              </button>
+              <button type="button" onClick={() => setSendingBack(false)} disabled={sendBackBusy} className="flex-1 min-h-12 rounded-xl border border-zinc-700 text-zinc-300 font-semibold cursor-pointer">Cancel</button>
+            </div>
+          </div>
+        )}
         {hasMovie && (error || success) && (
           <p className={`text-sm ${error ? "text-red-400" : "text-emerald-400"}`}>{error || success}</p>
         )}
