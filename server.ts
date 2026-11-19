@@ -476,7 +476,7 @@ async function startServer() {
         db.nights[nightIndex].selector = cleanSelector;
 
         // If requested, auto-realign all subsequent scheduled uncompleted sessions
-        // to continue the standard cycle: Max > Ash > Madi > Amy > Tom > James
+        // to continue the standard cycle: Ash > Madi > Amy > Tom > James > Max
         if (realignSubsequent) {
           db.nights.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
           const targetIndex = db.nights.findIndex((n) => n.id === id);
@@ -510,7 +510,7 @@ async function startServer() {
     }
   });
 
-  // 2.6. Re-align all future scheduled movie nights to standard order: Max > Ash > Madi > Amy > Tom > James
+  // 2.6. Re-align all future scheduled movie nights to standard order: Ash > Madi > Amy > Tom > James > Max
   app.post("/api/nights/realign-rotation", async (req, res) => {
     const { requester, startingSelector } = req.body;
 
@@ -526,7 +526,7 @@ async function startServer() {
 
       const db = readDb();
       res.json({ 
-        message: "Future rotation realigned successfully (Max > Ash > Madi > Amy > Tom > James)", 
+        message: "Future rotation realigned successfully (Ash > Madi > Amy > Tom > James > Max)", 
         nights: db.nights 
       });
     } catch (error) {

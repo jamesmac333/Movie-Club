@@ -399,7 +399,7 @@ export default function App() {
     }
   };
 
-  // API Call: Re-align all future scheduled sessions to standard rotation (Max > Ash > Madi > Amy > Tom > James)
+  // API Call: Re-align all future scheduled sessions to standard rotation (Ash > Madi > Amy > Tom > James > Max)
   const handleRealignRotation = async () => {
     const response = await fetch("/api/nights/realign-rotation", {
       method: "POST",

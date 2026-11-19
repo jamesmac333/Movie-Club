@@ -59,7 +59,7 @@ export interface ThemeSuggestion {
   createdAt: string;
 }
 
-// The theme a rotation won, keyed by the night that starts it (Max's night)
+// The theme a rotation won, keyed by the night that starts it (Ash's night)
 export interface RotationTheme {
   startNightId: string;
   themeId: string;
@@ -162,20 +162,20 @@ export const MOVIE_CLUB_USERS: User[] = [
 ];
 
 export const HOST_ROTATION = [
-  "Max Smith",
   "Ash Macintosh",
   "Madison Hill",
   "Amy Walsh",
   "Tom Sakai",
-  "James Macintosh"
+  "James Macintosh",
+  "Max Smith"
 ] as const;
 
 export const ROTATION_MEMBERS = [
-  { shortName: "Max", fullName: "Max Smith", username: "Max" },
   { shortName: "Ash", fullName: "Ash Macintosh", username: "Ash" },
   { shortName: "Madi", fullName: "Madison Hill", username: "Madison" },
   { shortName: "Amy", fullName: "Amy Walsh", username: "Amy" },
   { shortName: "Tom", fullName: "Tom Sakai", username: "Tom" },
   { shortName: "James", fullName: "James Macintosh", username: "James" },
+  { shortName: "Max", fullName: "Max Smith", username: "Max" },
 ];
 

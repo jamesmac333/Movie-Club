@@ -1,4 +1,4 @@
-// Rotation themes: each rotation (one pass through all six hosts, starting with Max) can have a theme
+// Rotation themes: each rotation (one pass through all six hosts, starting with Ash and ending with Max) can have a theme
 // that every pick in it must fit. Kept free of the app's other imports so the server and tests can load it.
 //
 // When a theme is locked in, the rotation is saved with a fixed number and how many nights it covers,
@@ -21,14 +21,14 @@ export interface RotationThemeLike {
 }
 
 // The hosting order. Every full rotation starts with the first host's night.
-export const HOST_ORDER = ["Max Smith", "Ash Macintosh", "Madison Hill", "Amy Walsh", "Tom Sakai", "James Macintosh"];
+export const HOST_ORDER = ["Ash Macintosh", "Madison Hill", "Amy Walsh", "Tom Sakai", "James Macintosh", "Max Smith"];
 export const FIRST_HOST = HOST_ORDER[0];
 
 const byDate = <T extends { date: string }>(a: T, b: T) => new Date(a.date).getTime() - new Date(b.date).getTime();
 const firstName = (s: string) => s.trim().toLowerCase().split(" ")[0];
 export const isFirstHost = (n: NightLike) => firstName(n.selector) === firstName(FIRST_HOST);
 
-// How many nights a rotation starting with this host covers: 6 from Max, 5 from Ash (the rest of the rotation), and so on
+// How many nights a rotation starting with this host covers: 6 from Ash, 5 from Madi (the rest of the rotation), and so on
 export function rotationLengthFrom(selector: string): number {
   const index = HOST_ORDER.findIndex((h) => firstName(h) === firstName(selector));
   return HOST_ORDER.length - Math.max(0, index);
@@ -61,7 +61,7 @@ export function themeForNight<N extends NightLike, T extends RotationThemeLike>(
 }
 
 // The whole schedule split into rotations, in date order. A themed rotation covers the nights saved with
-// its theme; a rotation without one runs from a Max night (or the first night) up to the next rotation.
+// its theme; a rotation without one runs from an Ash night (or the first night) up to the next rotation.
 export function groupIntoRotations<N extends NightLike, T extends RotationThemeLike>(nights: N[], themes: T[]): Array<{ start: N; theme: T | null; nights: N[] }> {
   const sorted = [...nights].sort(byDate);
   const themeStarts = new Set(themes.map((t) => t.startNightId));
@@ -102,7 +102,7 @@ export function nextRotationNumber(themes: RotationThemeLike[]): number {
   return themes.reduce((max, t, i) => Math.max(max, t.number ?? i + 1), 0) + 1;
 }
 
-// The next full rotation still waiting for its theme: the first Max night still to come that no theme covers
+// The next full rotation still waiting for its theme: the first Ash night still to come that no theme covers
 export function nextUnthemedStart<N extends NightLike>(nights: N[], themes: RotationThemeLike[]): N | null {
   return [...nights].sort(byDate).find((n) => n.status === "scheduled" && isFirstHost(n) && !themeForNight(nights, n.id, themes)) || null;
 }
@@ -115,14 +115,14 @@ function stillToCome(n: NightLike, now: Date) {
 }
 
 // Where the wheel can start a theme from: the next night, if no theme covers it yet (so the rest of
-// its rotation gets one), and the next Max night without a theme. Earliest first.
+// its rotation gets one), and the next Ash night without a theme. Earliest first.
 export function spinStartOptions<N extends NightLike>(nights: N[], themes: RotationThemeLike[], now = new Date()): N[] {
   const sorted = [...nights].sort(byDate);
   const options: N[] = [];
   const next = sorted.find((n) => stillToCome(n, now));
   if (next && !themeForNight(nights, next.id, themes)) options.push(next);
-  const nextMax = nextUnthemedStart(nights, themes);
-  if (nextMax && !options.includes(nextMax)) options.push(nextMax);
+  const nextStart = nextUnthemedStart(nights, themes);
+  if (nextStart && !options.includes(nextStart)) options.push(nextStart);
   return options;
 }
 

@@ -102,7 +102,7 @@ function lockIn(db: DatabaseSchema, startNightId: string, themeId: string, by: s
     startNightId,
     themeId,
     number: nextRotationNumber(publicRotationThemes(db)),
-    // From Max: all six nights. From partway through: the rest of that rotation.
+    // From Ash: all six nights. From partway through: the rest of that rotation.
     length: rotationLengthFrom(start.selector),
     lockedAt: new Date().toISOString(),
     lockedBy: by

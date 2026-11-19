@@ -385,25 +385,6 @@ export default function ThemeWheel({ nights, onClose, onChanged }: { nights: Mov
                   </motion.p>
                 </AnimatePresence>
                 {phase === "ready" && finalSpin && <p className="text-lg text-amber-300">The veto's been used. Whatever this lands on is the theme.</p>}
-                {phase === "ready" && !state?.spin && (state?.startOptions.length ?? 0) > 1 && (
-                  <fieldset className="flex flex-col gap-2 mt-2">
-                    <legend className="slate text-zinc-400 mb-2">Spinning for</legend>
-                    {state!.startOptions.map((o) => {
-                      const on = rotation?.startNightId === o.startNightId;
-                      return (
-                        <button
-                          key={o.startNightId}
-                          type="button"
-                          aria-pressed={on}
-                          onClick={() => setRotation(o)}
-                          className={`min-h-12 px-4 rounded-xl text-left text-base font-medium border cursor-pointer ${on ? "border-amber-500 bg-amber-500/10 text-amber-200" : "border-zinc-700 text-zinc-300 hover:border-zinc-500"}`}
-                        >
-                          {describeRotationStart(o)}
-                        </button>
-                      );
-                    })}
-                  </fieldset>
-                )}
               </div>
             )}
 
