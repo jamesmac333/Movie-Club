@@ -220,30 +220,6 @@ export function ensureFutureNights(db: DatabaseSchema) {
   }
 }
 
-/**
- * Re-aligns future uncompleted sessions strictly according to standard rotation:
- * Max Smith > Ash Macintosh > Madison Hill > Amy Walsh > Tom Sakai > James Macintosh
- */
-export function realignFutureNights(db: DatabaseSchema, startingSelector?: string): void {
-  // Sort nights chronologically
-  db.nights.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-  // Find all scheduled nights that are uncompleted
-  const scheduledNights = db.nights.filter((n) => n.status === "scheduled");
-  if (scheduledNights.length === 0) return;
-
-  let currentIdx = 0;
-  if (startingSelector) {
-    const foundIdx = getRotationIndex(startingSelector);
-    if (foundIdx !== -1) currentIdx = foundIdx;
-  }
-
-  for (const night of scheduledNights) {
-    night.selector = HOST_ROTATION[currentIdx];
-    currentIdx = (currentIdx + 1) % HOST_ROTATION.length;
-  }
-}
-
 // Guaranteed unique ID generator combining timestamp and random cryptographic bytes
 export function generateUniqueId(prefix: string = "id"): string {
   return `${prefix}-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;

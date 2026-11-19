@@ -29,7 +29,6 @@ interface CalendarViewProps {
   currentUser: User | null;
   onUpdateDate: (id: string, newDate: string, pushFollowing?: boolean) => Promise<{ confirm?: NightPush[] } | void>;
   onUpdateSelector?: (id: string, newSelector: string, realignSubsequent?: boolean) => Promise<void>;
-  onRealignRotation?: () => Promise<void>;
   onForceStatus?: (id: string, newStatus: 'scheduled' | 'watched' | 'skipped') => Promise<void>;
   users?: User[];
   overviews?: NightOverview[];
@@ -47,7 +46,6 @@ export default function CalendarView({
   currentUser, 
   onUpdateDate, 
   onUpdateSelector,
-  onRealignRotation,
   onForceStatus, 
   users = MOVIE_CLUB_USERS,
   overviews = [],

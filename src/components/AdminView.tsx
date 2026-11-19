@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { CalendarClock, ChevronDown, Disc3, Mail, RefreshCw, ShieldCheck, Users } from "lucide-react";
+import { CalendarClock, ChevronDown, Disc3, Mail, ShieldCheck, Users } from "lucide-react";
 import ThemeAdminPanel from "./ThemeAdminPanel.tsx";
-import { MovieNight, NightOverview, NightPush, Review, User, ROTATION_MEMBERS } from "../types.ts";
+import { MovieNight, NightOverview, NightPush, Review, User } from "../types.ts";
 import OverviewForm from "./OverviewForm.tsx";
 import GapTracker from "./GapTracker.tsx";
 import BestReviewPicks from "./BestReviewPicks.tsx";
@@ -16,7 +16,6 @@ interface AdminViewProps {
   members: User[];
   onPostOverview: (movieNightId: string, title: string, content: string, imageUrl: string) => Promise<void>;
   onUpdateOverviewImage: (overviewId: string, imageUrl: string) => Promise<void>;
-  onRealignRotation: () => Promise<void>;
   // Reloads the schedule after dates are re-aligned
   onNightsChanged?: () => void;
   onUserUpdate: () => void;
@@ -71,54 +70,6 @@ function Fold({ id, title, subtitle, icon: Icon, children, defaultOpen = false }
   );
 }
 
-function RotationPanel({ onRealignRotation }: { onRealignRotation: () => Promise<void> }) {
-  const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
-  const order = ROTATION_MEMBERS.map((m) => m.shortName).join(", ");
-
-  const realign = async () => {
-    setBusy(true);
-    setMessage(null);
-    try {
-      await onRealignRotation();
-      setMessage({ ok: true, text: "Upcoming nights are back in the usual order." });
-    } catch (err: any) {
-      setMessage({ ok: false, text: err.message || "Couldn't re-align the rotation." });
-    } finally {
-      setBusy(false);
-      setConfirming(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm text-zinc-300">
-        Puts every upcoming night back in the usual host order: {order}. Nights already watched aren't touched.
-      </p>
-      {confirming ? (
-        <div className="flex flex-col gap-2">
-          <p className="text-sm text-amber-500">This changes who hosts each upcoming night. Carry on?</p>
-          <div className="flex gap-2">
-            <button type="button" onClick={() => setConfirming(false)} disabled={busy} className="flex-1 min-h-12 rounded-2xl border border-zinc-700 text-zinc-300 font-semibold cursor-pointer">
-              Cancel
-            </button>
-            <button type="button" onClick={realign} disabled={busy} className="flex-1 min-h-12 rounded-2xl bg-red-700 hover:bg-red-600 disabled:opacity-60 text-ticket font-semibold cursor-pointer">
-              {busy ? "Re-aligning…" : "Yes, re-align"}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <button type="button" onClick={() => setConfirming(true)} className="min-h-12 rounded-2xl border border-amber-500/40 text-amber-500 hover:bg-amber-500/10 font-semibold flex items-center justify-center gap-2 cursor-pointer">
-          <RefreshCw className="w-4 h-4" aria-hidden="true" />
-          Re-align the rotation
-        </button>
-      )}
-      {message && <p role="status" className={`text-sm ${message.ok ? "text-emerald-400" : "text-red-400"}`}>{message.text}</p>}
-    </div>
-  );
-}
-
 // Puts upcoming dates back on a fortnightly Friday rhythm from the next night, after a preview
 function RealignDatesPanel({ nights, onNightsChanged }: { nights: MovieNight[]; onNightsChanged?: () => void }) {
   const [preview, setPreview] = useState<NightPush[] | null>(null);
@@ -151,7 +102,7 @@ function RealignDatesPanel({ nights, onNightsChanged }: { nights: MovieNight[]; 
   };
 
   return (
-    <div className="flex flex-col gap-4 pt-5 mt-1 border-t border-zinc-800">
+    <div className="flex flex-col gap-4">
       <p className="text-sm text-zinc-300">
         Puts the dates back on track if rescheduling has made a mess of them. {next ? `${next.selector.split(" ")[0]}'s night (${day(next.date)}) stays where it is` : "The next night stays where it is"}, and every night after it is set a fortnight apart, on Fridays at 7 pm. Hosts don't change.
       </p>
@@ -186,7 +137,7 @@ function RealignDatesPanel({ nights, onNightsChanged }: { nights: MovieNight[]; 
 }
 
 // Everything only Ash and James can do, in one place. Per-night controls stay on the nights themselves.
-export default function AdminView({ currentUser, nights, reviews, overviews, members, onPostOverview, onUpdateOverviewImage, onRealignRotation, onUserUpdate, onNightsChanged, onOpenMember, recapNightId, isAsh, onToggleStarReview, showBestReviews, onShownBestReviews, onOpenWheel, onThemesChanged, themesRefreshKey, openThemes, onOpenedThemes }: AdminViewProps) {
+export default function AdminView({ currentUser, nights, reviews, overviews, members, onPostOverview, onUpdateOverviewImage, onUserUpdate, onNightsChanged, onOpenMember, recapNightId, isAsh, onToggleStarReview, showBestReviews, onShownBestReviews, onOpenWheel, onThemesChanged, themesRefreshKey, openThemes, onOpenedThemes }: AdminViewProps) {
   // Remember the request to open Themes for this visit, then clear it
   const [themesOpen] = useState(!!openThemes);
   React.useEffect(() => {
@@ -220,8 +171,7 @@ export default function AdminView({ currentUser, nights, reviews, overviews, mem
         <EdmAdminManager currentUser={currentUser} />
       </Fold>
 
-      <Fold id="admin-rotation" title="Rotation" subtitle="Put upcoming hosts and dates back in order" icon={RefreshCw}>
-        <RotationPanel onRealignRotation={onRealignRotation} />
+      <Fold id="admin-rotation" title="Dates" subtitle="Put upcoming nights back a fortnight apart" icon={CalendarClock}>
         <RealignDatesPanel nights={nights} onNightsChanged={onNightsChanged} />
       </Fold>
     </div>
