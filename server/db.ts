@@ -5,6 +5,7 @@ import { MovieNight, Review, NightOverview, User, EdmRecipient, EdmLog, Theme, T
 import { migratePlainPasswords } from "./passwords.ts";
 import { configureImageStore, moveInlineImagesToFiles } from "./images.ts";
 import { STARTER_THEMES } from "./starterThemes.ts";
+import { fixZonelessDate, nzDaysLater, nzWallTime } from "./nzTime.ts";
 
 function getDbFile(): string {
   if (process.env.DB_PATH) {
@@ -182,7 +183,7 @@ export function ensureFutureNights(db: DatabaseSchema) {
     if (!lastNight) {
       db.nights.push({
         id: "night-1",
-        date: "2026-07-17T19:00:00",
+        date: nzWallTime(2026, 7, 17),
         selector: HOST_ROTATION[0],
         movie: null,
         status: "scheduled"
@@ -191,15 +192,8 @@ export function ensureFutureNights(db: DatabaseSchema) {
       continue;
     }
     
-    // Calculate the next date (exactly 14 days later at 19:00:00)
-    const lastDate = new Date(lastNight.date);
-    const nextDate = new Date(lastDate);
-    nextDate.setDate(nextDate.getDate() + 14);
-    
-    const year = nextDate.getFullYear();
-    const month = String(nextDate.getMonth() + 1).padStart(2, '0');
-    const day = String(nextDate.getDate()).padStart(2, '0');
-    const nextDateStr = `${year}-${month}-${day}T19:00:00`;
+    // Two weeks after the last night, at the same time in NZ (the server itself runs on UTC)
+    const nextDateStr = nzDaysLater(lastNight.date, 14);
     
     // Determine next selector in perpetual cycle: Max -> Ash -> Madison -> Amy -> Tom -> James
     const lastIndex = getRotationIndex(lastNight.selector);
@@ -431,6 +425,17 @@ function loadDbFromDisk(): DatabaseSchema {
   if (moveInlineImagesToFiles(parsed)) {
     saveDbToDiskAtomic(parsed);
   }
+
+  // Older nights were saved without a timezone; store them as the NZ time they were meant as
+  let datesFixed = false;
+  for (const night of parsed.nights) {
+    const fixed = typeof night.date === "string" ? fixZonelessDate(night.date) : null;
+    if (fixed) {
+      night.date = fixed;
+      datesFixed = true;
+    }
+  }
+  if (datesFixed) saveDbToDiskAtomic(parsed);
 
   // Auto-schedule future nights to ensure at least 8 are always in the pipeline
   const originalLength = parsed.nights.length;

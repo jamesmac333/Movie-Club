@@ -247,3 +247,15 @@ test("admins see how many theme suggestions are waiting", async () => {
   const summary = await (await fetch(`${BASE}/api/admin/themes/summary`, authed(james))).json();
   assert.equal(summary.suggestions, 1);
 });
+
+test("a night can't be moved onto a day that already has one", async () => {
+  const james = await login("James");
+  const move = (date: string) => fetch(`${BASE}/api/nights/night-3/date`, { ...json({ date, requester: "James" }, james), method: "PUT" });
+  // 8:30 pm on 9 Oct in NZ, the same day as Max's night
+  const clash = await move("2026-10-09T07:30:00.000Z");
+  assert.equal(clash.status, 409);
+  assert.match((await clash.json()).error, /Max's night is already on that day/);
+  assert.equal((await move("not a date")).status, 400);
+  const nights = await (await fetch(`${BASE}/api/nights`, { headers: { Authorization: `Bearer ${james}` } })).json();
+  assert.equal(nights.find((n: { id: string }) => n.id === "night-3").date, "2099-01-01T06:00:00.000Z", "the night didn't move (and its old zoneless date now reads as 7 pm NZ)");
+});
