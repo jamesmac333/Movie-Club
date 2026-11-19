@@ -5,7 +5,8 @@ import { MovieNight, Review, NightOverview, User, EdmRecipient, EdmLog, Theme, T
 import { migratePlainPasswords } from "./passwords.ts";
 import { configureImageStore, moveInlineImagesToFiles } from "./images.ts";
 import { STARTER_THEMES } from "./starterThemes.ts";
-import { fixZonelessDate, nzDaysLater, nzWallTime } from "./nzTime.ts";
+import { fixZonelessDate, nzWallTime } from "./nzTime.ts";
+import { nextNightDate } from "./schedule.ts";
 
 function getDbFile(): string {
   if (process.env.DB_PATH) {
@@ -192,8 +193,8 @@ export function ensureFutureNights(db: DatabaseSchema) {
       continue;
     }
     
-    // Two weeks after the last night, at the same time in NZ (the server itself runs on UTC)
-    const nextDateStr = nzDaysLater(lastNight.date, 14);
+    // A fortnight after the last night's planned Friday, at 7 pm NZ (see nextNightDate)
+    const nextDateStr = nextNightDate(lastNight);
     
     // Determine next selector in perpetual cycle: Max -> Ash -> Madison -> Amy -> Tom -> James
     const lastIndex = getRotationIndex(lastNight.selector);

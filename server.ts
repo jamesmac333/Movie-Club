@@ -24,10 +24,15 @@ import { hashPassword, verifyPassword } from "./server/passwords.ts";
 import { buildClubCalendar } from "./server/calendar.ts";
 import { storeImage, sendImage, imageVersion, isStoredImage, isInlineImage, shrinkAvatar } from "./server/images.ts";
 import { registerThemeRoutes, publicRotationThemes } from "./server/themes.ts";
-import { fixZonelessDate, nzDayKey } from "./server/nzTime.ts";
+import { fixZonelessDate } from "./server/nzTime.ts";
+import { planReschedule, applyReschedule, planRealignDates, applyRealignDates, Push } from "./server/schedule.ts";
 
-// Thrown when a night is moved onto a day that already has one
-class DateClashError extends Error {}
+// Thrown when a night is moved onto a day that already has one, or would push other nights
+class DateClashError extends Error {
+  constructor(message: string, public confirm?: Push[]) {
+    super(message);
+  }
+}
 import { themeForNight } from "./src/rotationThemes.ts";
 
 // Public address of the site, used for links and images in club emails
@@ -396,7 +401,7 @@ async function startServer() {
   // 2. Update a movie night's date (Admin only: James or Ash)
   app.put("/api/nights/:id/date", async (req, res) => {
     const { id } = req.params;
-    const { date, requester } = req.body;
+    const { date, requester, pushFollowing } = req.body;
 
     const reqLower = requester?.toLowerCase();
     if (!requester || (reqLower !== "james" && reqLower !== "ash")) {
@@ -411,6 +416,7 @@ async function startServer() {
       return res.status(400).json({ error: "That isn't a valid date" });
     }
 
+    let moved: Push[] = [];
     try {
       const updatedNight = await mutateDb((db) => {
         const nightIndex = db.nights.findIndex((n) => n.id === id);
@@ -418,14 +424,18 @@ async function startServer() {
           return null;
         }
 
-        // One night per day: refuse a date another night already has (skipped nights don't count)
-        const day = nzDayKey(newDate);
-        const clash = db.nights.find((n) => n.id !== id && n.status !== "skipped" && nzDayKey(n.date) === day);
-        if (clash) {
-          throw new DateClashError(`${clash.selector.split(" ")[0]}'s night is already on that day. Move that night first, or pick another day.`);
+        // One night per day (skipped nights don't count). Landing under a week before the next
+        // night pushes that night back a week, once the admin has said yes.
+        const plan = planReschedule(db.nights, id, newDate);
+        if (plan.clash) {
+          throw new DateClashError(`${plan.clash.selector.split(" ")[0]}'s night is already on that day. Move that night first, or pick another day.`);
         }
-
-        db.nights[nightIndex].date = newDate;
+        if (plan.pushes.length && typeof pushFollowing !== "boolean") {
+          throw new DateClashError("That's less than a week before the next night. Push it back a week too?", plan.pushes);
+        }
+        const pushes = pushFollowing ? plan.pushes : [];
+        applyReschedule(db.nights, id, newDate, pushes);
+        moved = pushes;
         return db.nights[nightIndex];
       });
 
@@ -433,9 +443,9 @@ async function startServer() {
         return res.status(404).json({ error: "Movie night not found" });
       }
 
-      res.json({ message: "Date updated successfully", night: updatedNight });
+      res.json({ message: "Date updated successfully", night: updatedNight, moved });
     } catch (error) {
-      if (error instanceof DateClashError) return res.status(409).json({ error: error.message });
+      if (error instanceof DateClashError) return res.status(409).json({ error: error.message, confirm: error.confirm });
       res.status(500).json({ error: "Failed to update date" });
     }
   });
@@ -522,6 +532,23 @@ async function startServer() {
     } catch (error) {
       console.error("Failed to realign rotation:", error);
       res.status(500).json({ error: "Failed to realign rotation" });
+    }
+  });
+
+  // Put upcoming dates back on a fortnightly Friday rhythm from the next night (admins only, see auth.ts).
+  // Without apply: true it only shows what would change.
+  app.post("/api/admin/nights/realign-dates", async (req, res) => {
+    try {
+      const apply = req.body?.apply === true;
+      const changes = await mutateDb((db) => {
+        const plan = planRealignDates(db.nights);
+        if (apply) applyRealignDates(db.nights, plan);
+        return plan;
+      });
+      res.json({ changes, applied: apply });
+    } catch (error) {
+      console.error("Failed to re-align dates:", error);
+      res.status(500).json({ error: "Couldn't re-align the dates" });
     }
   });
 

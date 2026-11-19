@@ -236,7 +236,27 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
               referrerPolicy="no-referrer"
             />
           ) : (
-            <div className="w-full aspect-[2/3] rounded-2xl border border-zinc-700 bg-slate shadow-[0_24px_50px_rgba(0,0,0,0.5)] flex flex-col justify-between p-6">
+            <>
+            {/* Phones, before a film is picked: a short ticket instead of an empty poster, so the theme stays on screen */}
+            {!hasMovie && (
+              <div className="md:hidden w-full rounded-2xl border border-zinc-700 bg-slate shadow-[0_16px_36px_rgba(0,0,0,0.45)] flex items-center gap-4 p-4">
+                {selectorUser?.avatarUrl ? (
+                  <img src={selectorUser.avatarUrl} alt="" className="w-16 h-16 min-[400px]:w-20 min-[400px]:h-20 shrink-0 rounded-full object-cover border-2 border-amber-500" referrerPolicy="no-referrer" />
+                ) : (
+                  <span aria-hidden="true" className="w-16 h-16 min-[400px]:w-20 min-[400px]:h-20 shrink-0 rounded-full border-2 border-amber-500 bg-zinc-900 flex items-center justify-center font-serif text-4xl text-amber-300">
+                    {hostFirstName.charAt(0)}
+                  </span>
+                )}
+                <div className="min-w-0 flex flex-col gap-1">
+                  <span className="slate text-amber-500">{hostFirstName}'s pick</span>
+                  <p className="font-serif text-[1.6rem] min-[400px]:text-3xl whitespace-nowrap leading-tight text-ticket">Still choosing…</p>
+                  <p className="slate text-zinc-300">
+                    {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m to go
+                  </p>
+                </div>
+              </div>
+            )}
+            <div className={`${hasMovie ? "flex" : "hidden md:flex"} w-full aspect-[2/3] rounded-2xl border border-zinc-700 bg-slate shadow-[0_24px_50px_rgba(0,0,0,0.5)] flex-col justify-between p-6`}>
               <span className="slate text-amber-500">{hasMovie ? "No poster" : `${hostFirstName}'s pick`}</span>
               <div className="space-y-3">
                 {!hasMovie && selectorUser?.avatarUrl && (
@@ -250,6 +270,7 @@ export default function NextMovieHero({ nights, currentUser, onChooseMovie, onRe
                 )}
               </div>
             </div>
+            </>
           )}
           <PaletteStrip posterUrl={hasMovie ? nextNight.movie!.posterUrl : null} className="h-2 rounded" />
         </div>

@@ -259,3 +259,37 @@ test("a night can't be moved onto a day that already has one", async () => {
   const nights = await (await fetch(`${BASE}/api/nights`, { headers: { Authorization: `Bearer ${james}` } })).json();
   assert.equal(nights.find((n: { id: string }) => n.id === "night-3").date, "2099-01-01T06:00:00.000Z", "the night didn't move (and its old zoneless date now reads as 7 pm NZ)");
 });
+
+test("moving a night under a week before the next asks before pushing it", async () => {
+  const james = await login("James");
+  const nights = await (await fetch(`${BASE}/api/nights`, { headers: { Authorization: `Bearer ${james}` } })).json();
+  const upcoming = nights.filter((n: { status: string }) => n.status === "scheduled").sort((a: { date: string }, b: { date: string }) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const [first, second] = upcoming;
+  const sixDaysBefore = new Date(new Date(second.date).getTime() - 6 * 24 * 3600 * 1000).toISOString();
+  const move = (body: object) => fetch(`${BASE}/api/nights/${first.id}/date`, { ...json({ date: sixDaysBefore, requester: "James", ...body }, james), method: "PUT" });
+
+  const ask = await move({});
+  assert.equal(ask.status, 409);
+  const { confirm } = await ask.json();
+  assert.deepEqual(confirm.map((p: { id: string }) => p.id), [second.id]);
+
+  const res = await move({ pushFollowing: true });
+  assert.equal(res.status, 200);
+  const { moved } = await res.json();
+  assert.equal(moved[0].id, second.id);
+  const after = await (await fetch(`${BASE}/api/nights`, { headers: { Authorization: `Bearer ${james}` } })).json();
+  const pushed = after.find((n: { id: string }) => n.id === second.id);
+  assert.equal(new Date(pushed.date).getTime() - new Date(second.date).getTime(), 7 * 24 * 3600 * 1000);
+});
+
+test("only admins can re-align dates, and it shows the changes before making them", async () => {
+  const tom = await login("Tom");
+  const james = await login("James");
+  assert.equal((await fetch(`${BASE}/api/admin/nights/realign-dates`, json({}, tom))).status, 403);
+  const preview = await (await fetch(`${BASE}/api/admin/nights/realign-dates`, json({}, james))).json();
+  assert.equal(preview.applied, false);
+  const applied = await (await fetch(`${BASE}/api/admin/nights/realign-dates`, json({ apply: true }, james))).json();
+  assert.deepEqual(applied.changes, preview.changes);
+  const again = await (await fetch(`${BASE}/api/admin/nights/realign-dates`, json({}, james))).json();
+  assert.deepEqual(again.changes, [], "already on track after re-aligning");
+});

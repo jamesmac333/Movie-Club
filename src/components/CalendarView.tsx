@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import AddToCalendarButton from "./AddToCalendarButton.tsx";
-import { MovieNight, User, NightOverview, MOVIE_CLUB_USERS, ROTATION_MEMBERS, HOST_ROTATION, PublicRotationTheme } from "../types.ts";
+import { MovieNight, User, NightOverview, MOVIE_CLUB_USERS, ROTATION_MEMBERS, HOST_ROTATION, PublicRotationTheme, NightPush } from "../types.ts";
 import { groupIntoRotations, themeForNight } from "../rotationThemes.ts";
 import ThemeBadge from "./ThemeBadge.tsx";
 import { 
@@ -27,7 +27,7 @@ import { showingNow } from "../clubStats.ts";
 interface CalendarViewProps {
   nights: MovieNight[];
   currentUser: User | null;
-  onUpdateDate: (id: string, newDate: string) => Promise<void>;
+  onUpdateDate: (id: string, newDate: string, pushFollowing?: boolean) => Promise<{ confirm?: NightPush[] } | void>;
   onUpdateSelector?: (id: string, newSelector: string, realignSubsequent?: boolean) => Promise<void>;
   onRealignRotation?: () => Promise<void>;
   onForceStatus?: (id: string, newStatus: 'scheduled' | 'watched' | 'skipped') => Promise<void>;
@@ -64,6 +64,8 @@ export default function CalendarView({
   const [editDate, setEditDate] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Nights that would be pushed back a week by the date being saved, waiting for the admin to choose
+  const [pushPlan, setPushPlan] = useState<{ id: string; date: string; pushes: NightPush[] } | null>(null);
   const [showPreviousSessions, setShowPreviousSessions] = useState(false);
 
   // Selector assignment state for Admins
@@ -79,6 +81,8 @@ export default function CalendarView({
 
   const handleEditClick = (night: MovieNight) => {
     setEditingSelectorNightId(null);
+    setPushPlan(null);
+    setError("");
     setEditingNightId(night.id);
     // Convert current ISO date to input-friendly format
     const isoDate = new Date(night.date);
@@ -128,7 +132,12 @@ export default function CalendarView({
     setError("");
     setLoading(true);
     try {
-      await onUpdateDate(id, new Date(editDate).toISOString());
+      const date = new Date(editDate).toISOString();
+      const result = await onUpdateDate(id, date);
+      if (result && result.confirm) {
+        setPushPlan({ id, date, pushes: result.confirm });
+        return;
+      }
       setEditingNightId(null);
     } catch (e: any) {
       setError(e.message || "Failed to update date");
@@ -136,6 +145,24 @@ export default function CalendarView({
       setLoading(false);
     }
   };
+
+  // The admin's answer to "push the next night back a week too?"
+  const handleConfirmPush = async (pushFollowing: boolean) => {
+    if (!pushPlan) return;
+    setError("");
+    setLoading(true);
+    try {
+      await onUpdateDate(pushPlan.id, pushPlan.date, pushFollowing);
+      setPushPlan(null);
+      setEditingNightId(null);
+    } catch (e: any) {
+      setError(e.message || "Failed to update date");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const pushDay = (d: string) => new Date(d).toLocaleDateString("en-NZ", { weekday: "short", day: "numeric", month: "short" });
 
   const formatNZTDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -286,10 +313,35 @@ export default function CalendarView({
                 <input
                   type="datetime-local"
                   value={editDate}
-                  onChange={(e) => setEditDate(e.target.value)}
+                  onChange={(e) => { setEditDate(e.target.value); setPushPlan(null); }}
                   className="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
                 {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+                {pushPlan && pushPlan.id === night.id ? (
+                  <div role="alertdialog" aria-labelledby={`push-${night.id}`} className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
+                    <p id={`push-${night.id}`} className="text-sm text-amber-200">
+                      That's less than a week before the next night. Push {pushPlan.pushes.length === 1 ? "it" : "these"} back a week too?
+                    </p>
+                    <ul className="text-sm text-zinc-200 space-y-0.5">
+                      {pushPlan.pushes.map((p) => (
+                        <li key={p.id}>
+                          {p.selector.split(" ")[0]}: {pushDay(p.from)} → <span className="font-semibold">{pushDay(p.to)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => handleConfirmPush(true)} disabled={loading} className="min-h-11 bg-red-700 hover:bg-red-600 disabled:opacity-60 text-ticket font-semibold px-4 rounded-xl text-sm cursor-pointer">
+                        {loading ? "Saving…" : pushPlan.pushes.length === 1 ? "Move both" : `Move all ${pushPlan.pushes.length + 1}`}
+                      </button>
+                      <button type="button" onClick={() => handleConfirmPush(false)} disabled={loading} className="min-h-11 border border-zinc-700 text-zinc-200 hover:bg-zinc-800 font-semibold px-4 rounded-xl text-sm cursor-pointer">
+                        Just this one
+                      </button>
+                      <button type="button" onClick={() => setPushPlan(null)} disabled={loading} className="min-h-11 text-zinc-400 hover:text-zinc-200 font-semibold px-3 rounded-xl text-sm cursor-pointer">
+                        Back
+                      </button>
+                    </div>
+                  </div>
+                ) : (
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleSaveDate(night.id)}
@@ -305,6 +357,7 @@ export default function CalendarView({
                     Cancel
                   </button>
                 </div>
+                )}
               </div>
             ) : (
               <h3 className="text-xl font-serif text-zinc-50">
