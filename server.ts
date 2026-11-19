@@ -24,6 +24,10 @@ import { hashPassword, verifyPassword } from "./server/passwords.ts";
 import { buildClubCalendar } from "./server/calendar.ts";
 import { storeImage, sendImage, imageVersion, isStoredImage, isInlineImage, shrinkAvatar } from "./server/images.ts";
 import { registerThemeRoutes, publicRotationThemes } from "./server/themes.ts";
+import { fixZonelessDate, nzDayKey } from "./server/nzTime.ts";
+
+// Thrown when a night is moved onto a day that already has one
+class DateClashError extends Error {}
 import { themeForNight } from "./src/rotationThemes.ts";
 
 // Public address of the site, used for links and images in club emails
@@ -402,6 +406,10 @@ async function startServer() {
     if (!date) {
       return res.status(400).json({ error: "Missing new date" });
     }
+    const newDate = typeof date === "string" ? fixZonelessDate(date) || date : "";
+    if (Number.isNaN(new Date(newDate).getTime())) {
+      return res.status(400).json({ error: "That isn't a valid date" });
+    }
 
     try {
       const updatedNight = await mutateDb((db) => {
@@ -410,7 +418,14 @@ async function startServer() {
           return null;
         }
 
-        db.nights[nightIndex].date = date;
+        // One night per day: refuse a date another night already has (skipped nights don't count)
+        const day = nzDayKey(newDate);
+        const clash = db.nights.find((n) => n.id !== id && n.status !== "skipped" && nzDayKey(n.date) === day);
+        if (clash) {
+          throw new DateClashError(`${clash.selector.split(" ")[0]}'s night is already on that day. Move that night first, or pick another day.`);
+        }
+
+        db.nights[nightIndex].date = newDate;
         return db.nights[nightIndex];
       });
 
@@ -420,6 +435,7 @@ async function startServer() {
 
       res.json({ message: "Date updated successfully", night: updatedNight });
     } catch (error) {
+      if (error instanceof DateClashError) return res.status(409).json({ error: error.message });
       res.status(500).json({ error: "Failed to update date" });
     }
   });
