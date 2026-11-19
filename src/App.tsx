@@ -29,7 +29,7 @@ import FilmPage from "./components/FilmPage.tsx";
 import MemberPage from "./components/MemberPage.tsx";
 import OfflineNotice from "./components/OfflineNotice.tsx";
 import { CLUB_PALETTE } from "./palette.ts";
-import { PublicRotationTheme } from "./types.ts";
+import { PublicRotationTheme, NightPush } from "./types.ts";
 import { themeForNight } from "./rotationThemes.ts";
 import ThemeWheel from "./components/ThemeWheel.tsx";
 import SpinReminderCard from "./components/SpinReminderCard.tsx";
@@ -352,18 +352,22 @@ export default function App() {
   };
 
   // API Call: Reschedule date (called from CalendarView)
-  const handleUpdateDate = async (id: string, newDate: string) => {
+  // pushFollowing: whether to push the next night back a week when this one lands under a week before it.
+  // Left out, the server answers with the nights it would push so the admin can choose.
+  const handleUpdateDate = async (id: string, newDate: string, pushFollowing?: boolean): Promise<{ confirm?: NightPush[] } | void> => {
     const response = await fetch(`/api/nights/${id}/date`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         date: newDate,
-        requester: currentUser?.username
+        requester: currentUser?.username,
+        ...(pushFollowing === undefined ? {} : { pushFollowing })
       })
     });
 
     if (!response.ok) {
-      const errData = await response.json();
+      const errData = await response.json().catch(() => ({}));
+      if (Array.isArray(errData.confirm) && errData.confirm.length) return { confirm: errData.confirm };
       throw new Error(errData.error || "Failed to update movie night date");
     }
 
@@ -1089,6 +1093,7 @@ export default function App() {
                     onPostOverview={handlePostOverview}
                     onUpdateOverviewImage={handleUpdateOverviewImage}
                     onRealignRotation={handleRealignRotation}
+                    onNightsChanged={fetchSilentData}
                     onUserUpdate={fetchUsers}
                     onOpenMember={openMember}
                     recapNightId={recapNightId}

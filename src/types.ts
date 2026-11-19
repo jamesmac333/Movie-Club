@@ -24,8 +24,19 @@ export interface MovieNight {
   selector: string; // e.g., 'James Macintosh'
   movie: MovieMetadata | null; // null if not chosen yet
   status: 'scheduled' | 'watched' | 'skipped';
+  // The fortnightly Friday this night belongs to, when it's been moved off it. New nights are set
+  // from this, so moving one night a day or two doesn't shift the ones after it.
+  plannedDate?: string;
   // Set when an admin sends a pick back because it doesn't fit the rotation's theme; cleared on the next pick
   sentBack?: { title: string; note?: string; by: string; at: string };
+}
+
+// A night that would be pushed back a week when another is rescheduled to under a week before it
+export interface NightPush {
+  id: string;
+  selector: string;
+  from: string;
+  to: string;
 }
 
 // A rotation theme. Available ones are on the wheel; used ones have been won by a rotation.
