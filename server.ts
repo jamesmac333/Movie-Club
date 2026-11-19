@@ -12,7 +12,6 @@ import {
   canonicalizeHostName,
   HOST_ROTATION,
   getRotationIndex,
-  realignFutureNights,
   getBackupStats,
   getDbFilePath
 } from "./server/db.ts";
@@ -507,31 +506,6 @@ async function startServer() {
     } catch (error) {
       console.error("Failed to update selector:", error);
       res.status(500).json({ error: "Failed to update assigned host" });
-    }
-  });
-
-  // 2.6. Re-align all future scheduled movie nights to standard order: Ash > Madi > Amy > Tom > James > Max
-  app.post("/api/nights/realign-rotation", async (req, res) => {
-    const { requester, startingSelector } = req.body;
-
-    const reqLower = requester?.toLowerCase();
-    if (!requester || (reqLower !== "james" && reqLower !== "ash")) {
-      return res.status(403).json({ error: "Unauthorized. Only James or Ash can re-align session rotations." });
-    }
-
-    try {
-      await mutateDb((db) => {
-        realignFutureNights(db, startingSelector);
-      });
-
-      const db = readDb();
-      res.json({ 
-        message: "Future rotation realigned successfully (Ash > Madi > Amy > Tom > James > Max)", 
-        nights: db.nights 
-      });
-    } catch (error) {
-      console.error("Failed to realign rotation:", error);
-      res.status(500).json({ error: "Failed to realign rotation" });
     }
   });
 

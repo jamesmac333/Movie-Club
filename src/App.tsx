@@ -30,9 +30,9 @@ import MemberPage from "./components/MemberPage.tsx";
 import OfflineNotice from "./components/OfflineNotice.tsx";
 import { CLUB_PALETTE } from "./palette.ts";
 import { PublicRotationTheme, NightPush } from "./types.ts";
-import { themeForNight } from "./rotationThemes.ts";
+import { themeForNight, spinDue } from "./rotationThemes.ts";
 import ThemeWheel from "./components/ThemeWheel.tsx";
-import SpinReminderCard from "./components/SpinReminderCard.tsx";
+import SpinReminderCard, { SpinPromptSheet } from "./components/SpinReminderCard.tsx";
 import ThemeSuggestCard, { ThemeSuggestSheet } from "./components/ThemeSuggestCard.tsx";
 
 export default function App() {
@@ -46,6 +46,8 @@ export default function App() {
   const [newRecapAlert, setNewRecapAlert] = useState<{ overview: NightOverview; night: MovieNight } | null>(null);
   const [rotationThemes, setRotationThemes] = useState<PublicRotationTheme[]>([]);
   const [wheelOpen, setWheelOpen] = useState(false);
+  // James's review of a rotation's last night is in: prompt him to spin for the next rotation
+  const [spinPrompt, setSpinPrompt] = useState<{ finalNight: MovieNight; nextStart: MovieNight } | null>(null);
   const [themesRefreshKey, setThemesRefreshKey] = useState(0);
   // The theme email links to /?suggest=theme, which opens the suggestion form
   const [suggestOpen, setSuggestOpen] = useState(() => new URLSearchParams(window.location.search).get("suggest") === "theme");
@@ -399,29 +401,6 @@ export default function App() {
     }
   };
 
-  // API Call: Re-align all future scheduled sessions to standard rotation (Ash > Madi > Amy > Tom > James > Max)
-  const handleRealignRotation = async () => {
-    const response = await fetch("/api/nights/realign-rotation", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        requester: currentUser?.username
-      })
-    });
-
-    if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.error || "Failed to realign rotation");
-    }
-
-    const data = await response.json();
-    if (data.nights) {
-      setNights(data.nights);
-    } else {
-      await fetchInitialData();
-    }
-  };
-
   // API Call: Force event status watched/scheduled (called from CalendarView)
   const handleForceStatus = async (id: string, newStatus: 'scheduled' | 'watched' | 'skipped') => {
     const response = await fetch(`/api/nights/${id}/status`, {
@@ -465,6 +444,12 @@ export default function App() {
     }
     if (data.nights) {
       setNights(data.nights);
+    }
+
+    // James has just reviewed the last night of a rotation whose successor has no theme yet: time to spin
+    if (currentUser?.username?.toLowerCase() === "james") {
+      const due = spinDue(data.nights || nights, rotationThemes);
+      if (due && due.finalNight.id === movieNightId && due.nextStart.id !== movieNightId) setSpinPrompt(due);
     }
 
     // Refresh state silently to ensure all connected clients are in lockstep
@@ -720,6 +705,16 @@ export default function App() {
           />
         )}
         {wheelOpen && isAdmin && <ThemeWheel nights={nights} onClose={closeWheel} onChanged={fetchSilentData} />}
+        {spinPrompt && !wheelOpen && (
+          <SpinPromptSheet
+            finalNight={spinPrompt.finalNight}
+            nextStart={spinPrompt.nextStart}
+            nights={nights}
+            rotationThemes={rotationThemes}
+            onOpenWheel={() => { setSpinPrompt(null); setWheelOpen(true); }}
+            onClose={() => setSpinPrompt(null)}
+          />
+        )}
         {suggestOpen && <ThemeSuggestSheet onClose={closeSuggest} />}
         {newRecapAlert && (
           <RecapAlertModal
@@ -1008,7 +1003,6 @@ export default function App() {
                       currentUser={currentUser}
                       onUpdateDate={handleUpdateDate}
                       onUpdateSelector={handleUpdateSelector}
-                      onRealignRotation={handleRealignRotation}
                       onForceStatus={handleForceStatus}
                       users={clubUsers}
                       overviews={overviews}
@@ -1054,7 +1048,6 @@ export default function App() {
                     currentUser={currentUser} 
                     onUpdateDate={handleUpdateDate}
                     onUpdateSelector={handleUpdateSelector}
-                    onRealignRotation={handleRealignRotation}
                     onForceStatus={handleForceStatus}
                     users={clubUsers}
                     overviews={overviews}
@@ -1092,7 +1085,6 @@ export default function App() {
                     members={members}
                     onPostOverview={handlePostOverview}
                     onUpdateOverviewImage={handleUpdateOverviewImage}
-                    onRealignRotation={handleRealignRotation}
                     onNightsChanged={fetchSilentData}
                     onUserUpdate={fetchUsers}
                     onOpenMember={openMember}
