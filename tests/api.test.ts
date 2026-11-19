@@ -170,15 +170,13 @@ test("the wheel: one veto, then the next spin is final and the theme never comes
     assert.equal((await fetch(`${BASE}/api/admin/themes`, json({ name }, james))).status, 200);
   }
 
-  // Ash's night is next and this rotation has no theme, so it's offered first, then the next Max rotation
+  // A round starts with Ash, so Ash's night is the one (and only) rotation to spin for
   const before = await (await fetch(`${BASE}/api/admin/themes`, authed(james))).json();
-  assert.equal(before.startOptions.length, 2);
-  assert.equal(before.startOptions[0].startNightId, "night-3");
-  assert.equal(before.startOptions[0].partial, true);
-  assert.equal(before.startOptions[1].partial, false, "a Max night starts a whole rotation");
+  assert.deepEqual(before.startOptions.map((o: { startNightId: string }) => o.startNightId), ["night-3"]);
+  assert.equal(before.startOptions[0].partial, false, "Ash's night starts a whole rotation");
   assert.equal((await fetch(`${BASE}/api/admin/themes/spin`, json({ startNightId: "night-1" }, james))).status, 409, "a past night can't start a theme");
 
-  const first = await (await fetch(`${BASE}/api/admin/themes/spin`, json({ startNightId: before.startOptions[1].startNightId }, james))).json();
+  const first = await (await fetch(`${BASE}/api/admin/themes/spin`, json({}, james))).json();
   assert.equal(first.final, false);
   assert.equal(first.wheel.length, 4);
   assert.equal((await fetch(`${BASE}/api/admin/themes/spin`, json({}, james))).status, 409, "can't re-roll without deciding");
@@ -196,14 +194,21 @@ test("the wheel: one veto, then the next spin is final and the theme never comes
   const publicThemes = await (await fetch(`${BASE}/api/rotation-themes`)).json();
   assert.equal(publicThemes.length, 1);
   assert.equal(publicThemes[0].number, 1, "the first themed rotation is Rotation 1");
-  assert.equal(publicThemes[0].length, 6);
+  assert.equal(publicThemes[0].length, 6, "Ash through to Max");
   assert.equal(publicThemes[0].name, second.winner.name);
   const nights = await (await fetch(`${BASE}/api/nights`)).json();
-  assert.match(nights.find((n: { id: string }) => n.id === publicThemes[0].startNightId).selector, /^Max/);
+  assert.match(nights.find((n: { id: string }) => n.id === publicThemes[0].startNightId).selector, /^Ash/);
 
-  // Ash's night can still be spun for, and the used theme isn't on the wheel
+  // Nothing else is waiting for a theme, so there's nothing to spin for
   const state = await (await fetch(`${BASE}/api/admin/themes`, authed(james))).json();
-  assert.deepEqual(state.startOptions.map((o: { startNightId: string }) => o.startNightId), ["night-3"]);
+  assert.deepEqual(state.startOptions, []);
+  assert.equal((await fetch(`${BASE}/api/admin/themes/spin`, json({}, james))).status, 409);
+
+  // Clearing a rotation that hasn't started puts its theme back on the wheel
+  assert.equal((await fetch(`${BASE}/api/admin/rotation-themes/night-3`, { ...authed(james), method: "DELETE" })).status, 200);
+  const cleared = await (await fetch(`${BASE}/api/admin/themes`, authed(james))).json();
+  assert.equal(cleared.themes.find((t: { id: string }) => t.id === second.winner.id).status, "available");
+
   // A spin pressed by mistake can be cancelled, and the veto comes back
   const oops = await (await fetch(`${BASE}/api/admin/themes/spin`, json({}, james))).json();
   assert.equal(oops.final, false);
@@ -212,15 +217,14 @@ test("the wheel: one veto, then the next spin is final and the theme never comes
   assert.equal((await fetch(`${BASE}/api/admin/themes/spin/cancel`, json({}, james))).status, 409);
 
   const third = await (await fetch(`${BASE}/api/admin/themes/spin`, json({}, james))).json();
-  assert.ok(!third.wheel.some((t: { id: string }) => t.id === second.winner.id));
   assert.equal(third.spin.startNightId, "night-3");
   assert.equal(third.spin.vetoed, false);
   assert.equal((await fetch(`${BASE}/api/admin/themes/spin/lock`, json({}, james))).status, 200);
   const after = await (await fetch(`${BASE}/api/rotation-themes`)).json();
-  assert.equal(after.length, 2);
-  const ash = after.find((t: { startNightId: string }) => t.startNightId === "night-3");
-  assert.equal(ash.number, 2);
-  assert.equal(ash.length, 5, "the rest of the rotation, Ash to James");
+  assert.equal(after.length, 1);
+  assert.equal(after[0].startNightId, "night-3");
+  assert.equal(after[0].number, 1);
+  assert.equal(after[0].length, 6);
 });
 
 test("an admin can send a pick back to the host", async () => {

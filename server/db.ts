@@ -87,15 +87,15 @@ export interface DatabaseSchema {
   themeSpin?: ThemeSpin | null;
 }
 
-// Clean launch initial data: starting rotation with Max Smith first
-// Strict perpetual rotation order: max > ash > madi > amy > Tom > james (Then the order starts again with no change)
+// Strict perpetual rotation order: Ash > Madi > Amy > Tom > James > Max, then round again.
+// A round (rotation) starts with Ash and ends with Max (from 20 Nov 2026; before that it started with Max).
 export const HOST_ROTATION = [
-  "Max Smith",
   "Ash Macintosh",
   "Madison Hill",
   "Amy Walsh",
   "Tom Sakai",
-  "James Macintosh"
+  "James Macintosh",
+  "Max Smith"
 ];
 
 export function canonicalizeHostName(name: string): string {
@@ -196,7 +196,7 @@ export function ensureFutureNights(db: DatabaseSchema) {
     // A fortnight after the last night's planned Friday, at 7 pm NZ (see nextNightDate)
     const nextDateStr = nextNightDate(lastNight);
     
-    // Determine next selector in perpetual cycle: Max -> Ash -> Madison -> Amy -> Tom -> James
+    // Determine next selector in perpetual cycle: Ash -> Madison -> Amy -> Tom -> James -> Max
     const lastIndex = getRotationIndex(lastNight.selector);
     const nextIndex = lastIndex === -1 ? 0 : (lastIndex + 1) % HOST_ROTATION.length;
     const nextSelector = HOST_ROTATION[nextIndex];

@@ -528,7 +528,7 @@ export default function CalendarView({
                 </span>
               </div>
               <span className="text-xs font-mono text-amber-400/90 font-medium">
-                Standard: Max → Ash → Madi → Amy → Tom → James
+                Standard: Ash → Madi → Amy → Tom → James → Max
               </span>
             </div>
 
@@ -598,7 +598,7 @@ export default function CalendarView({
                   Auto-realign subsequent sessions to follow the standard rotation
                 </span>
                 <p className="text-xs text-zinc-400 mt-0.5">
-                  Maintains continuous sequence starting after {selectedSelector.split(" ")[0] || "this host"} (Max → Ash → Madi → Amy → Tom → James).
+                  Maintains continuous sequence starting after {selectedSelector.split(" ")[0] || "this host"} (Ash → Madi → Amy → Tom → James → Max).
                 </p>
               </div>
             </label>
